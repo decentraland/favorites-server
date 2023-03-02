@@ -5,6 +5,7 @@ import type {
   IHttpServerComponent,
   IBaseComponent,
   IMetricsComponent,
+  IDatabase,
 } from "@well-known-components/interfaces"
 import { metricDeclarations } from "./metrics"
 
@@ -19,6 +20,7 @@ export type BaseComponents = {
   server: IHttpServerComponent<GlobalContext>
   fetch: IFetchComponent
   metrics: IMetricsComponent<keyof typeof metricDeclarations>
+  pg: IDatabase
 }
 
 // components used in runtime
