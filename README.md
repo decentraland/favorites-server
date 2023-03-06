@@ -1,4 +1,4 @@
-# template-server
+# marketplace-favorites-server
 
 ## Architecture
 
