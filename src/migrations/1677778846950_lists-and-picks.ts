@@ -8,7 +8,7 @@ export const shorthands: ColumnDefinitions | undefined = undefined
 
 export async function up(pgm: MigrationBuilder): Promise<void> {
   pgm.createTable(LISTS_TABLE, {
-    id: { type: "SERIAL", notNull: true, primaryKey: true, unique: true },
+    id: { type: "uuid", notNull: true, primaryKey: true, unique: true, default: pgm.func("uuid_generate_v4()") },
     name: { type: "text", notNull: true },
     description: { type: "text", notNull: false },
     user_address: { type: "text", notNull: true },
@@ -22,7 +22,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
   pgm.createTable(PICKS_TABLE, {
     item_id: { type: "text", notNull: true },
     user_address: { type: "text", notNull: true },
-    list_id: { type: "SERIAL", notNull: true, unique: false, references: `${LISTS_TABLE}(id)`, onDelete: "CASCADE" },
+    list_id: { type: "uuid", notNull: true, unique: false, references: `${LISTS_TABLE}(id)`, onDelete: "CASCADE" },
     created_at: { type: "timestamp", notNull: true, default: pgm.func("now()") },
   })
 
