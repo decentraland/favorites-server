@@ -40,6 +40,8 @@ async function initComponents(): Promise<TestComponents> {
   const logs = await createLogComponent({ metrics })
 
   const pg = await createPgComponent({ logs, config, metrics })
+  // Mock the start function to avoid connecting to a local database
+  jest.spyOn(pg, "start").mockResolvedValue()
 
   const server = await createServerComponent<GlobalContext>({ config, logs }, {})
   const fetch = await createFetchComponent()
