@@ -11,7 +11,8 @@ import { metricDeclarations } from "../src/metrics"
 import { createLogComponent } from "@well-known-components/logger"
 import { createServerComponent } from "@well-known-components/http-server"
 import { createFetchComponent } from "../src/adapters/fetch"
-import { createPgComponent } from "@well-known-components/pg-component"
+import { createPgComponent, IPgComponent } from "@well-known-components/pg-component"
+import { createListsComponent, IListsComponents } from "../src/ports/lists"
 
 // start TCP port for listeners
 let lastUsedPort = 19000 + parseInt(process.env.JEST_WORKER_ID || "1") * 1000
@@ -46,6 +47,8 @@ async function initComponents(): Promise<TestComponents> {
   const server = await createServerComponent<GlobalContext>({ config, logs }, {})
   const fetch = await createFetchComponent()
 
+  const lists = await createListsComponent({ pg })
+
   return {
     config,
     metrics,
@@ -53,6 +56,35 @@ async function initComponents(): Promise<TestComponents> {
     pg,
     server,
     fetch,
+    lists,
     localFetch: await createLocalFetchCompoment(config),
+  }
+}
+
+export function createTestListsComponent(
+  { getPicksByListId = jest.fn() } = {
+    getPicksByListId: jest.fn(),
+  }
+): IListsComponents {
+  return {
+    getPicksByListId,
+  }
+}
+
+export function createTestPgComponent(
+  { query = jest.fn(), start = jest.fn(), streamQuery = jest.fn(), getPool = jest.fn(), stop = jest.fn() } = {
+    query: jest.fn(),
+    start: jest.fn(),
+    streamQuery: jest.fn(),
+    getPool: jest.fn(),
+    stop: jest.fn(),
+  }
+): IPgComponent {
+  return {
+    start,
+    streamQuery,
+    query,
+    getPool,
+    stop,
   }
 }

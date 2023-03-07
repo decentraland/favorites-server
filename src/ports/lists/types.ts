@@ -16,8 +16,8 @@ export type DBGetPickByListId = PickRow & {
   picks_count: number
 }
 
-export type Pick = {
+export type TPick = {
   itemId: string
 }
 
-export type PicksWithCount = { picks: Pick[]; count: number }
+export type PicksWithCount = { picks: TPick[]; count: number }

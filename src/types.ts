@@ -8,8 +8,9 @@ import type {
   IDatabase,
 } from "@well-known-components/interfaces"
 import { IPgComponent } from "@well-known-components/pg-component"
+import { PaginatedResponse } from "./logic/http"
 import { metricDeclarations } from "./metrics"
-import { IListsComponents } from "./ports/lists/types"
+import { IListsComponents, TPick } from "./ports/lists/types"
 
 export type GlobalContext = {
   components: BaseComponents
@@ -63,5 +64,9 @@ export enum StatusCode {
 
 export type HTTPResponse = {
   status: StatusCode
-  body: any // TODO fix this
+  body: {
+    ok: boolean
+    message?: string
+    data?: PaginatedResponse<TPick>
+  }
 }
