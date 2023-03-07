@@ -26,18 +26,16 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     created_at: { type: "timestamp", notNull: true, default: pgm.func("now()") },
   })
 
-  // Should create an index by the two columns compounded
-  pgm.addConstraint(PICKS_TABLE, "item_id_user_address_primary_key", {
-    primaryKey: ["item_id", "user_address"],
+  // Should create an index by the three columns compounded
+  pgm.addConstraint(PICKS_TABLE, "item_id_user_address_list_id_primary_key", {
+    primaryKey: ["item_id", "user_address", "list_id"],
   })
 
-  pgm.createIndex(PICKS_TABLE, ["item_id", "user_address", "list_id"])
   pgm.createIndex(PICKS_TABLE, "created_at")
 }
 
 export async function down(pgm: MigrationBuilder): Promise<void> {
   pgm.dropConstraint(PICKS_TABLE, "item_id_user_address_primary_key")
-  pgm.dropIndex(PICKS_TABLE, ["item_id", "user_address", "list_id"])
   pgm.dropIndex(PICKS_TABLE, "created_at")
   pgm.dropTable(PICKS_TABLE)
 
