@@ -4,8 +4,6 @@ import { GlobalContext } from "../types"
 import { pingHandler } from "./handlers/ping-handler"
 import { getPicksByListIdHandler } from "./handlers/lists-handlers"
 
-authorizationMiddleware
-
 // We return the entire router because it will be easier to test than a whole server
 export async function setupRouter(
   _globalContext: GlobalContext
