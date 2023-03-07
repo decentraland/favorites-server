@@ -7,6 +7,7 @@ import { createMetricsComponent } from "@well-known-components/metrics"
 import { createPgComponent } from "@well-known-components/pg-component"
 import { AppComponents, GlobalContext } from "./types"
 import { metricDeclarations } from "./metrics"
+import { createListsComponent } from "./ports/lists/component"
 
 // Initialize all the components of the app
 export async function initComponents(): Promise<AppComponents> {
@@ -45,6 +46,7 @@ export async function initComponents(): Promise<AppComponents> {
   const server = await createServerComponent<GlobalContext>({ config, logs }, {})
   const statusChecks = await createStatusCheckComponent({ server, config })
   const fetch = await createFetchComponent()
+  const lists = await createListsComponent({ pg })
 
   return {
     config,
@@ -54,5 +56,6 @@ export async function initComponents(): Promise<AppComponents> {
     fetch,
     metrics,
     pg,
+    lists,
   }
 }
