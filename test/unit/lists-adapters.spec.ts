@@ -1,7 +1,7 @@
 import { fromDBGetPickByListIdPickToPicksWithCount } from "../../src/adapters/lists"
 import { DBGetPickByListId, PicksWithCount } from "../../src/ports/lists"
 
-describe("when transforming DB retrieved rental listings to rental listings", () => {
+describe("when transforming DB retrieved picks to picks with count", () => {
   let dbGetPicksByListId: DBGetPickByListId[]
   let picksWithCount: PicksWithCount
 
@@ -26,7 +26,7 @@ describe("when transforming DB retrieved rental listings to rental listings", ()
     }
   })
 
-  it("should return the transformed rental listing", () => {
+  it("should return the transformed picks with count", () => {
     expect(fromDBGetPickByListIdPickToPicksWithCount(dbGetPicksByListId)).toEqual(picksWithCount)
   })
 })

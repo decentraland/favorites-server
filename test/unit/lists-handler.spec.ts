@@ -1,10 +1,10 @@
 import * as authorizationMiddleware from "decentraland-crypto-middleware"
 import { getPicksByListIdHandler } from "../../src/controllers/handlers/lists-handlers"
-import { DBGetPickByListId, TPick, PickRow, PicksWithCount } from "../../src/ports/lists"
+import { DBGetPickByListId, TPick } from "../../src/ports/lists"
 import { AppComponents, HandlerContextWithPath, StatusCode } from "../../src/types"
 import { createTestListsComponent } from "../components"
 
-describe("when getting rental listings", () => {
+describe("when getting the picks of a list", () => {
   let url: URL
   let listId: string
   let components: Pick<AppComponents, "lists">
@@ -46,7 +46,7 @@ describe("when getting rental listings", () => {
     })
   })
 
-  describe("and the process to get the listing is successful", () => {
+  describe("and the process to get the picks is successful", () => {
     let dbPicksByListId: DBGetPickByListId[]
     let picks: TPick[]
 
@@ -61,7 +61,7 @@ describe("when getting rental listings", () => {
       getPicksByListIdMock.mockResolvedValueOnce(dbPicksByListId)
     })
 
-    it("should return a response with an ok status code and the listings", () => {
+    it("should return a response with an ok status code and the picks", () => {
       return expect(getPicksByListIdHandler({ url, components, verification, request, params })).resolves.toEqual({
         status: StatusCode.OK,
         body: {
