@@ -7,7 +7,10 @@ import type {
   IMetricsComponent,
   IDatabase,
 } from "@well-known-components/interfaces"
+import { IPgComponent } from "@well-known-components/pg-component"
+import { PaginatedResponse } from "./logic/http"
 import { metricDeclarations } from "./metrics"
+import { IListsComponents, TPick } from "./ports/lists/types"
 
 export type GlobalContext = {
   components: BaseComponents
@@ -20,7 +23,8 @@ export type BaseComponents = {
   server: IHttpServerComponent<GlobalContext>
   fetch: IFetchComponent
   metrics: IMetricsComponent<keyof typeof metricDeclarations>
-  pg: IDatabase
+  pg: IPgComponent & IDatabase
+  lists: IListsComponents
 }
 
 // components used in runtime
@@ -46,3 +50,23 @@ export type HandlerContextWithPath<
 >
 
 export type Context<Path extends string = any> = IHttpServerComponent.PathAwareContext<GlobalContext, Path>
+
+export enum StatusCode {
+  OK = 200,
+  CREATED = 201,
+  BAD_REQUEST = 400,
+  UNAUTHORIZED = 401,
+  NOT_FOUND = 404,
+  LOCKED = 423,
+  CONFLICT = 409,
+  ERROR = 500,
+}
+
+export type HTTPResponse = {
+  status: StatusCode
+  body: {
+    ok: boolean
+    message?: string
+    data?: PaginatedResponse<TPick>
+  }
+}
