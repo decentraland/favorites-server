@@ -1,9 +1,10 @@
 import { IMetricsComponent } from "@well-known-components/interfaces"
-import { validateMetricsDeclaration } from "@well-known-components/metrics"
+import { getDefaultHttpMetrics, validateMetricsDeclaration } from "@well-known-components/metrics"
 import { metricDeclarations as logsMetricsDeclarations } from "@well-known-components/logger"
 import { metricDeclarations as thegraphMetrics } from "@well-known-components/thegraph-component"
 
 export const metricDeclarations = {
+  ...getDefaultHttpMetrics(),
   ...logsMetricsDeclarations,
   ...thegraphMetrics,
   test_ping_counter: {
