@@ -10,7 +10,7 @@ import { createMetricsComponent } from "@well-known-components/metrics"
 import { metricDeclarations } from "../src/metrics"
 import { createLogComponent } from "@well-known-components/logger"
 import { createServerComponent } from "@well-known-components/http-server"
-import { createFetchComponent } from "../src/adapters/fetch"
+import { createFetchComponent } from "../src/ports/fetch"
 import { createPgComponent, IPgComponent } from "@well-known-components/pg-component"
 import { createListsComponent, IListsComponents } from "../src/ports/lists"
 
