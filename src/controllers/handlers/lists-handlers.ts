@@ -56,7 +56,7 @@ export async function createPickInListHandler(
     params,
     request,
   } = context
-  const userAddress: string | undefined = verification?.auth.toLowerCase()
+  const userAddress: string | undefined = verification?.auth?.toLowerCase()
   let body: { itemId?: string }
 
   if (!userAddress) {
@@ -91,12 +91,12 @@ export async function createPickInListHandler(
   }
 
   try {
-    const picksByListIdResult = await lists.addPickToList(params.id, body.itemId, userAddress)
+    const addPickToListResult = await lists.addPickToList(params.id, body.itemId, userAddress)
     return {
       status: StatusCode.CREATED,
       body: {
         ok: true,
-        data: fromDBPickToPick(picksByListIdResult),
+        data: fromDBPickToPick(addPickToListResult),
       },
     }
   } catch (error) {
