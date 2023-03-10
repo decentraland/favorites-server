@@ -8,9 +8,10 @@ import type {
   IDatabase,
 } from "@well-known-components/interfaces"
 import { IPgComponent } from "@well-known-components/pg-component"
+import { ISubgraphComponent } from "@well-known-components/thegraph-component"
 import { PaginatedResponse } from "./logic/http"
 import { metricDeclarations } from "./metrics"
-import { IListsComponents, TPick } from "./ports/lists/types"
+import { IListsComponents } from "./ports/lists/types"
 
 export type GlobalContext = {
   components: BaseComponents
@@ -25,6 +26,7 @@ export type BaseComponents = {
   metrics: IMetricsComponent<keyof typeof metricDeclarations>
   pg: IPgComponent & IDatabase
   lists: IListsComponents
+  collectionsSubgraph: ISubgraphComponent
 }
 
 // components used in runtime
@@ -60,13 +62,23 @@ export enum StatusCode {
   LOCKED = 423,
   CONFLICT = 409,
   ERROR = 500,
+  UNPROCESSABLE_CONTENT = 422,
 }
 
-export type HTTPResponse = {
+export type HTTPResponse<T> = {
   status: StatusCode
-  body: {
-    ok: boolean
-    message?: string
-    data?: PaginatedResponse<TPick>
-  }
+  body:
+    | {
+        ok: false
+        message: string
+        data?: object
+      }
+    | {
+        ok: true
+        data?: PaginatedResponse<T>
+      }
+    | {
+        ok: true
+        data?: T
+      }
 }

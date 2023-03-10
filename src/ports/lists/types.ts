@@ -1,5 +1,13 @@
 export interface IListsComponents {
   getPicksByListId(listId: string, params: GetPicksByListIdParameters): Promise<DBGetPickByListId[]>
+  addPickToList(listId: string, itemId: string, userAddress: string): Promise<DBPick>
+}
+
+export type DBPick = {
+  item_id: string
+  user_address: string
+  list_id: string
+  created_at: Date
 }
 
 export type GetPicksByListIdParameters = {
@@ -8,16 +16,13 @@ export type GetPicksByListIdParameters = {
   limit: number
 }
 
-export type PickRow = {
-  item_id: string
+export type DBList = {
+  id: string
+  name: string
+  description: string | null
+  user_address: string
 }
 
-export type DBGetPickByListId = PickRow & {
+export type DBGetPickByListId = DBPick & {
   picks_count: number
 }
-
-export type TPick = {
-  itemId: string
-}
-
-export type PicksWithCount = { picks: TPick[]; count: number }
