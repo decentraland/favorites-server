@@ -1,24 +1,30 @@
 import { IDatabase } from "@well-known-components/interfaces"
 import { IPgComponent } from "@well-known-components/pg-component"
-import { createListsComponent, DBGetPickByListId, IListsComponents } from "../../src/ports/lists"
-import { createTestPgComponent } from "../components"
+import { ISubgraphComponent } from "@well-known-components/thegraph-component"
+import { createListsComponent, DBGetPickByListId, DBPick, IListsComponents } from "../../src/ports/lists"
+import { ItemNotFoundError, ListNotFoundError, PickAlreadyExistsError } from "../../src/ports/lists/errors"
+import { createTestPgComponent, createTestSubgraphComponent } from "../components"
 
 let dbQueryMock: jest.Mock
+let collectionsSubgraphQueryMock: jest.Mock
 let pg: IPgComponent & IDatabase
 let listsComponent: IListsComponents
+let collectionsSubgraph: ISubgraphComponent
 
 afterEach(() => {
   jest.resetAllMocks()
 })
 
+beforeEach(async () => {
+  dbQueryMock = jest.fn()
+  collectionsSubgraphQueryMock = jest.fn()
+  pg = createTestPgComponent({ query: dbQueryMock })
+  collectionsSubgraph = createTestSubgraphComponent({ query: collectionsSubgraphQueryMock })
+  listsComponent = await createListsComponent({ pg, collectionsSubgraph })
+})
+
 describe("when getting picks by list id", () => {
   let dbGetPicksByListId: DBGetPickByListId[]
-
-  beforeEach(async () => {
-    dbQueryMock = jest.fn()
-    pg = createTestPgComponent({ query: dbQueryMock })
-    listsComponent = await createListsComponent({ pg })
-  })
 
   describe("and the query throws an error", () => {
     const errorMessage = "Something went wrong while querying the database"
@@ -57,6 +63,110 @@ describe("when getting picks by list id", () => {
       )
       expect(dbQueryMock.mock.calls[0][0].text).toEqual(expect.stringContaining(`LIMIT $3 OFFSET $4`))
       expect(dbQueryMock.mock.calls[0][0].values).toEqual(["list-id", "0xuseraddress", 10, 0])
+    })
+  })
+})
+
+describe("when creating a new pick", () => {
+  let listId: string
+  let itemId: string
+  let userAddress: string
+
+  beforeEach(() => {
+    listId = "99ffdcd4-0647-41e7-a865-996e2071ed62"
+    itemId = "0x08de0de733cc11081d43569b809c00e6ddf314fb-0"
+    userAddress = "0x1dec5f50cb1467f505bb3ddfd408805114406b10"
+  })
+
+  describe("and the user isn't allowed to create a new pick on the given list or the list doesn't exist", () => {
+    let error: Error
+
+    beforeEach(() => {
+      error = new ListNotFoundError(listId)
+      dbQueryMock.mockRejectedValueOnce(error)
+    })
+
+    it("should throw a list not found error", () => {
+      return expect(listsComponent.addPickToList(listId, itemId, userAddress)).rejects.toEqual(error)
+    })
+  })
+
+  describe("and the item being picked doesn't exist", () => {
+    beforeEach(() => {
+      dbQueryMock.mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [
+          {
+            id: "aListId",
+            name: "aListName",
+            description: null,
+            user_address: "aUserAddress",
+          },
+        ],
+      })
+      collectionsSubgraphQueryMock.mockResolvedValueOnce({ items: [] })
+    })
+
+    it("should throw an item not found error", () => {
+      return expect(listsComponent.addPickToList(listId, itemId, userAddress)).rejects.toEqual(
+        new ItemNotFoundError(itemId)
+      )
+    })
+  })
+
+  describe("and the item being picked exists", () => {
+    beforeEach(() => {
+      collectionsSubgraphQueryMock.mockResolvedValueOnce({ items: [{ id: itemId }] })
+    })
+
+    describe("and the user is allowed to create a new pick on the given list and the list exists", () => {
+      beforeEach(() => {
+        dbQueryMock.mockResolvedValueOnce({
+          rowCount: 1,
+          rows: [
+            {
+              id: "aListId",
+              name: "aListName",
+              description: null,
+              user_address: "aUserAddress",
+            },
+          ],
+        })
+      })
+
+      describe("and the pick already exists", () => {
+        beforeEach(() => {
+          dbQueryMock.mockRejectedValueOnce({ constraint: "item_id_user_address_list_id_primary_key" })
+        })
+
+        it("should throw a pick already exists error", () => {
+          return expect(listsComponent.addPickToList(listId, itemId, userAddress)).rejects.toEqual(
+            new PickAlreadyExistsError(listId, itemId)
+          )
+        })
+      })
+
+      describe("and the pick does not exist already", () => {
+        let dbPick: DBPick
+
+        beforeEach(() => {
+          dbPick = {
+            item_id: itemId,
+            user_address: userAddress,
+            list_id: listId,
+            created_at: new Date(),
+          }
+
+          dbQueryMock.mockResolvedValueOnce({
+            rowCount: 1,
+            rows: [dbPick],
+          })
+        })
+
+        it("should create the pick and return it", () => {
+          return expect(listsComponent.addPickToList(listId, itemId, userAddress)).resolves.toEqual(dbPick)
+        })
+      })
     })
   })
 })

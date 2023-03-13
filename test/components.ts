@@ -8,6 +8,7 @@ import { createMetricsComponent } from "@well-known-components/metrics"
 import { createLogComponent } from "@well-known-components/logger"
 import { createServerComponent } from "@well-known-components/http-server"
 import { createTracerComponent } from "@well-known-components/tracer-component"
+import { createSubgraphComponent, ISubgraphComponent } from "@well-known-components/thegraph-component"
 import { createPgComponent, IPgComponent } from "@well-known-components/pg-component"
 import { createFetchComponent } from "../src/ports/fetch"
 import { createListsComponent, IListsComponents } from "../src/ports/lists"
@@ -34,10 +35,22 @@ export const test = createRunner<TestComponents>({
 })
 
 async function initComponents(): Promise<TestComponents> {
-  process.env.HTTP_SERVER_PORT = (getFreePort() + 1).toString()
-
+  const currentPort = getFreePort()
   // default config from process.env + .env file
-  const config = await createDotEnvConfigComponent({ path: [".env.spec"] }, process.env)
+  const defaultConfig = {
+    HTTP_SERVER_PORT: (currentPort + 1).toString(),
+    HTTP_SERVER_HOST: "localhost",
+    COLLECTIONS_SUBGRAPH_URL: "https://some-url.com",
+    SUBGRAPH_COMPONENT_RETRIES: "0",
+    PG_COMPONENT_PSQL_DATABASE: "marketplace",
+    PG_COMPONENT_PSQL_SCHEMA: "favorites",
+    PG_COMPONENT_PSQL_PORT: "5432",
+    PG_COMPONENT_PSQL_HOST: "localhost",
+    PG_COMPONENT_PSQL_USER: "username",
+    PG_COMPONENT_PSQL_PASSWORD: "password",
+  }
+
+  const config = await createDotEnvConfigComponent({}, defaultConfig)
   const metrics = await createMetricsComponent(metricDeclarations, { config })
   const tracer = createTracerComponent()
   const logs = await createLogComponent({ metrics, tracer })
@@ -49,8 +62,8 @@ async function initComponents(): Promise<TestComponents> {
   const server = await createServerComponent<GlobalContext>({ config, logs }, {})
   const fetch = await createFetchComponent({ tracer })
   instrumentHttpServerWithRequestLogger({ server, logger: logs }, { verbosity: Verbosity.INFO })
-
-  const lists = await createListsComponent({ pg })
+  const collectionsSubgraph = await createSubgraphComponent({ logs, config, fetch, metrics }, "subgraph-url")
+  const lists = await createListsComponent({ pg, collectionsSubgraph })
 
   return {
     config,
@@ -60,17 +73,26 @@ async function initComponents(): Promise<TestComponents> {
     server,
     fetch,
     lists,
+    collectionsSubgraph,
     localFetch: await createLocalFetchCompoment(config),
   }
 }
 
 export function createTestListsComponent(
-  { getPicksByListId = jest.fn() } = {
+  { getPicksByListId = jest.fn(), addPickToList = jest.fn() } = {
     getPicksByListId: jest.fn(),
+    addPickToList: jest.fn(),
   }
 ): IListsComponents {
   return {
     getPicksByListId,
+    addPickToList,
+  }
+}
+
+export function createTestSubgraphComponent({ query = jest.fn() } = { query: jest.fn() }): ISubgraphComponent {
+  return {
+    query,
   }
 }
 
