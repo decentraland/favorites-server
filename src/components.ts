@@ -8,6 +8,7 @@ import { createPgComponent } from "@well-known-components/pg-component"
 import { AppComponents, GlobalContext } from "./types"
 import { metricDeclarations } from "./metrics"
 import { createListsComponent } from "./ports/lists/component"
+import { createSubgraphComponent } from "@well-known-components/thegraph-component"
 
 // Initialize all the components of the app
 export async function initComponents(): Promise<AppComponents> {
@@ -16,6 +17,7 @@ export async function initComponents(): Promise<AppComponents> {
   const logs = await createLogComponent({ metrics })
 
   let databaseUrl: string | undefined = await config.getString("PG_COMPONENT_PSQL_CONNECTION_STRING")
+  const COLLECTIONS_SUBGRAPH_URL = await config.requireString("COLLECTIONS_SUBGRAPH_URL")
 
   if (!databaseUrl) {
     const dbUser = await config.requireString("PG_COMPONENT_PSQL_USER")
@@ -26,7 +28,6 @@ export async function initComponents(): Promise<AppComponents> {
 
     databaseUrl = `postgres://${dbUser}:${dbPassword}@${dbHost}:${dbPort}/${dbDatabaseName}`
   }
-
   const schema = await config.requireString("PG_COMPONENT_PSQL_SCHEMA")
 
   const pg = await createPgComponent(
@@ -46,10 +47,12 @@ export async function initComponents(): Promise<AppComponents> {
   const server = await createServerComponent<GlobalContext>({ config, logs }, {})
   const statusChecks = await createStatusCheckComponent({ server, config })
   const fetch = await createFetchComponent()
-  const lists = await createListsComponent({ pg })
+  const collectionsSubgraph = await createSubgraphComponent({ logs, config, fetch, metrics }, COLLECTIONS_SUBGRAPH_URL)
+  const lists = await createListsComponent({ pg, collectionsSubgraph })
 
   return {
     config,
+    collectionsSubgraph,
     logs,
     server,
     statusChecks,
