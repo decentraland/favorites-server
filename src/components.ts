@@ -3,13 +3,13 @@ import { createDotEnvConfigComponent } from "@well-known-components/env-config-p
 import { createServerComponent, createStatusCheckComponent } from "@well-known-components/http-server"
 import { createLogComponent } from "@well-known-components/logger"
 import { createMetricsComponent, instrumentHttpServerWithMetrics } from "@well-known-components/metrics"
+import { createHttpTracerComponent } from "@well-known-components/http-tracer-component"
 import { createPgComponent } from "@well-known-components/pg-component"
 import { createTracerComponent } from "@well-known-components/tracer-component"
 import { createFetchComponent } from "./ports/fetch"
 import { AppComponents, GlobalContext } from "./types"
 import { metricDeclarations } from "./metrics"
 import { createListsComponent } from "./ports/lists/component"
-import { createHttpTracerComponent } from "@well-known-components/http-tracer-component"
 
 // Initialize all the components of the app
 export async function initComponents(): Promise<AppComponents> {
