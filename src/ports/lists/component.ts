@@ -1,7 +1,7 @@
 import SQL from "sql-template-strings"
 import { DEFAULT_LIST_USER_ADDRESS } from "../../migrations/1678303321034_default-list"
 import { AppComponents } from "../../types"
-import { ItemNotFoundError, ListNotFoundError, PickAlreadyExistsError } from "./errors"
+import { ItemNotFoundError, ListNotFoundError, PickAlreadyExistsError, PickNotFoundError } from "./errors"
 import { GetPicksByListIdParameters, IListsComponents, DBGetPickByListId, DBList, DBPick } from "./types"
 
 export function createListsComponent(components: Pick<AppComponents, "pg" | "collectionsSubgraph">): IListsComponents {
@@ -64,5 +64,17 @@ export function createListsComponent(components: Pick<AppComponents, "pg" | "col
     }
   }
 
-  return { getPicksByListId, addPickToList }
+  async function deletePickInList(listId: string, itemId: string, userAddress: string): Promise<void> {
+    const result = await pg.query(
+      SQL`DELETE picks FROM favorites.picks as picks, favorites.lists as lists
+      WHERE lists.id = picks.list_id AND picks.list_id = ${listId}
+      AND picks.itemId = ${itemId}
+      AND (lists.user_address = ${userAddress} OR user_address = ${DEFAULT_LIST_USER_ADDRESS})`
+    )
+    if (result.rowCount === 0) {
+      throw new PickNotFoundError(listId, itemId)
+    }
+  }
+
+  return { getPicksByListId, addPickToList, deletePickInList }
 }

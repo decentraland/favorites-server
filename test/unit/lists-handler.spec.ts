@@ -1,16 +1,30 @@
 import * as authorizationMiddleware from "decentraland-crypto-middleware"
 import { TPick } from "../../src/adapters/lists"
-import { createPickInListHandler, getPicksByListIdHandler } from "../../src/controllers/handlers/lists-handlers"
+import {
+  createPickInListHandler,
+  deletePickInListHandler,
+  getPicksByListIdHandler,
+} from "../../src/controllers/handlers/lists-handlers"
 import { DBGetPickByListId, DBPick } from "../../src/ports/lists"
-import { ItemNotFoundError, ListNotFoundError, PickAlreadyExistsError } from "../../src/ports/lists/errors"
+import {
+  ItemNotFoundError,
+  ListNotFoundError,
+  PickAlreadyExistsError,
+  PickNotFoundError,
+} from "../../src/ports/lists/errors"
 import { AppComponents, HandlerContextWithPath, StatusCode } from "../../src/types"
 import { createTestListsComponent } from "../components"
 
+let verification: authorizationMiddleware.DecentralandSignatureData | undefined
+let components: Pick<AppComponents, "lists">
+let listId: string
+
+beforeEach(() => {
+  verification = { auth: "0x0", authMetadata: {} }
+})
+
 describe("when getting the picks of a list", () => {
   let url: URL
-  let listId: string
-  let components: Pick<AppComponents, "lists">
-  let verification: authorizationMiddleware.DecentralandSignatureData | undefined
   let getPicksByListIdMock: jest.Mock
   let request: HandlerContextWithPath<"lists", "/v1/lists/:id/picks">["request"]
   let params: HandlerContextWithPath<"lists", "/v1/lists/:id/picks">["params"]
@@ -21,7 +35,6 @@ describe("when getting the picks of a list", () => {
     components = {
       lists: createTestListsComponent({ getPicksByListId: getPicksByListIdMock }),
     }
-    verification = { auth: "0x0", authMetadata: {} }
     request = {} as HandlerContextWithPath<"lists", "/v1/lists/:id/picks">["request"]
     url = new URL(`http://localhost/v1/lists/${listId}/picks`)
     params = { id: listId }
@@ -81,10 +94,7 @@ describe("when getting the picks of a list", () => {
 })
 
 describe("when creating a pick", () => {
-  let listId: string
   let itemId: string
-  let verification: authorizationMiddleware.DecentralandSignatureData | undefined
-  let components: Pick<AppComponents, "lists">
   let request: HandlerContextWithPath<"lists", "/v1/lists/:id">["request"]
   let params: HandlerContextWithPath<"lists", "/v1/lists/:id">["params"]
   let jsonMock: jest.Mock
@@ -98,7 +108,6 @@ describe("when creating a pick", () => {
     components = {
       lists: createTestListsComponent({ addPickToList: addPickToListMock }),
     }
-    verification = { auth: "0x0", authMetadata: {} }
     request = {
       json: jsonMock,
     } as any
@@ -265,6 +274,87 @@ describe("when creating a pick", () => {
           },
         },
       })
+    })
+  })
+})
+
+describe("when deleting a pick", () => {
+  let itemId: string
+  let request: HandlerContextWithPath<"lists", "/v1/lists/:id/picks/:itemId">["request"]
+  let params: HandlerContextWithPath<"lists", "/v1/lists/:id/picks/:itemId">["params"]
+  let deletePickInListMock: jest.Mock
+
+  beforeEach(() => {
+    listId = "list-id"
+    itemId = "item-id"
+    deletePickInListMock = jest.fn()
+    components = {
+      lists: createTestListsComponent({ deletePickInList: deletePickInListMock }),
+    }
+    request = {} as HandlerContextWithPath<"lists", "/v1/lists/:id/picks">["request"]
+    params = { id: listId, itemId }
+  })
+
+  describe("and the request is not authenticated", () => {
+    beforeEach(() => {
+      verification = undefined
+    })
+
+    it("should return an unauthorized response", () => {
+      return expect(createPickInListHandler({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.UNAUTHORIZED,
+        body: {
+          ok: false,
+          message: "Unauthorized",
+        },
+      })
+    })
+  })
+
+  describe("and the request failed due to the pick not existing or not being accessible", () => {
+    beforeEach(() => {
+      deletePickInListMock.mockRejectedValueOnce(new PickNotFoundError(listId, itemId))
+    })
+
+    it("should return a not found response", () => {
+      return expect(deletePickInListHandler({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.NOT_FOUND,
+        body: {
+          ok: false,
+          message: "The pick does not exist or is not accessible by this user.",
+          data: {
+            itemId,
+            listId,
+          },
+        },
+      })
+    })
+  })
+
+  describe("and the request is successful", () => {
+    beforeEach(() => {
+      deletePickInListMock.mockResolvedValueOnce(undefined)
+    })
+
+    it("should return an ok response", () => {
+      return expect(deletePickInListHandler({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.OK,
+        body: {
+          ok: true,
+        },
+      })
+    })
+  })
+
+  describe("and the process to add the picks fails with an unknown error", () => {
+    let error = new Error("anError")
+
+    beforeEach(() => {
+      deletePickInListMock.mockRejectedValueOnce(error)
+    })
+
+    it("should propagate the error", () => {
+      return expect(deletePickInListHandler({ components, verification, request, params })).rejects.toEqual(error)
     })
   })
 })

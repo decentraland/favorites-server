@@ -2,9 +2,17 @@ import { IDatabase } from "@well-known-components/interfaces"
 import { IPgComponent } from "@well-known-components/pg-component"
 import { ISubgraphComponent } from "@well-known-components/thegraph-component"
 import { createListsComponent, DBGetPickByListId, DBPick, IListsComponents } from "../../src/ports/lists"
-import { ItemNotFoundError, ListNotFoundError, PickAlreadyExistsError } from "../../src/ports/lists/errors"
+import {
+  ItemNotFoundError,
+  ListNotFoundError,
+  PickAlreadyExistsError,
+  PickNotFoundError,
+} from "../../src/ports/lists/errors"
 import { createTestPgComponent, createTestSubgraphComponent } from "../components"
 
+let listId: string
+let itemId: string
+let userAddress: string
 let dbQueryMock: jest.Mock
 let collectionsSubgraphQueryMock: jest.Mock
 let pg: IPgComponent & IDatabase
@@ -21,6 +29,9 @@ beforeEach(async () => {
   pg = createTestPgComponent({ query: dbQueryMock })
   collectionsSubgraph = createTestSubgraphComponent({ query: collectionsSubgraphQueryMock })
   listsComponent = await createListsComponent({ pg, collectionsSubgraph })
+  listId = "99ffdcd4-0647-41e7-a865-996e2071ed62"
+  itemId = "0x08de0de733cc11081d43569b809c00e6ddf314fb-0"
+  userAddress = "0x1dec5f50cb1467f505bb3ddfd408805114406b10"
 })
 
 describe("when getting picks by list id", () => {
@@ -68,16 +79,6 @@ describe("when getting picks by list id", () => {
 })
 
 describe("when creating a new pick", () => {
-  let listId: string
-  let itemId: string
-  let userAddress: string
-
-  beforeEach(() => {
-    listId = "99ffdcd4-0647-41e7-a865-996e2071ed62"
-    itemId = "0x08de0de733cc11081d43569b809c00e6ddf314fb-0"
-    userAddress = "0x1dec5f50cb1467f505bb3ddfd408805114406b10"
-  })
-
   describe("and the user isn't allowed to create a new pick on the given list or the list doesn't exist", () => {
     let error: Error
 
@@ -167,6 +168,31 @@ describe("when creating a new pick", () => {
           return expect(listsComponent.addPickToList(listId, itemId, userAddress)).resolves.toEqual(dbPick)
         })
       })
+    })
+  })
+})
+
+describe("when deleting a pick", () => {
+  describe("and the pick was not found or was not accessible by the user", () => {
+    let error: Error
+
+    beforeEach(() => {
+      error = new PickNotFoundError(listId, itemId)
+      dbQueryMock.mockResolvedValueOnce({ rowCount: 0 })
+    })
+
+    it("should throw a pick not found error", () => {
+      return expect(listsComponent.deletePickInList(listId, itemId, userAddress)).rejects.toEqual(error)
+    })
+  })
+
+  describe("and the pick was successfully deleted", () => {
+    beforeEach(() => {
+      dbQueryMock.mockResolvedValueOnce({ rowCount: 1 })
+    })
+
+    it("should resolve", () => {
+      return expect(listsComponent.deletePickInList(listId, itemId, userAddress)).resolves.toEqual(undefined)
     })
   })
 })

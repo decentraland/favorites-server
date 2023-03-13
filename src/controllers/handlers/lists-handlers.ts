@@ -2,7 +2,12 @@ import * as authorizationMiddleware from "decentraland-crypto-middleware"
 import { fromDBGetPickByListIdToPickIdsWithCount, fromDBPickToPick } from "../../adapters/lists"
 import { TPick } from "../../adapters/lists/types"
 import { getPaginationParams } from "../../logic/http"
-import { ItemNotFoundError, ListNotFoundError, PickAlreadyExistsError } from "../../ports/lists/errors"
+import {
+  ItemNotFoundError,
+  ListNotFoundError,
+  PickAlreadyExistsError,
+  PickNotFoundError,
+} from "../../ports/lists/errors"
 import { HandlerContextWithPath, HTTPResponse, StatusCode } from "../../types"
 
 export async function getPicksByListIdHandler(
@@ -130,6 +135,56 @@ export async function createPickInListHandler(
           ok: false,
           message: error.message,
           data: {
+            itemId: error.itemId,
+          },
+        },
+      }
+    }
+
+    throw error
+  }
+}
+
+export async function deletePickInListHandler(
+  context: Pick<HandlerContextWithPath<"lists", "/v1/lists/:id/picks/:itemId">, "components" | "params" | "request"> &
+    authorizationMiddleware.DecentralandSignatureContext
+): Promise<HTTPResponse<undefined>> {
+  const {
+    components: { lists },
+    verification,
+    params,
+  } = context
+  const userAddress: string | undefined = verification?.auth?.toLowerCase()
+  const { id, itemId } = params
+
+  if (!userAddress) {
+    return {
+      status: StatusCode.UNAUTHORIZED,
+      body: {
+        ok: false,
+        message: "Unauthorized",
+      },
+    }
+  }
+
+  try {
+    await lists.deletePickInList(id, itemId, userAddress)
+    return {
+      status: StatusCode.OK,
+      body: {
+        ok: true,
+        data: undefined,
+      },
+    }
+  } catch (error) {
+    if (error instanceof PickNotFoundError) {
+      return {
+        status: StatusCode.NOT_FOUND,
+        body: {
+          ok: false,
+          message: error.message,
+          data: {
+            listId: error.listId,
             itemId: error.itemId,
           },
         },

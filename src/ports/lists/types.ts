@@ -1,6 +1,7 @@
 export interface IListsComponents {
   getPicksByListId(listId: string, params: GetPicksByListIdParameters): Promise<DBGetPickByListId[]>
   addPickToList(listId: string, itemId: string, userAddress: string): Promise<DBPick>
+  deletePickInList(listId: string, itemId: string, userAddress: string): Promise<void>
 }
 
 export type DBPick = {
