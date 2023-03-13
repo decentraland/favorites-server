@@ -1,5 +1,5 @@
 import * as authorizationMiddleware from "decentraland-crypto-middleware"
-import { fromDBGetPickByListIdPickToPickIdsWithCount, fromDBPickToPick } from "../../adapters/lists"
+import { fromDBGetPickByListIdToPickIdsWithCount, fromDBPickToPick } from "../../adapters/lists"
 import { TPick } from "../../adapters/lists/types"
 import { getPaginationParams } from "../../logic/http"
 import { ItemNotFoundError, ListNotFoundError, PickAlreadyExistsError } from "../../ports/lists/errors"
@@ -29,7 +29,7 @@ export async function getPicksByListIdHandler(
 
   const { limit, offset } = getPaginationParams(url.searchParams)
   const picksByListIdResult = await lists.getPicksByListId(params.id, { userAddress, limit, offset })
-  const { picks, count } = fromDBGetPickByListIdPickToPickIdsWithCount(picksByListIdResult)
+  const { picks, count } = fromDBGetPickByListIdToPickIdsWithCount(picksByListIdResult)
 
   return {
     status: StatusCode.OK,
