@@ -1,4 +1,5 @@
 import type { IFetchComponent } from "@well-known-components/http-server"
+import type * as authorizationMiddleware from "decentraland-crypto-middleware"
 import type {
   IConfigComponent,
   ILoggerComponent,
@@ -47,7 +48,8 @@ export type HandlerContextWithPath<
 > = IHttpServerComponent.PathAwareContext<
   IHttpServerComponent.DefaultContext<{
     components: Pick<AppComponents, ComponentNames>
-  }>,
+  }> &
+    authorizationMiddleware.DecentralandSignatureContext,
   Path
 >
 
