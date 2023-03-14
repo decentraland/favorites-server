@@ -1,4 +1,3 @@
-import * as authorizationMiddleware from "decentraland-crypto-middleware"
 import { fromDBGetPickByListIdToPickIdsWithCount, fromDBPickToPick } from "../../adapters/lists"
 import { TPick } from "../../adapters/lists/types"
 import { getPaginationParams } from "../../logic/http"
@@ -11,8 +10,10 @@ import {
 import { HandlerContextWithPath, HTTPResponse, StatusCode } from "../../types"
 
 export async function getPicksByListIdHandler(
-  context: Pick<HandlerContextWithPath<"lists", "/v1/lists/:id/picks">, "url" | "components" | "params" | "request"> &
-    authorizationMiddleware.DecentralandSignatureContext
+  context: Pick<
+    HandlerContextWithPath<"lists", "/v1/lists/:id/picks">,
+    "url" | "components" | "params" | "request" | "verification"
+  >
 ): Promise<HTTPResponse<Pick<TPick, "itemId">>> {
   const {
     url,
@@ -20,7 +21,7 @@ export async function getPicksByListIdHandler(
     verification,
     params,
   } = context
-  const userAddress: string | undefined = verification?.auth?.toLowerCase()
+  const userAddress: string | undefined = verification?.auth.toLowerCase()
 
   if (!userAddress) {
     return {
@@ -52,8 +53,10 @@ export async function getPicksByListIdHandler(
 }
 
 export async function createPickInListHandler(
-  context: Pick<HandlerContextWithPath<"lists", "/v1/lists/:id/picks">, "components" | "params" | "request"> &
-    authorizationMiddleware.DecentralandSignatureContext
+  context: Pick<
+    HandlerContextWithPath<"lists", "/v1/lists/:id/picks">,
+    "components" | "params" | "request" | "verification"
+  >
 ): Promise<HTTPResponse<TPick>> {
   const {
     components: { lists },
@@ -61,7 +64,7 @@ export async function createPickInListHandler(
     params,
     request,
   } = context
-  const userAddress: string | undefined = verification?.auth?.toLowerCase()
+  const userAddress: string | undefined = verification?.auth.toLowerCase()
   let body: { itemId?: string }
 
   if (!userAddress) {
@@ -146,15 +149,17 @@ export async function createPickInListHandler(
 }
 
 export async function deletePickInListHandler(
-  context: Pick<HandlerContextWithPath<"lists", "/v1/lists/:id/picks/:itemId">, "components" | "params" | "request"> &
-    authorizationMiddleware.DecentralandSignatureContext
+  context: Pick<
+    HandlerContextWithPath<"lists", "/v1/lists/:id/picks/:itemId">,
+    "components" | "params" | "request" | "verification"
+  >
 ): Promise<HTTPResponse<undefined>> {
   const {
     components: { lists },
     verification,
     params,
   } = context
-  const userAddress: string | undefined = verification?.auth?.toLowerCase()
+  const userAddress: string | undefined = verification?.auth.toLowerCase()
   const { id, itemId } = params
 
   if (!userAddress) {

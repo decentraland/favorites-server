@@ -7,10 +7,8 @@ import { createPickInListHandler, deletePickInListHandler, getPicksByListIdHandl
 const FIVE_MINUTES = 5 * 60 * 1000
 
 // We return the entire router because it will be easier to test than a whole server
-export async function setupRouter(
-  _globalContext: GlobalContext
-): Promise<Router<GlobalContext & authorizationMiddleware.DecentralandSignatureContext>> {
-  const router = new Router<GlobalContext & authorizationMiddleware.DecentralandSignatureContext>()
+export async function setupRouter(_globalContext: GlobalContext): Promise<Router<GlobalContext>> {
+  const router = new Router<GlobalContext>()
 
   router.get("/ping", pingHandler)
 
