@@ -154,8 +154,7 @@ export async function deletePickInListHandler(
     verification,
     params,
   } = context
-  const userAddress: string | undefined =
-    verification?.auth?.toLowerCase() ?? "0xeDaE96F7739aF8A7fB16E2a888C1E578E1328299".toLowerCase()
+  const userAddress: string | undefined = verification?.auth?.toLowerCase()
   const { id, itemId } = params
 
   if (!userAddress) {
