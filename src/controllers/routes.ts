@@ -28,7 +28,7 @@ export async function setupRouter(
 
   router.delete(
     "/v1/lists/:id/picks/:itemId",
-    // authorizationMiddleware.wellKnownComponents({ optional: false, expiration: FIVE_MINUTES }),
+    authorizationMiddleware.wellKnownComponents({ optional: false, expiration: FIVE_MINUTES }),
     deletePickInListHandler
   )
 
