@@ -79,14 +79,16 @@ async function initComponents(): Promise<TestComponents> {
 }
 
 export function createTestListsComponent(
-  { getPicksByListId = jest.fn(), addPickToList = jest.fn() } = {
+  { getPicksByListId = jest.fn(), addPickToList = jest.fn(), deletePickInList = jest.fn() } = {
     getPicksByListId: jest.fn(),
     addPickToList: jest.fn(),
+    deletePickInList: jest.fn(),
   }
 ): IListsComponents {
   return {
     getPicksByListId,
     addPickToList,
+    deletePickInList,
   }
 }
 
