@@ -66,11 +66,10 @@ export function createListsComponent(components: Pick<AppComponents, "pg" | "col
 
   async function deletePickInList(listId: string, itemId: string, userAddress: string): Promise<void> {
     const result = await pg.query(
-      SQL`DELETE FROM favorites.picks USING favorites.lists
-      WHERE favorites.lists.id = favorites.picks.list_id AND favorites.picks.list_id = ${listId}
+      SQL`DELETE FROM favorites.picks
+      WHERE favorites.picks.list_id = ${listId}
       AND favorites.picks.item_id = ${itemId}
-      AND favorites.picks.user_address = ${userAddress}
-      AND (favorites.lists.user_address = ${userAddress} OR favorites.lists.user_address = ${DEFAULT_LIST_USER_ADDRESS})`
+      AND favorites.picks.user_address = ${userAddress}`
     )
     if (result.rowCount === 0) {
       throw new PickNotFoundError(listId, itemId)
