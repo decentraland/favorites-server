@@ -11,6 +11,7 @@ import { createFetchComponent } from "./ports/fetch"
 import { AppComponents, GlobalContext } from "./types"
 import { metricDeclarations } from "./metrics"
 import { createListsComponent } from "./ports/lists/component"
+import { createSnapshotComponent } from "./ports/snapshot"
 
 // Initialize all the components of the app
 export async function initComponents(): Promise<AppComponents> {
@@ -53,7 +54,8 @@ export async function initComponents(): Promise<AppComponents> {
   const statusChecks = await createStatusCheckComponent({ server, config })
   const fetch = await createFetchComponent({ tracer })
   const collectionsSubgraph = await createSubgraphComponent({ logs, config, fetch, metrics }, COLLECTIONS_SUBGRAPH_URL)
-  const lists = await createListsComponent({ pg, collectionsSubgraph })
+  const snapshot = await createSnapshotComponent({ fetch, config })
+  const lists = await createListsComponent({ pg, collectionsSubgraph, snapshot, logs })
 
   return {
     config,
@@ -65,5 +67,6 @@ export async function initComponents(): Promise<AppComponents> {
     metrics,
     pg,
     lists,
+    snapshot,
   }
 }

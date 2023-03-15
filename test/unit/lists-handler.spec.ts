@@ -269,7 +269,7 @@ describe("when creating a pick", () => {
           data: {
             itemId,
             listId,
-            createdAt: pick.created_at.toString(),
+            createdAt: Number(pick.created_at),
             userAddress: verification!.auth!,
           },
         },

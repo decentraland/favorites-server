@@ -59,7 +59,7 @@ describe("when transforming a DB retrieved pick to a pick", () => {
       itemId: dbPick.item_id,
       userAddress: dbPick.user_address,
       listId: dbPick.list_id,
-      createdAt: dbPick.created_at.toString(),
+      createdAt: Number(dbPick.created_at),
     })
   })
 })

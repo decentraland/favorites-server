@@ -13,6 +13,7 @@ import { ISubgraphComponent } from "@well-known-components/thegraph-component"
 import { PaginatedResponse } from "./logic/http"
 import { metricDeclarations } from "./metrics"
 import { IListsComponents } from "./ports/lists/types"
+import { ISnapshotComponent } from "./ports/snapshot"
 
 export type GlobalContext = {
   components: BaseComponents
@@ -28,6 +29,7 @@ export type BaseComponents = {
   pg: IPgComponent & IDatabase
   lists: IListsComponents
   collectionsSubgraph: ISubgraphComponent
+  snapshot: ISnapshotComponent
 }
 
 // components used in runtime
