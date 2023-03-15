@@ -7,6 +7,7 @@ import { createHttpTracerComponent } from "@well-known-components/http-tracer-co
 import { createSubgraphComponent } from "@well-known-components/thegraph-component"
 import { createPgComponent } from "@well-known-components/pg-component"
 import { createTracerComponent } from "@well-known-components/tracer-component"
+import { instrumentHttpServerWithRequestLogger } from "@well-known-components/http-requests-logger-component"
 import { createFetchComponent } from "./ports/fetch"
 import { AppComponents, GlobalContext } from "./types"
 import { metricDeclarations } from "./metrics"
@@ -50,6 +51,7 @@ export async function initComponents(): Promise<AppComponents> {
 
   const server = await createServerComponent<GlobalContext>({ config, logs }, {})
   createHttpTracerComponent({ server, tracer })
+  instrumentHttpServerWithRequestLogger({ server, logger: logs })
   await instrumentHttpServerWithMetrics({ metrics, config, server })
   const statusChecks = await createStatusCheckComponent({ server, config })
   const fetch = await createFetchComponent({ tracer })
