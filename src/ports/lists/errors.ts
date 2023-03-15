@@ -21,3 +21,9 @@ export class PickNotFoundError extends Error {
     super("The pick does not exist or is not accessible by this user.")
   }
 }
+
+export class QueryFailure extends Error {
+  constructor(message: string) {
+    super(`Querying the subgraph failed: ${message}`)
+  }
+}

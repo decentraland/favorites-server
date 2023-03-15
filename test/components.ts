@@ -1,6 +1,7 @@
 // This file is the "test-environment" analogous for src/components.ts
 // Here we define the test components to be used in the testing environment
 
+import { ILoggerComponent } from "@well-known-components/interfaces"
 import { createRunner, createLocalFetchCompoment } from "@well-known-components/test-helpers"
 import { instrumentHttpServerWithRequestLogger, Verbosity } from "@well-known-components/http-requests-logger-component"
 import { createDotEnvConfigComponent } from "@well-known-components/env-config-provider"
@@ -11,6 +12,7 @@ import { createTracerComponent } from "@well-known-components/tracer-component"
 import { createSubgraphComponent, ISubgraphComponent } from "@well-known-components/thegraph-component"
 import { createPgComponent, IPgComponent } from "@well-known-components/pg-component"
 import { createFetchComponent } from "../src/ports/fetch"
+import { createSnapshotComponent, ISnapshotComponent } from "../src/ports/snapshot"
 import { createListsComponent, IListsComponents } from "../src/ports/lists"
 import { metricDeclarations } from "../src/metrics"
 import { main } from "../src/service"
@@ -38,6 +40,7 @@ async function initComponents(): Promise<TestComponents> {
   const currentPort = getFreePort()
   // default config from process.env + .env file
   const defaultConfig = {
+    SNAPSHOT_URL: "https://snapshot-url.com",
     HTTP_SERVER_PORT: (currentPort + 1).toString(),
     HTTP_SERVER_HOST: "localhost",
     COLLECTIONS_SUBGRAPH_URL: "https://some-url.com",
@@ -63,10 +66,12 @@ async function initComponents(): Promise<TestComponents> {
   const fetch = await createFetchComponent({ tracer })
   instrumentHttpServerWithRequestLogger({ server, logger: logs }, { verbosity: Verbosity.INFO })
   const collectionsSubgraph = await createSubgraphComponent({ logs, config, fetch, metrics }, "subgraph-url")
-  const lists = await createListsComponent({ pg, collectionsSubgraph })
+  const snapshot = await createSnapshotComponent({ fetch, config })
+  const lists = await createListsComponent({ pg, collectionsSubgraph, snapshot, logs })
 
   return {
     config,
+    snapshot,
     metrics,
     logs,
     pg,
@@ -75,6 +80,18 @@ async function initComponents(): Promise<TestComponents> {
     lists,
     collectionsSubgraph,
     localFetch: await createLocalFetchCompoment(config),
+  }
+}
+
+export function createTestLogsComponent({ getLogger = jest.fn() } = { getLogger: jest.fn() }): ILoggerComponent {
+  return {
+    getLogger,
+  }
+}
+
+export function createTestSnapshotComponent({ getScore = jest.fn() } = { getScore: jest.fn() }): ISnapshotComponent {
+  return {
+    getScore,
   }
 }
 

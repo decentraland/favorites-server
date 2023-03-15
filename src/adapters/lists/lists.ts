@@ -15,6 +15,6 @@ export function fromDBPickToPick(dbPick: DBPick): TPick {
     itemId: dbPick.item_id,
     userAddress: dbPick.user_address,
     listId: dbPick.list_id,
-    createdAt: dbPick.created_at.toString(),
+    createdAt: Number(dbPick.created_at),
   }
 }
