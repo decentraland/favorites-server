@@ -38,6 +38,6 @@
     "@well-known-components/pg-component": "^0.2.1",
     "@well-known-components/thegraph-component": "^1.4.1",
     "@well-known-components/tracer-component": "^1.2.0",
-    "decentraland-crypto-middleware": "^1.0.4"
+    "decentraland-crypto-middleware": "^1.1.0"
   }
 }
