@@ -1,5 +1,6 @@
 import { URLSearchParams } from "url"
-import { getPaginationParams } from "../../src/logic/http"
+import { getNumberParameter, getPaginationParams } from "../../src/logic/http"
+import { InvalidParameterError } from "../../src/logic/http/errors"
 
 describe("when getting the pagination params", () => {
   describe("and the limit is greater than the max limit", () => {
@@ -71,6 +72,42 @@ describe("when getting the pagination params", () => {
         limit: 100,
         offset: 100,
       })
+    })
+  })
+})
+
+describe("getNumberParameter", () => {
+  let searchParams: URLSearchParams
+
+  describe("when the search parameter is not defined", () => {
+    beforeEach(() => {
+      searchParams = new URLSearchParams()
+    })
+
+    it("should return undefined when value is null", () => {
+      expect(getNumberParameter("parameterName", searchParams)).toBe(undefined)
+    })
+  })
+
+  describe("when the search parameter value is an integer", () => {
+    beforeEach(() => {
+      searchParams = new URLSearchParams({ parameterName: "12" })
+    })
+
+    it("should return parsed number", () => {
+      expect(getNumberParameter("parameterName", searchParams)).toBe(12)
+    })
+  })
+
+  describe("when the search parameter value is not a valid number", () => {
+    beforeEach(() => {
+      searchParams = new URLSearchParams({ parameterName: "test" })
+    })
+
+    it("should throw InvalidParameterError", () => {
+      expect(() => getNumberParameter("parameterName", searchParams)).toThrow(
+        new InvalidParameterError("parameterName", "test")
+      )
     })
   })
 })

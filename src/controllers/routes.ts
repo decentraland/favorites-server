@@ -3,6 +3,7 @@ import * as authorizationMiddleware from "decentraland-crypto-middleware"
 import { GlobalContext } from "../types"
 import { pingHandler } from "./handlers/ping-handler"
 import { createPickInListHandler, deletePickInListHandler, getPicksByListIdHandler } from "./handlers/lists-handlers"
+import { getPickStatsHandler } from "./handlers/picks-handlers"
 
 const FIVE_MINUTES = 5 * 60 * 1000
 
@@ -28,6 +29,12 @@ export async function setupRouter(_globalContext: GlobalContext): Promise<Router
     "/v1/lists/:id/picks/:itemId",
     authorizationMiddleware.wellKnownComponents({ optional: false, expiration: FIVE_MINUTES }),
     deletePickInListHandler
+  )
+
+  router.get(
+    "/v1/picks/:itemId/stats",
+    authorizationMiddleware.wellKnownComponents({ optional: true, expiration: FIVE_MINUTES }),
+    getPickStatsHandler
   )
 
   return router

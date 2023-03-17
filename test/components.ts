@@ -14,6 +14,7 @@ import { createPgComponent, IPgComponent } from "@well-known-components/pg-compo
 import { createFetchComponent } from "../src/ports/fetch"
 import { createSnapshotComponent, ISnapshotComponent } from "../src/ports/snapshot"
 import { createListsComponent, IListsComponents } from "../src/ports/lists"
+import { createPicksComponent, IPicksComponent } from "../src/ports/picks"
 import { metricDeclarations } from "../src/metrics"
 import { main } from "../src/service"
 import { GlobalContext, TestComponents } from "../src/types"
@@ -68,6 +69,7 @@ async function initComponents(): Promise<TestComponents> {
   const collectionsSubgraph = await createSubgraphComponent({ logs, config, fetch, metrics }, "subgraph-url")
   const snapshot = await createSnapshotComponent({ fetch, config })
   const lists = await createListsComponent({ pg, collectionsSubgraph, snapshot, logs })
+  const picks = await createPicksComponent({ pg })
 
   return {
     config,
@@ -78,6 +80,7 @@ async function initComponents(): Promise<TestComponents> {
     server,
     fetch,
     lists,
+    picks,
     collectionsSubgraph,
     localFetch: await createLocalFetchCompoment(config),
   }
@@ -86,6 +89,12 @@ async function initComponents(): Promise<TestComponents> {
 export function createTestLogsComponent({ getLogger = jest.fn() } = { getLogger: jest.fn() }): ILoggerComponent {
   return {
     getLogger,
+  }
+}
+
+export function createTestPicksComponent({ getPickStats = jest.fn() } = { getPickStats: jest.fn() }): IPicksComponent {
+  return {
+    getPickStats,
   }
 }
 

@@ -31,10 +31,6 @@ let collectionsSubgraph: ISubgraphComponent
 let snapshot: ISnapshotComponent
 let logs: ILoggerComponent
 
-afterEach(() => {
-  jest.resetAllMocks()
-})
-
 beforeEach(async () => {
   dbQueryMock = jest.fn()
   collectionsSubgraphQueryMock = jest.fn()

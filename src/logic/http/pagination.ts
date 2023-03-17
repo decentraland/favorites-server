@@ -1,3 +1,5 @@
+import { InvalidParameterError } from "./errors"
+
 const MAX_LIMIT = 100
 const DEFAULT_PAGE = 0
 
@@ -19,4 +21,19 @@ export const getPaginationParams = (params: URLSearchParams): { limit: number; o
     limit: paginationLimit,
     offset: paginationOffset,
   }
+}
+
+export function getNumberParameter(parameterName: string, params: URLSearchParams): number | undefined {
+  const parameter = params.get(parameterName)
+
+  if (parameter === null) {
+    return undefined
+  }
+
+  const valueAsNumber = Number.parseInt(parameter)
+  if (Number.isNaN(valueAsNumber)) {
+    throw new InvalidParameterError(parameterName, parameter)
+  }
+
+  return valueAsNumber
 }

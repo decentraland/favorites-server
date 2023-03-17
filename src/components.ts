@@ -13,6 +13,7 @@ import { AppComponents, GlobalContext } from "./types"
 import { metricDeclarations } from "./metrics"
 import { createListsComponent } from "./ports/lists/component"
 import { createSnapshotComponent } from "./ports/snapshot"
+import { createPicksComponent } from "./ports/picks"
 
 // Initialize all the components of the app
 export async function initComponents(): Promise<AppComponents> {
@@ -58,6 +59,7 @@ export async function initComponents(): Promise<AppComponents> {
   const collectionsSubgraph = await createSubgraphComponent({ logs, config, fetch, metrics }, COLLECTIONS_SUBGRAPH_URL)
   const snapshot = await createSnapshotComponent({ fetch, config })
   const lists = await createListsComponent({ pg, collectionsSubgraph, snapshot, logs })
+  const picks = createPicksComponent({ pg })
 
   return {
     config,
@@ -70,5 +72,6 @@ export async function initComponents(): Promise<AppComponents> {
     pg,
     lists,
     snapshot,
+    picks,
   }
 }
