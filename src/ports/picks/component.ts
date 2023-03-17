@@ -8,18 +8,18 @@ export function createPicksComponent(components: Pick<AppComponents, "pg">): IPi
 
   async function getPickStats(itemId: string, options?: { userAddress?: string; power?: number }): Promise<PickStats> {
     const checkIfUserLikedTheItem = Boolean(options?.userAddress)
-    const query = SQL`SELECT COUNT(DISTINCT picks.user_address)`
+    const query = SQL`SELECT COUNT(DISTINCT favorites.picks.user_address)`
     if (checkIfUserLikedTheItem) {
       query.append(", (hasLiked.counter > 0) likedByUser")
     }
-    query.append("FROM favorites.picks picks, favorites.voting voting")
+    query.append(" FROM favorites.picks, favorites.voting")
     if (checkIfUserLikedTheItem) {
       query.append(
         SQL`, (SELECT COUNT(*) counter FROM favorites.picks WHERE favorites.picks.user_address = ${options?.userAddress} AND favorites.picks.item_id = ${itemId} LIMIT 1) hasLiked`
       )
     }
     query.append(
-      SQL`WHERE picks.item_id = ${itemId} AND voting.user_address = picks.user_address AND voting.power >= ${
+      SQL` WHERE favorites.picks.item_id = ${itemId} AND favorites.voting.user_address = favorites.picks.user_address AND favorites.voting.power >= ${
         options?.power ?? DEFAULT_VOTING_POWER
       }`
     )
