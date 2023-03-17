@@ -10,7 +10,7 @@
     "test:watch": "jest --watch --verbose"
   },
   "devDependencies": {
-    "@types/jest": "^29.4.0",
+    "@types/jest": "^29.5.0",
     "@types/node": "^16.18.4",
     "@well-known-components/test-helpers": "^1.4.0",
     "dcl-tslint-config-standard": "^3.0.0",
