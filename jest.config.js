@@ -8,4 +8,5 @@ module.exports = {
   coveragePathIgnorePatterns: ["/node_modules/", "index.ts", "src/migrations"],
   testMatch: ["**/*.spec.(ts)"],
   testEnvironment: "node",
+  resetMocks: true,
 }

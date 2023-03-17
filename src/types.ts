@@ -14,6 +14,7 @@ import { PaginatedResponse } from "./logic/http"
 import { metricDeclarations } from "./metrics"
 import { IListsComponents } from "./ports/lists/types"
 import { ISnapshotComponent } from "./ports/snapshot"
+import { IPicksComponent } from "./ports/picks"
 
 export type GlobalContext = {
   components: BaseComponents
@@ -30,6 +31,7 @@ export type BaseComponents = {
   lists: IListsComponents
   collectionsSubgraph: ISubgraphComponent
   snapshot: ISnapshotComponent
+  picks: IPicksComponent
 }
 
 // components used in runtime
