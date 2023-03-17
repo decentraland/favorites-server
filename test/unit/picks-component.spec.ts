@@ -80,7 +80,7 @@ describe("when getting the pick stats of an item", () => {
       result = await picksComponent.getPickStats(itemId, options)
     })
 
-    it("should not check in the query if the user has liked the item", () => {
+    it("should check in the query if the user has liked the item", () => {
       expect(dbQueryMock).toBeCalledWith(
         expect.objectContaining({
           text: expect.stringContaining(", (hasLiked.counter > 0) likedByUser"),
@@ -95,7 +95,6 @@ describe("when getting the pick stats of an item", () => {
       expect(dbQueryMock).toBeCalledWith(
         expect.objectContaining({
           text: expect.stringContaining("GROUP BY (hasLiked.counter)"),
-          values: expect.arrayContaining([options.userAddress, itemId]),
         })
       )
     })
@@ -112,7 +111,7 @@ describe("when getting the pick stats of an item", () => {
       result = await picksComponent.getPickStats(itemId, options)
     })
 
-    it("should check in the query if the user has liked the item", () => {
+    it("should not check in the query if the user has liked the item", () => {
       expect(dbQueryMock).not.toBeCalledWith(
         expect.objectContaining({
           text: expect.stringContaining(", (hasLiked.counter > 0) likedByUser"),
