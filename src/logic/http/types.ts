@@ -5,3 +5,8 @@ export type PaginatedResponse<T> = {
   pages: number
   limit: number
 }
+
+export type GetPaginatedParameters = {
+  offset: number
+  limit: number
+}

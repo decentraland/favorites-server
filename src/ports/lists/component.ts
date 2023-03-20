@@ -2,8 +2,9 @@ import SQL from "sql-template-strings"
 import { isErrorWithMessage } from "../../logic/errors"
 import { DEFAULT_LIST_USER_ADDRESS } from "../../migrations/1678303321034_default-list"
 import { AppComponents } from "../../types"
+import { DBGetFilteredPicksWithCount, DBPick } from "../picks"
 import { ItemNotFoundError, ListNotFoundError, PickAlreadyExistsError, PickNotFoundError, QueryFailure } from "./errors"
-import { GetPicksByListIdParameters, IListsComponents, DBGetPickByListId, DBList, DBPick } from "./types"
+import { GetPicksByListIdParameters, IListsComponents, DBList } from "./types"
 
 export function createListsComponent(
   components: Pick<AppComponents, "pg" | "collectionsSubgraph" | "snapshot" | "logs">
@@ -11,9 +12,12 @@ export function createListsComponent(
   const { pg, collectionsSubgraph, snapshot, logs } = components
   const logger = logs.getLogger("Lists component")
 
-  async function getPicksByListId(listId: string, params: GetPicksByListIdParameters): Promise<DBGetPickByListId[]> {
+  async function getPicksByListId(
+    listId: string,
+    params: GetPicksByListIdParameters
+  ): Promise<DBGetFilteredPicksWithCount[]> {
     const { userAddress, limit, offset } = params
-    const result = await pg.query<DBGetPickByListId>(SQL`
+    const result = await pg.query<DBGetFilteredPicksWithCount>(SQL`
         SELECT p.*, COUNT(*) OVER() as picks_count FROM favorites.picks p
         WHERE list_id = ${listId} AND user_address = ${userAddress}
         ORDER BY created_at DESC

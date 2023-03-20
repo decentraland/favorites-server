@@ -1,11 +1,10 @@
 import * as authorizationMiddleware from "decentraland-crypto-middleware"
-import { TPick } from "../../src/adapters/lists"
 import {
   createPickInListHandler,
   deletePickInListHandler,
   getPicksByListIdHandler,
 } from "../../src/controllers/handlers/lists-handlers"
-import { DBGetPickByListId, DBPick } from "../../src/ports/lists"
+import { DBGetFilteredPicksWithCount, DBPick } from "../../src/ports/picks"
 import {
   ItemNotFoundError,
   ListNotFoundError,
@@ -14,6 +13,7 @@ import {
 } from "../../src/ports/lists/errors"
 import { AppComponents, HandlerContextWithPath, StatusCode } from "../../src/types"
 import { createTestListsComponent } from "../components"
+import { TPick } from "../../src/adapters/picks"
 
 let verification: authorizationMiddleware.DecentralandSignatureData | undefined
 let components: Pick<AppComponents, "lists">
@@ -58,7 +58,7 @@ describe("when getting the picks of a list", () => {
   })
 
   describe("and the process to get the picks is successful", () => {
-    let dbPicksByListId: DBGetPickByListId[]
+    let dbPicksByListId: DBGetFilteredPicksWithCount[]
     let picks: Pick<TPick, "itemId">[]
 
     beforeEach(() => {

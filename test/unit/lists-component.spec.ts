@@ -1,7 +1,8 @@
 import { IDatabase, ILoggerComponent } from "@well-known-components/interfaces"
 import { IPgComponent } from "@well-known-components/pg-component"
 import { ISubgraphComponent } from "@well-known-components/thegraph-component"
-import { createListsComponent, DBGetPickByListId, DBPick, IListsComponents } from "../../src/ports/lists"
+import { createListsComponent, IListsComponents } from "../../src/ports/lists"
+import { DBGetFilteredPicksWithCount, DBPick } from "../../src/ports/picks"
 import {
   ItemNotFoundError,
   ListNotFoundError,
@@ -50,8 +51,8 @@ beforeEach(async () => {
   userAddress = "0x1dec5f50cb1467f505bb3ddfd408805114406b10"
 })
 
-describe("when getting picks by list id", () => {
-  let dbGetPicksByListId: DBGetPickByListId[]
+describe("when getting picks from a list by list id", () => {
+  let dbGetPicksByListId: DBGetFilteredPicksWithCount[]
 
   describe("and the query throws an error", () => {
     const errorMessage = "Something went wrong while querying the database"

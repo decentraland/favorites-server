@@ -1,6 +1,6 @@
 import { IDatabase } from "@well-known-components/interfaces"
 import { IPgComponent } from "@well-known-components/pg-component"
-import { createPicksComponent, IPicksComponent, PickStats } from "../../src/ports/picks"
+import { createPicksComponent, DBGetFilteredPicksWithCount, IPicksComponent, PickStats } from "../../src/ports/picks"
 import { createTestPgComponent } from "../components"
 
 let options: {
@@ -131,6 +131,46 @@ describe("when getting the pick stats of an item", () => {
 
     it("should return the amount of favorites", () => {
       expect(result).toEqual({ counts: 1000 })
+    })
+  })
+})
+
+describe("when getting picks by item id", () => {
+  let dbGetPicksByItemId: DBGetFilteredPicksWithCount[]
+
+  describe("and the query throws an error", () => {
+    const errorMessage = "Something went wrong while querying the database"
+
+    beforeEach(() => {
+      dbQueryMock.mockRejectedValueOnce(new Error(errorMessage))
+    })
+
+    it("should propagate the error", () => {
+      expect(
+        picksComponent.getPicksByItemId("item-id", {
+          offset: 0,
+          limit: 10,
+        })
+      ).rejects.toThrowError(errorMessage)
+    })
+  })
+
+  describe("and the list id, limit, and offset are all set", () => {
+    beforeEach(() => {
+      dbGetPicksByItemId = []
+      dbQueryMock.mockResolvedValueOnce({ rows: dbGetPicksByItemId })
+    })
+
+    it("should have made the query to get the picks matching those conditions", async () => {
+      await expect(
+        picksComponent.getPicksByItemId("item-id", {
+          offset: 0,
+          limit: 10,
+        })
+      ).resolves.toEqual(dbGetPicksByItemId)
+      expect(dbQueryMock.mock.calls[0][0].text).toEqual(expect.stringContaining(`WHERE item_id = $1`))
+      expect(dbQueryMock.mock.calls[0][0].text).toEqual(expect.stringContaining(`LIMIT $2 OFFSET $3`))
+      expect(dbQueryMock.mock.calls[0][0].values).toEqual(["item-id", 10, 0])
     })
   })
 })
