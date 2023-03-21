@@ -39,7 +39,13 @@ export function createPicksComponent(components: Pick<AppComponents, "pg">): IPi
     const { limit, offset } = options
     const result = await pg.query<DBGetFilteredPicksWithCount>(SQL`
         SELECT user_address, COUNT(*) OVER() as picks_count
-        FROM (SELECT DISTINCT user_address FROM favorites.picks WHERE item_id = ${itemId}) AS temp
+        FROM (
+          SELECT DISTINCT favorites.picks.user_address FROM favorites.picks, favorites.voting
+          WHERE favorites.picks.item_id = ${itemId}
+          AND favorites.voting.user_address = favorites.picks.user_address AND favorites.voting.power >= ${
+            options.power ?? DEFAULT_VOTING_POWER
+          }
+        ) AS temp
         ORDER BY user_address
         LIMIT ${limit} OFFSET ${offset}
     `)

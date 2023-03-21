@@ -55,7 +55,8 @@ export async function getPicksByItemIdHandler(
   } = context
 
   const { limit, offset } = getPaginationParams(url.searchParams)
-  const picksByItemIdResult = await picks.getPicksByItemId(params.itemId, { limit, offset })
+  const power = getNumberParameter("power", url.searchParams)
+  const picksByItemIdResult = await picks.getPicksByItemId(params.itemId, { limit, offset, power })
   const { picks: results, count } = fromDBGetPickByItemIdToPickUserAddressesWithCount(picksByItemIdResult)
 
   return {

@@ -166,19 +166,29 @@ describe("when getting picks by item id", () => {
         picksComponent.getPicksByItemId("item-id", {
           offset: 0,
           limit: 10,
+          power: 5,
         })
       ).resolves.toEqual(dbGetPicksByItemId)
 
       expect(dbQueryMock).toBeCalledWith(
         expect.objectContaining({
-          text: expect.stringContaining("SELECT DISTINCT user_address FROM favorites.picks WHERE item_id = "),
+          text: expect.stringContaining("WHERE favorites.picks.item_id ="),
           values: expect.arrayContaining(["item-id"]),
         })
       )
 
       expect(dbQueryMock).toBeCalledWith(
         expect.objectContaining({
-          text: expect.stringContaining("LIMIT $2 OFFSET $3"),
+          text: expect.stringContaining(
+            "AND favorites.voting.user_address = favorites.picks.user_address AND favorites.voting.power >= "
+          ),
+          values: expect.arrayContaining([5]),
+        })
+      )
+
+      expect(dbQueryMock).toBeCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining("LIMIT $3 OFFSET $4"),
           values: expect.arrayContaining([10, 0]),
         })
       )
