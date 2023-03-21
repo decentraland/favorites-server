@@ -198,7 +198,7 @@ describe("when getting the picks for an item", () => {
       getPicksByItemIdMock.mockResolvedValueOnce([])
     })
 
-    it("should request the pikcs by item id using the power parameter", async () => {
+    it("should request the picks by item id using the power parameter", async () => {
       await getPicksByItemIdHandler({ params, components, url, request })
       expect(getPicksByItemIdMock).toHaveBeenCalledWith(itemId, expect.objectContaining({ power: 200 }))
     })
@@ -210,7 +210,7 @@ describe("when getting the picks for an item", () => {
       getPicksByItemIdMock.mockResolvedValueOnce([])
     })
 
-    it("should request the pikcs by item id without the power parameter", async () => {
+    it("should request the picks by item id without the power parameter", async () => {
       await getPicksByItemIdHandler({ params, components, url, request })
       expect(getPicksByItemIdMock).toHaveBeenCalledWith(itemId, expect.objectContaining({ power: undefined }))
     })
