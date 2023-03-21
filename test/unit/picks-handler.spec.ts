@@ -241,43 +241,51 @@ describe("when getting the picks for an item", () => {
     })
 
     describe("when using the pagination parameters", () => {
-      it("should return an array with the first pick when the limit is 1 and the page is 0", () => {
-        url = new URL(`http://localhost/v1/lists/${itemId}/picks?limit=1&page=0`)
-        picks = [{ userAddress }]
-        getPicksByItemIdMock.mockResolvedValueOnce([dbPicksByItemId[0]])
+      describe("when the limit is 1 and the page is 0", () => {
+        beforeEach(() => {
+          url = new URL(`http://localhost/v1/lists/${itemId}/picks?limit=1&page=0`)
+          picks = [{ userAddress }]
+          getPicksByItemIdMock.mockResolvedValueOnce([dbPicksByItemId[0]])
+        })
 
-        return expect(getPicksByItemIdHandler({ url, components, request, params })).resolves.toEqual({
-          status: StatusCode.OK,
-          body: {
-            ok: true,
-            data: {
-              results: picks,
-              total: 2,
-              page: 0,
-              pages: 2,
-              limit: 1,
+        it("should return an array with the first pick", () => {
+          return expect(getPicksByItemIdHandler({ url, components, request, params })).resolves.toEqual({
+            status: StatusCode.OK,
+            body: {
+              ok: true,
+              data: {
+                results: picks,
+                total: 2,
+                page: 0,
+                pages: 2,
+                limit: 1,
+              },
             },
-          },
+          })
         })
       })
 
-      it("should return an array with the second pick when the limit is 1 and the page is 1", () => {
-        url = new URL(`http://localhost/v1/lists/${itemId}/picks?limit=1&page=1`)
-        picks = [{ userAddress: anotherUserAddress }]
-        getPicksByItemIdMock.mockResolvedValueOnce([dbPicksByItemId[1]])
+      describe("limit is 1 and the page is 1", () => {
+        beforeEach(() => {
+          url = new URL(`http://localhost/v1/lists/${itemId}/picks?limit=1&page=1`)
+          picks = [{ userAddress: anotherUserAddress }]
+          getPicksByItemIdMock.mockResolvedValueOnce([dbPicksByItemId[1]])
+        })
 
-        return expect(getPicksByItemIdHandler({ url, components, request, params })).resolves.toEqual({
-          status: StatusCode.OK,
-          body: {
-            ok: true,
-            data: {
-              results: picks,
-              total: 2,
-              page: 1,
-              pages: 2,
-              limit: 1,
+        it("should return an array with the second pick", () => {
+          return expect(getPicksByItemIdHandler({ url, components, request, params })).resolves.toEqual({
+            status: StatusCode.OK,
+            body: {
+              ok: true,
+              data: {
+                results: picks,
+                total: 2,
+                page: 1,
+                pages: 2,
+                limit: 1,
+              },
             },
-          },
+          })
         })
       })
     })
