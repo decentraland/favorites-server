@@ -57,6 +57,19 @@ describe("when getting the picks of a list", () => {
     })
   })
 
+  describe("and the process to get the picks fails", () => {
+    let error: Error
+
+    beforeEach(() => {
+      error = new Error("anError")
+      getPicksByListIdMock.mockRejectedValueOnce(error)
+    })
+
+    it("should propagate the error", () => {
+      return expect(getPicksByListIdHandler({ url, components, verification, request, params })).rejects.toEqual(error)
+    })
+  })
+
   describe("and the process to get the picks is successful", () => {
     let dbPicksByListId: DBGetFilteredPicksWithCount[]
     let picks: Pick<TPick, "itemId">[]

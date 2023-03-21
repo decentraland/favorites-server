@@ -163,6 +163,19 @@ describe("when getting the picks for an item", () => {
     ]
   })
 
+  describe("and the process to get the picks fails", () => {
+    let error: Error
+
+    beforeEach(() => {
+      error = new Error("anError")
+      getPicksByItemIdMock.mockRejectedValueOnce(error)
+    })
+
+    it("should propagate the error", () => {
+      return expect(getPicksByItemIdHandler({ params, components, url, request })).rejects.toEqual(error)
+    })
+  })
+
   describe("and the process to get the picks is successful", () => {
     describe("when not using pagination parameters", () => {
       beforeEach(() => {
