@@ -168,9 +168,20 @@ describe("when getting picks by item id", () => {
           limit: 10,
         })
       ).resolves.toEqual(dbGetPicksByItemId)
-      expect(dbQueryMock.mock.calls[0][0].text).toEqual(expect.stringContaining(`WHERE item_id = $1`))
-      expect(dbQueryMock.mock.calls[0][0].text).toEqual(expect.stringContaining(`LIMIT $2 OFFSET $3`))
-      expect(dbQueryMock.mock.calls[0][0].values).toEqual(["item-id", 10, 0])
+
+      expect(dbQueryMock).toBeCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining("SELECT DISTINCT user_address FROM favorites.picks WHERE item_id = "),
+          values: expect.arrayContaining(["item-id"]),
+        })
+      )
+
+      expect(dbQueryMock).toBeCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining("LIMIT $2 OFFSET $3"),
+          values: expect.arrayContaining([10, 0]),
+        })
+      )
     })
   })
 })

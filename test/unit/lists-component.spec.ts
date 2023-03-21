@@ -86,11 +86,19 @@ describe("when getting picks from a list by list id", () => {
           userAddress: "0xuseraddress",
         })
       ).resolves.toEqual(dbGetPicksByListId)
-      expect(dbQueryMock.mock.calls[0][0].text).toEqual(
-        expect.stringContaining(`WHERE list_id = $1 AND user_address = $2`)
+      expect(dbQueryMock).toBeCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining(`WHERE list_id = $1 AND user_address = $2`),
+          values: expect.arrayContaining(["list-id", "0xuseraddress"]),
+        })
       )
-      expect(dbQueryMock.mock.calls[0][0].text).toEqual(expect.stringContaining(`LIMIT $3 OFFSET $4`))
-      expect(dbQueryMock.mock.calls[0][0].values).toEqual(["list-id", "0xuseraddress", 10, 0])
+
+      expect(dbQueryMock).toBeCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining(`LIMIT $3 OFFSET $4`),
+          values: expect.arrayContaining([10, 0]),
+        })
+      )
     })
   })
 })
