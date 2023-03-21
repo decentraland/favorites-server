@@ -8,6 +8,6 @@ export function fromDBGetPickByItemIdToPickUserAddressesWithCount(
     results: dBGetPicksByListId.map((pick) => ({
       userAddress: pick.user_address,
     })),
-    count: dBGetPicksByListId[0].picks_count,
+    count: dBGetPicksByListId[0]?.picks_count ?? 0,
   }
 }
