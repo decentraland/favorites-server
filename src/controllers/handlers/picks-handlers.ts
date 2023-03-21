@@ -55,21 +55,36 @@ export async function getPicksByItemIdHandler(
   } = context
 
   const { limit, offset } = getPaginationParams(url.searchParams)
-  const power = getNumberParameter("power", url.searchParams)
-  const picksByItemIdResult = await picks.getPicksByItemId(params.itemId, { limit, offset, power })
-  const { picks: results, count } = fromDBGetPickByItemIdToPickUserAddressesWithCount(picksByItemIdResult)
 
-  return {
-    status: StatusCode.OK,
-    body: {
-      ok: true,
-      data: {
-        results,
-        total: results.length > 0 ? count : 0,
-        page: Math.floor(offset / limit),
-        pages: results.length > 0 ? Math.ceil(count / limit) : 0,
-        limit,
+  try {
+    const power = getNumberParameter("power", url.searchParams)
+    const picksByItemIdResult = await picks.getPicksByItemId(params.itemId, { limit, offset, power })
+    const { picks: results, count } = fromDBGetPickByItemIdToPickUserAddressesWithCount(picksByItemIdResult)
+
+    return {
+      status: StatusCode.OK,
+      body: {
+        ok: true,
+        data: {
+          results,
+          total: results.length > 0 ? count : 0,
+          page: Math.floor(offset / limit),
+          pages: results.length > 0 ? Math.ceil(count / limit) : 0,
+          limit,
+        },
       },
-    },
+    }
+  } catch (error) {
+    if (error instanceof InvalidParameterError) {
+      return {
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: error.message,
+        },
+      }
+    }
+
+    throw error
   }
 }

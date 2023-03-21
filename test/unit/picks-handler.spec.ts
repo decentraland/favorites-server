@@ -176,6 +176,46 @@ describe("when getting the picks for an item", () => {
     })
   })
 
+  describe("and the power parameter is set and it's not a number", () => {
+    beforeEach(() => {
+      url = new URL(`http://localhost/v1/lists/${itemId}/picks?power=anInvalidValue`)
+    })
+
+    it("should return a bad request response", () => {
+      return expect(getPicksByItemIdHandler({ params, components, url, request })).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: `The value of the power parameter is invalid: anInvalidValue`,
+        },
+      })
+    })
+  })
+
+  describe("and the power parameter is set as a number", () => {
+    beforeEach(() => {
+      url = new URL(`http://localhost/v1/lists/${itemId}/picks?power=200`)
+      getPicksByItemIdMock.mockResolvedValueOnce([])
+    })
+
+    it("should request the pikcs by item id using the power parameter", async () => {
+      await getPicksByItemIdHandler({ params, components, url, request })
+      expect(getPicksByItemIdMock).toHaveBeenCalledWith(itemId, expect.objectContaining({ power: 200 }))
+    })
+  })
+
+  describe("and the power parameter is not set", () => {
+    beforeEach(() => {
+      url = new URL(`http://localhost/v1/lists/${itemId}/picks`)
+      getPicksByItemIdMock.mockResolvedValueOnce([])
+    })
+
+    it("should request the pikcs by item id without the power parameter", async () => {
+      await getPicksByItemIdHandler({ params, components, url, request })
+      expect(getPicksByItemIdMock).toHaveBeenCalledWith(itemId, expect.objectContaining({ power: undefined }))
+    })
+  })
+
   describe("and the process to get the picks is successful", () => {
     describe("when not using pagination parameters", () => {
       beforeEach(() => {
