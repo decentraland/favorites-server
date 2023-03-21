@@ -129,6 +129,7 @@ describe("when getting the picks for an item", () => {
   let request: HandlerContextWithPath<"picks", "/v1/picks/:itemId">["request"]
   let params: HandlerContextWithPath<"picks", "/v1/picks/:itemId">["params"]
   let userAddress: string
+  let anotherUserAddress: string
   let dbPicksByItemId: DBGetFilteredPicksWithCount[]
   let picks: Pick<TPick, "userAddress">[]
 
@@ -141,7 +142,8 @@ describe("when getting the picks for an item", () => {
     request = {} as HandlerContextWithPath<"lists", "/v1/lists/:id/picks">["request"]
     url = new URL(`http://localhost/v1/lists/${itemId}/picks`)
     params = { itemId }
-    userAddress = "0x45abb534BD927284F84b03d43f33dF0E5C91C21f"
+    userAddress = "0x687abb534BD927284F84b03d43f33dF0E5C91D21"
+    anotherUserAddress = "0x45abb534BD927284F84b03d43f33dF0E5C91C21f"
 
     dbPicksByItemId = [
       {
@@ -149,27 +151,81 @@ describe("when getting the picks for an item", () => {
         user_address: userAddress,
         list_id: "e96df126-f5bf-4311-94d8-6e261f368bb2",
         created_at: new Date(),
-        picks_count: 1,
+        picks_count: 2,
+      },
+      {
+        item_id: "1",
+        user_address: anotherUserAddress,
+        list_id: "f96df126-f5bf-4311-94d8-6e261f368bb4",
+        created_at: new Date(),
+        picks_count: 2,
       },
     ]
-    picks = [{ userAddress }]
-    getPicksByItemIdMock.mockResolvedValueOnce(dbPicksByItemId)
   })
 
   describe("and the process to get the picks is successful", () => {
-    it("should return a response with an ok status code and the picks", () => {
-      return expect(getPicksByItemIdHandler({ url, components, request, params })).resolves.toEqual({
-        status: StatusCode.OK,
-        body: {
-          ok: true,
-          data: {
-            results: picks,
-            total: 1,
-            page: 0,
-            pages: 1,
-            limit: 100,
+    describe("when not using pagination parameters", () => {
+      beforeEach(() => {
+        picks = [{ userAddress }, { userAddress: anotherUserAddress }]
+        getPicksByItemIdMock.mockResolvedValueOnce(dbPicksByItemId)
+      })
+
+      it("should return a response with an ok status code and the picks using the default values of limit and page", () => {
+        return expect(getPicksByItemIdHandler({ url, components, request, params })).resolves.toEqual({
+          status: StatusCode.OK,
+          body: {
+            ok: true,
+            data: {
+              results: picks,
+              total: 2,
+              page: 0,
+              pages: 1,
+              limit: 100,
+            },
           },
-        },
+        })
+      })
+    })
+
+    describe("when using the pagination parameters", () => {
+      it("should return an array with the first pick when the limit is 1 and the page is 0", () => {
+        url = new URL(`http://localhost/v1/lists/${itemId}/picks?limit=1&page=0`)
+        picks = [{ userAddress }]
+        getPicksByItemIdMock.mockResolvedValueOnce([dbPicksByItemId[0]])
+
+        return expect(getPicksByItemIdHandler({ url, components, request, params })).resolves.toEqual({
+          status: StatusCode.OK,
+          body: {
+            ok: true,
+            data: {
+              results: picks,
+              total: 2,
+              page: 0,
+              pages: 2,
+              limit: 1,
+            },
+          },
+        })
+      })
+
+      it("should return an array with the second pick when the limit is 1 and the page is 1", () => {
+        url = new URL(`http://localhost/v1/lists/${itemId}/picks?limit=1&page=1`)
+        picks = [{ userAddress: anotherUserAddress }]
+        getPicksByItemIdMock.mockResolvedValueOnce([dbPicksByItemId[1]])
+
+        return expect(getPicksByItemIdHandler({ url, components, request, params })).resolves.toEqual({
+          status: StatusCode.OK,
+          body: {
+            ok: true,
+            data: {
+              results: picks,
+              total: 2,
+              page: 1,
+              pages: 2,
+              limit: 1,
+            },
+          },
+        })
       })
     })
   })
