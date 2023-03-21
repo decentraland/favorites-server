@@ -1,7 +1,7 @@
 import SQL from "sql-template-strings"
 import { AppComponents } from "../../types"
 import { DEFAULT_VOTING_POWER } from "./constants"
-import { IPicksComponent, PickStats } from "./types"
+import { DBGetFilteredPicksWithCount, GetPicksByItemIdParameters, IPicksComponent, PickStats } from "./types"
 
 export function createPicksComponent(components: Pick<AppComponents, "pg">): IPicksComponent {
   const { pg } = components
@@ -32,5 +32,25 @@ export function createPicksComponent(components: Pick<AppComponents, "pg">): IPi
     return result.rows[0]
   }
 
-  return { getPickStats }
+  async function getPicksByItemId(
+    itemId: string,
+    options: GetPicksByItemIdParameters
+  ): Promise<DBGetFilteredPicksWithCount[]> {
+    const { limit, offset } = options
+    const result = await pg.query<DBGetFilteredPicksWithCount>(SQL`
+        SELECT user_address, COUNT(*) OVER() as picks_count
+        FROM (
+          SELECT DISTINCT favorites.picks.user_address FROM favorites.picks, favorites.voting
+          WHERE favorites.picks.item_id = ${itemId}
+          AND favorites.voting.user_address = favorites.picks.user_address AND favorites.voting.power >= ${
+            options.power ?? DEFAULT_VOTING_POWER
+          }
+        ) AS temp
+        ORDER BY user_address
+        LIMIT ${limit} OFFSET ${offset}
+    `)
+    return result.rows
+  }
+
+  return { getPickStats, getPicksByItemId }
 }

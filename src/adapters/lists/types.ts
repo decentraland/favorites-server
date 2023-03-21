@@ -1,8 +1,3 @@
-export type TPick = {
-  itemId: string
-  userAddress: string
-  listId: string
-  createdAt: number
-}
+import { TPick } from "../picks"
 
 export type PickIdsWithCount = { picks: Pick<TPick, "itemId">[]; count: number }

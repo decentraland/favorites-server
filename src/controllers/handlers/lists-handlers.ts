@@ -1,5 +1,5 @@
 import { fromDBGetPickByListIdToPickIdsWithCount, fromDBPickToPick } from "../../adapters/lists"
-import { TPick } from "../../adapters/lists/types"
+import { TPick } from "../../adapters/picks"
 import { getPaginationParams } from "../../logic/http"
 import {
   ItemNotFoundError,

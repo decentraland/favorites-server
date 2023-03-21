@@ -1,4 +1,5 @@
-import { getNumberParameter } from "../../logic/http"
+import { fromDBGetPickByItemIdToPickUserAddressesWithCount, TPick } from "../../adapters/picks"
+import { getNumberParameter, getPaginationParams } from "../../logic/http"
 import { InvalidParameterError } from "../../logic/http/errors"
 import { PickStats } from "../../ports/picks"
 import { HandlerContextWithPath, HTTPResponse, StatusCode } from "../../types"
@@ -27,6 +28,50 @@ export async function getPickStatsHandler(
       body: {
         ok: true,
         data: pickStats,
+      },
+    }
+  } catch (error) {
+    if (error instanceof InvalidParameterError) {
+      return {
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: error.message,
+        },
+      }
+    }
+
+    throw error
+  }
+}
+
+export async function getPicksByItemIdHandler(
+  context: Pick<HandlerContextWithPath<"picks", "/v1/picks/:itemId">, "url" | "components" | "params" | "request">
+): Promise<HTTPResponse<Pick<TPick, "userAddress">>> {
+  const {
+    url,
+    components: { picks },
+    params,
+  } = context
+
+  const { limit, offset } = getPaginationParams(url.searchParams)
+
+  try {
+    const power = getNumberParameter("power", url.searchParams)
+    const picksByItemIdResult = await picks.getPicksByItemId(params.itemId, { limit, offset, power })
+    const { picks: results, count } = fromDBGetPickByItemIdToPickUserAddressesWithCount(picksByItemIdResult)
+
+    return {
+      status: StatusCode.OK,
+      body: {
+        ok: true,
+        data: {
+          results,
+          total: results.length > 0 ? count : 0,
+          page: Math.floor(offset / limit),
+          pages: results.length > 0 ? Math.ceil(count / limit) : 0,
+          limit,
+        },
       },
     }
   } catch (error) {

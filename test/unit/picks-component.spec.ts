@@ -1,6 +1,6 @@
 import { IDatabase } from "@well-known-components/interfaces"
 import { IPgComponent } from "@well-known-components/pg-component"
-import { createPicksComponent, IPicksComponent, PickStats } from "../../src/ports/picks"
+import { createPicksComponent, DBGetFilteredPicksWithCount, IPicksComponent, PickStats } from "../../src/ports/picks"
 import { createTestPgComponent } from "../components"
 
 let options: {
@@ -131,6 +131,67 @@ describe("when getting the pick stats of an item", () => {
 
     it("should return the amount of favorites", () => {
       expect(result).toEqual({ counts: 1000 })
+    })
+  })
+})
+
+describe("when getting picks by item id", () => {
+  let dbGetPicksByItemId: DBGetFilteredPicksWithCount[]
+
+  describe("and the query throws an error", () => {
+    const errorMessage = "Something went wrong while querying the database"
+
+    beforeEach(() => {
+      dbQueryMock.mockRejectedValueOnce(new Error(errorMessage))
+    })
+
+    it("should propagate the error", () => {
+      expect(
+        picksComponent.getPicksByItemId("item-id", {
+          offset: 0,
+          limit: 10,
+        })
+      ).rejects.toThrowError(errorMessage)
+    })
+  })
+
+  describe("and the list id, limit, and offset are all set", () => {
+    beforeEach(() => {
+      dbGetPicksByItemId = []
+      dbQueryMock.mockResolvedValueOnce({ rows: dbGetPicksByItemId })
+    })
+
+    it("should have made the query to get the picks matching those conditions", async () => {
+      await expect(
+        picksComponent.getPicksByItemId("item-id", {
+          offset: 0,
+          limit: 10,
+          power: 5,
+        })
+      ).resolves.toEqual(dbGetPicksByItemId)
+
+      expect(dbQueryMock).toBeCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining("WHERE favorites.picks.item_id ="),
+          values: expect.arrayContaining(["item-id"]),
+        })
+      )
+
+      expect(dbQueryMock).toBeCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining(
+            "AND favorites.voting.user_address = favorites.picks.user_address AND favorites.voting.power >= "
+          ),
+          values: expect.arrayContaining([5]),
+        })
+      )
+
+      expect(dbQueryMock).toBeCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining("LIMIT $3 OFFSET $4"),
+          values: expect.arrayContaining([10, 0]),
+        })
+      )
     })
   })
 })

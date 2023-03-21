@@ -1,8 +1,8 @@
 import { fromDBGetPickByListIdToPickIdsWithCount, fromDBPickToPick, PickIdsWithCount } from "../../src/adapters/lists"
-import { DBGetPickByListId, DBPick } from "../../src/ports/lists"
+import { DBGetFilteredPicksWithCount, DBPick } from "../../src/ports/picks"
 
 describe("when transforming DB retrieved picks to pick ids with count", () => {
-  let dbGetPicksByListId: DBGetPickByListId[]
+  let dbGetPicksByListId: DBGetFilteredPicksWithCount[]
   let picksWithCount: PickIdsWithCount
 
   beforeEach(() => {

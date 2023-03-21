@@ -92,9 +92,12 @@ export function createTestLogsComponent({ getLogger = jest.fn() } = { getLogger:
   }
 }
 
-export function createTestPicksComponent({ getPickStats = jest.fn() } = { getPickStats: jest.fn() }): IPicksComponent {
+export function createTestPicksComponent(
+  { getPickStats = jest.fn(), getPicksByItemId = jest.fn() } = { getPickStats: jest.fn(), getPicksByItemId: jest.fn() }
+): IPicksComponent {
   return {
     getPickStats,
+    getPicksByItemId,
   }
 }
 
