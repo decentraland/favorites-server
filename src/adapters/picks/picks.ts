@@ -5,7 +5,7 @@ export function fromDBGetPickByItemIdToPickUserAddressesWithCount(
   dBGetPicksByListId: DBGetFilteredPicksWithCount[]
 ): PickUserAddressesWithCount {
   return {
-    results: dBGetPicksByListId.map((pick) => ({
+    picks: dBGetPicksByListId.map((pick) => ({
       userAddress: pick.user_address,
     })),
     count: dBGetPicksByListId[0]?.picks_count ?? 0,

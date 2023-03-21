@@ -31,7 +31,7 @@ describe("when transforming DB retrieved picks to pick ids with count", () => {
       },
     ]
     picksWithCount = {
-      results: [
+      picks: [
         { userAddress: "0x45abb534BD927284F84b03d43f33dF0E5C91C21f" },
         { userAddress: "0x45abb534BD927284F84b03d43f33dF0E5C91C21e" },
         { userAddress: "0x45abb534BD927284F84b03d43f33dF0E5C91C21d" },

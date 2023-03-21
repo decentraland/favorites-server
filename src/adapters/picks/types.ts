@@ -5,4 +5,4 @@ export type TPick = {
   createdAt: number
 }
 
-export type PickUserAddressesWithCount = { results: Pick<TPick, "userAddress">[]; count: number }
+export type PickUserAddressesWithCount = { picks: Pick<TPick, "userAddress">[]; count: number }
