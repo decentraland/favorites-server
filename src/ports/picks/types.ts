@@ -1,8 +1,8 @@
-import { GetPaginatedParameters } from "../../logic/http"
+import { PaginationParameters } from "../../logic/http"
 
 export interface IPicksComponent {
   getPickStats(itemId: string, options?: { userAddress?: string; power?: number }): Promise<PickStats>
-  getPicksByItemId(itemId: string, options: GetPaginatedParameters): Promise<DBGetFilteredPicksWithCount[]>
+  getPicksByItemId(itemId: string, options: PaginationParameters): Promise<DBGetFilteredPicksWithCount[]>
 }
 
 export type PickStats = {
@@ -10,7 +10,7 @@ export type PickStats = {
   count: number
 }
 
-export type GetPicksByItemIdParameters = GetPaginatedParameters
+export type GetPicksByItemIdParameters = PaginationParameters
 
 export type DBPick = {
   item_id: string

@@ -1,4 +1,4 @@
-import { GetPaginatedParameters } from "../../logic/http"
+import { PaginationParameters } from "../../logic/http"
 import { DBGetFilteredPicksWithCount, DBPick } from "../../ports/picks"
 
 export interface IListsComponents {
@@ -9,7 +9,7 @@ export interface IListsComponents {
 
 export type GetPicksByListIdParameters = {
   userAddress: string
-} & GetPaginatedParameters
+} & PaginationParameters
 
 export type DBList = {
   id: string
