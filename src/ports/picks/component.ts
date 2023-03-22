@@ -1,9 +1,16 @@
-import SQL from "sql-template-strings"
-import { AppComponents } from "../../types"
-import { DEFAULT_VOTING_POWER } from "./constants"
-import { DBGetFilteredPicksWithCount, DBPickStats, GetPicksByItemIdParameters, IPicksComponent } from "./types"
+import SQL from 'sql-template-strings'
+import { AppComponents } from '../../types'
+import { DEFAULT_VOTING_POWER } from './constants'
+import {
+  DBGetFilteredPicksWithCount,
+  DBPickStats,
+  GetPicksByItemIdParameters,
+  IPicksComponent
+} from './types'
 
-export function createPicksComponent(components: Pick<AppComponents, "pg">): IPicksComponent {
+export function createPicksComponent(
+  components: Pick<AppComponents, 'pg'>
+): IPicksComponent {
   const { pg } = components
 
   /**

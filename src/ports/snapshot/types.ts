@@ -1,9 +1,9 @@
 export type ScoreRequest = {
-  jsonrpc: "2.0"
-  method: "get_vp"
+  jsonrpc: '2.0'
+  method: 'get_vp'
   params: {
     address: string
-    network: "1"
+    network: '1'
     strategies: any[]
     snapshot?: number
     space: string
@@ -12,7 +12,7 @@ export type ScoreRequest = {
 }
 
 export type ScoreResponse = {
-  jsonrpc: "2.0"
+  jsonrpc: '2.0'
   result: {
     vp: number
     vp_by_strategy: number

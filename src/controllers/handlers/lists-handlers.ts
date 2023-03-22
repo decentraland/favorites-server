@@ -1,25 +1,28 @@
-import { fromDBGetPickByListIdToPickIdsWithCount, fromDBPickToPick } from "../../adapters/lists"
-import { TPick } from "../../adapters/picks"
-import { getPaginationParams } from "../../logic/http"
+import {
+  fromDBGetPickByListIdToPickIdsWithCount,
+  fromDBPickToPick
+} from '../../adapters/lists'
+import { TPick } from '../../adapters/picks'
+import { getPaginationParams } from '../../logic/http'
 import {
   ItemNotFoundError,
   ListNotFoundError,
   PickAlreadyExistsError,
-  PickNotFoundError,
-} from "../../ports/lists/errors"
-import { HandlerContextWithPath, HTTPResponse, StatusCode } from "../../types"
+  PickNotFoundError
+} from '../../ports/lists/errors'
+import { HandlerContextWithPath, HTTPResponse, StatusCode } from '../../types'
 
 export async function getPicksByListIdHandler(
   context: Pick<
-    HandlerContextWithPath<"lists", "/v1/lists/:id/picks">,
-    "url" | "components" | "params" | "request" | "verification"
+    HandlerContextWithPath<'lists', '/v1/lists/:id/picks'>,
+    'url' | 'components' | 'params' | 'request' | 'verification'
   >
-): Promise<HTTPResponse<Pick<TPick, "itemId">>> {
+): Promise<HTTPResponse<Pick<TPick, 'itemId'>>> {
   const {
     url,
     components: { lists },
     verification,
-    params,
+    params
   } = context
   const userAddress: string | undefined = verification?.auth.toLowerCase()
 
@@ -28,14 +31,19 @@ export async function getPicksByListIdHandler(
       status: StatusCode.UNAUTHORIZED,
       body: {
         ok: false,
-        message: "Unauthorized",
-      },
+        message: 'Unauthorized'
+      }
     }
   }
 
   const { limit, offset } = getPaginationParams(url.searchParams)
-  const picksByListIdResult = await lists.getPicksByListId(params.id, { userAddress, limit, offset })
-  const { picks, count } = fromDBGetPickByListIdToPickIdsWithCount(picksByListIdResult)
+  const picksByListIdResult = await lists.getPicksByListId(params.id, {
+    userAddress,
+    limit,
+    offset
+  })
+  const { picks, count } =
+    fromDBGetPickByListIdToPickIdsWithCount(picksByListIdResult)
 
   return {
     status: StatusCode.OK,
@@ -46,23 +54,23 @@ export async function getPicksByListIdHandler(
         total: picks.length > 0 ? count : 0,
         page: Math.floor(offset / limit),
         pages: picks.length > 0 ? Math.ceil(count / limit) : 0,
-        limit,
-      },
-    },
+        limit
+      }
+    }
   }
 }
 
 export async function createPickInListHandler(
   context: Pick<
-    HandlerContextWithPath<"lists", "/v1/lists/:id/picks">,
-    "components" | "params" | "request" | "verification"
+    HandlerContextWithPath<'lists', '/v1/lists/:id/picks'>,
+    'components' | 'params' | 'request' | 'verification'
   >
 ): Promise<HTTPResponse<TPick>> {
   const {
     components: { lists },
     verification,
     params,
-    request,
+    request
   } = context
   const userAddress: string | undefined = verification?.auth.toLowerCase()
   let body: { itemId?: string }
@@ -72,20 +80,20 @@ export async function createPickInListHandler(
       status: StatusCode.UNAUTHORIZED,
       body: {
         ok: false,
-        message: "Unauthorized",
-      },
+        message: 'Unauthorized'
+      }
     }
   }
 
   try {
     body = await request.json()
-    if (!body.itemId || (body.itemId && typeof body.itemId !== "string")) {
+    if (!body.itemId || (body.itemId && typeof body.itemId !== 'string')) {
       return {
         status: StatusCode.BAD_REQUEST,
         body: {
           ok: false,
-          message: "The property itemId is missing or is not of string type.",
-        },
+          message: 'The property itemId is missing or is not of string type.'
+        }
       }
     }
   } catch (error) {
@@ -93,19 +101,23 @@ export async function createPickInListHandler(
       status: StatusCode.BAD_REQUEST,
       body: {
         ok: false,
-        message: "The body must contain a parsable JSON.",
-      },
+        message: 'The body must contain a parsable JSON.'
+      }
     }
   }
 
   try {
-    const addPickToListResult = await lists.addPickToList(params.id, body.itemId, userAddress)
+    const addPickToListResult = await lists.addPickToList(
+      params.id,
+      body.itemId,
+      userAddress
+    )
     return {
       status: StatusCode.CREATED,
       body: {
         ok: true,
-        data: fromDBPickToPick(addPickToListResult),
-      },
+        data: fromDBPickToPick(addPickToListResult)
+      }
     }
   } catch (error) {
     if (error instanceof ListNotFoundError) {
@@ -115,9 +127,9 @@ export async function createPickInListHandler(
           ok: false,
           message: error.message,
           data: {
-            listId: error.listId,
-          },
-        },
+            listId: error.listId
+          }
+        }
       }
     } else if (error instanceof PickAlreadyExistsError) {
       return {
@@ -127,9 +139,9 @@ export async function createPickInListHandler(
           message: error.message,
           data: {
             listId: error.listId,
-            itemId: error.itemId,
-          },
-        },
+            itemId: error.itemId
+          }
+        }
       }
     } else if (error instanceof ItemNotFoundError) {
       return {
@@ -138,9 +150,9 @@ export async function createPickInListHandler(
           ok: false,
           message: error.message,
           data: {
-            itemId: error.itemId,
-          },
-        },
+            itemId: error.itemId
+          }
+        }
       }
     }
 
@@ -150,14 +162,14 @@ export async function createPickInListHandler(
 
 export async function deletePickInListHandler(
   context: Pick<
-    HandlerContextWithPath<"lists", "/v1/lists/:id/picks/:itemId">,
-    "components" | "params" | "request" | "verification"
+    HandlerContextWithPath<'lists', '/v1/lists/:id/picks/:itemId'>,
+    'components' | 'params' | 'request' | 'verification'
   >
 ): Promise<HTTPResponse<undefined>> {
   const {
     components: { lists },
     verification,
-    params,
+    params
   } = context
   const userAddress: string | undefined = verification?.auth.toLowerCase()
   const { id, itemId } = params
@@ -167,8 +179,8 @@ export async function deletePickInListHandler(
       status: StatusCode.UNAUTHORIZED,
       body: {
         ok: false,
-        message: "Unauthorized",
-      },
+        message: 'Unauthorized'
+      }
     }
   }
 
@@ -178,8 +190,8 @@ export async function deletePickInListHandler(
       status: StatusCode.OK,
       body: {
         ok: true,
-        data: undefined,
-      },
+        data: undefined
+      }
     }
   } catch (error) {
     if (error instanceof PickNotFoundError) {
@@ -190,9 +202,9 @@ export async function deletePickInListHandler(
           message: error.message,
           data: {
             listId: error.listId,
-            itemId: error.itemId,
-          },
-        },
+            itemId: error.itemId
+          }
+        }
       }
     }
 
