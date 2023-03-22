@@ -6,6 +6,8 @@ import { AppComponents, GlobalContext, TestComponents } from './types'
 export async function main(
   program: Lifecycle.EntryPointParameters<AppComponents | TestComponents>
 ) {
+  // TODO: handle the following eslint-disable statement
+  // eslint-disable-next-line @typescript-eslint/unbound-method
   const { components, startComponents } = program
   const globalContext: GlobalContext = {
     components

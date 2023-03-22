@@ -2,6 +2,8 @@ import { IFetchComponent } from '@well-known-components/http-server'
 import { ITracerComponent } from '@well-known-components/interfaces'
 import * as nodeFetch from 'node-fetch'
 
+// TODO: handle the following eslint-disable statement
+// eslint-disable-next-line @typescript-eslint/require-await
 export async function createFetchComponent(components: {
   tracer: ITracerComponent
 }) {

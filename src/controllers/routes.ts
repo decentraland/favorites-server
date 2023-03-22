@@ -16,6 +16,8 @@ import {
 const FIVE_MINUTES = 5 * 60 * 1000
 
 // We return the entire router because it will be easier to test than a whole server
+// TODO: handle the following eslint-disable statement
+// eslint-disable-next-line @typescript-eslint/require-await
 export async function setupRouter(
   _globalContext: GlobalContext
 ): Promise<Router<GlobalContext>> {

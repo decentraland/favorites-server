@@ -32,6 +32,8 @@ let collectionsSubgraph: ISubgraphComponent
 let snapshot: ISnapshotComponent
 let logs: ILoggerComponent
 
+// TODO: handle the following eslint-disable statement
+// eslint-disable-next-line @typescript-eslint/require-await
 beforeEach(async () => {
   dbQueryMock = jest.fn()
   collectionsSubgraphQueryMock = jest.fn()
@@ -40,14 +42,12 @@ beforeEach(async () => {
   dbClientReleaseMock = jest.fn().mockResolvedValue(undefined)
   pg = createTestPgComponent({
     query: dbQueryMock,
-    getPool: jest
-      .fn()
-      .mockReturnValue({
-        connect: () => ({
-          query: dbClientQueryMock,
-          release: dbClientReleaseMock
-        })
+    getPool: jest.fn().mockReturnValue({
+      connect: () => ({
+        query: dbClientQueryMock,
+        release: dbClientReleaseMock
       })
+    })
   })
   logs = createTestLogsComponent({
     getLogger: jest.fn().mockReturnValue({ error: () => undefined })
@@ -56,7 +56,7 @@ beforeEach(async () => {
   collectionsSubgraph = createTestSubgraphComponent({
     query: collectionsSubgraphQueryMock
   })
-  listsComponent = await createListsComponent({
+  listsComponent = createListsComponent({
     pg,
     collectionsSubgraph,
     logs,
@@ -78,6 +78,8 @@ describe('when getting picks from a list by list id', () => {
     })
 
     it('should propagate the error', () => {
+      // TODO: handle the following eslint-disable statement
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       expect(
         listsComponent.getPicksByListId('list-id', {
           offset: 0,
@@ -227,6 +229,8 @@ describe('when creating a new pick', () => {
       let dbPick: DBPick
       let result: DBPick
 
+      // TODO: handle the following eslint-disable statement
+      // eslint-disable-next-line @typescript-eslint/require-await
       beforeEach(async () => {
         dbPick = {
           item_id: itemId,

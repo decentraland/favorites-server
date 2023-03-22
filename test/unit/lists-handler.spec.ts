@@ -302,7 +302,7 @@ describe('when creating a pick', () => {
   })
 
   describe('and the process to add the picks fails with an unknown error', () => {
-    let error = new Error('anError')
+    const error = new Error('anError')
 
     beforeEach(() => {
       jsonMock.mockResolvedValueOnce({ itemId })
@@ -323,7 +323,7 @@ describe('when creating a pick', () => {
       pick = {
         item_id: itemId,
         list_id: listId,
-        user_address: verification!.auth!,
+        user_address: verification!.auth,
         created_at: new Date()
       }
       jsonMock.mockResolvedValueOnce({ itemId })
@@ -341,7 +341,7 @@ describe('when creating a pick', () => {
             itemId,
             listId,
             createdAt: Number(pick.created_at),
-            userAddress: verification!.auth!
+            userAddress: verification!.auth
           }
         }
       })
@@ -437,7 +437,7 @@ describe('when deleting a pick', () => {
   })
 
   describe('and the process to add the picks fails with an unknown error', () => {
-    let error = new Error('anError')
+    const error = new Error('anError')
 
     beforeEach(() => {
       deletePickInListMock.mockRejectedValueOnce(error)

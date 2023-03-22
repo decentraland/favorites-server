@@ -1,6 +1,8 @@
 import { HandlerContextWithPath } from '../../types'
 
 // handlers arguments only type what they need, to make unit testing easier
+// TODO: handle the following eslint-disable statement
+// eslint-disable-next-line @typescript-eslint/require-await
 export async function pingHandler(
   context: Pick<
     HandlerContextWithPath<'metrics', '/ping'>,

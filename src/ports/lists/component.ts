@@ -120,6 +120,8 @@ export function createListsComponent(
 
       throw new Error("The pick couldn't be created")
     } finally {
+      // TODO: handle the following eslint-disable statement
+      // eslint-disable-next-line @typescript-eslint/await-thenable
       await client.release()
     }
   }

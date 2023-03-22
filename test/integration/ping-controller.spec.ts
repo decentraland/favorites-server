@@ -33,6 +33,8 @@ test('integration sanity tests using a real server backend', function ({
   it('random url responds 404', async () => {
     const { localFetch } = components
 
+    // TODO: handle the following eslint-disable statement
+    // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
     const r = await localFetch.fetch('/ping' + Math.random())
 
     expect(r.status).toEqual(404)

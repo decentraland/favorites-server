@@ -78,7 +78,7 @@ export async function initComponents(): Promise<AppComponents> {
     COLLECTIONS_SUBGRAPH_URL
   )
   const snapshot = await createSnapshotComponent({ fetch, config })
-  const lists = await createListsComponent({
+  const lists = createListsComponent({
     pg,
     collectionsSubgraph,
     snapshot,

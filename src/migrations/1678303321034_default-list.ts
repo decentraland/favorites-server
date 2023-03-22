@@ -10,12 +10,16 @@ export const DEFAULT_LIST_USER_ADDRESS =
 
 export const shorthands: ColumnDefinitions | undefined = undefined
 
+// TODO: handle the following eslint-disable statement
+// eslint-disable-next-line @typescript-eslint/require-await
 export async function up(pgm: MigrationBuilder): Promise<void> {
   pgm.sql(
     `INSERT INTO ${LISTS_TABLE} (id, name, description, user_address) VALUES ('${DEFAULT_LIST_ID}', '${DEFAULT_LIST_NAME}', '${DEFAULT_LIST_DESCRIPTION}', '${DEFAULT_LIST_USER_ADDRESS}')`
   )
 }
 
+// TODO: handle the following eslint-disable statement
+// eslint-disable-next-line @typescript-eslint/require-await
 export async function down(pgm: MigrationBuilder): Promise<void> {
   pgm.sql(`DELETE FROM ${LISTS_TABLE} WHERE id = '${DEFAULT_LIST_ID}'`)
 }
