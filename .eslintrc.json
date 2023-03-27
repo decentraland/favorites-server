@@ -14,7 +14,6 @@
             "selector": "objectLiteralProperty",
             "format": ["snake_case", "camelCase"],
             "filter": {
-              // you can expand this regex to add more allowed names
               "regex": "^.+-.+$",
               "match": false
             }

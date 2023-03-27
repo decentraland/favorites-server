@@ -14,7 +14,8 @@
     "fix:code": "npm run check:code -- --fix",
     "fix:prettier": "npm run check:prettier -- --write",
     "pre-commit:fix:code": "eslint -c .eslintrc.json --fix",
-    "pre-commit:fix:prettier": "prettier --write"
+    "pre-commit:fix:prettier": "prettier --write",
+    "prepare": "husky install"
   },
   "devDependencies": {
     "@dcl/eslint-config": "^1.1.1",
@@ -22,6 +23,7 @@
     "@types/node": "^16.18.4",
     "@well-known-components/test-helpers": "^1.4.0",
     "eslint-plugin-prettier": "^4.2.1",
+    "husky": "^8.0.3",
     "jest": "^29.5.0",
     "nodemon": "^2.0.21",
     "ts-jest": "^29.0.5",
