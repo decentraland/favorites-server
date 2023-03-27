@@ -6,9 +6,7 @@ const LISTS_TABLE = 'lists'
 
 export const shorthands: ColumnDefinitions | undefined = undefined
 
-// TODO: handle the following eslint-disable statement
-// eslint-disable-next-line @typescript-eslint/require-await
-export async function up(pgm: MigrationBuilder): Promise<void> {
+export function up(pgm: MigrationBuilder): void {
   pgm.createTable(LISTS_TABLE, {
     id: {
       type: 'uuid',
@@ -48,9 +46,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
   pgm.createIndex(PICKS_TABLE, 'created_at')
 }
 
-// TODO: handle the following eslint-disable statement
-// eslint-disable-next-line @typescript-eslint/require-await
-export async function down(pgm: MigrationBuilder): Promise<void> {
+export function down(pgm: MigrationBuilder): void {
   pgm.dropConstraint(PICKS_TABLE, 'item_id_user_address_primary_key')
   pgm.dropIndex(PICKS_TABLE, 'created_at')
   pgm.dropTable(PICKS_TABLE)

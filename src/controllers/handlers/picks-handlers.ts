@@ -21,7 +21,7 @@ export async function getPickStatsOfItemHandler(
 
     const pickStats = await picks.getPicksStats([params.itemId], {
       userAddress,
-      power: power ?? undefined
+      power
     })
 
     return {
