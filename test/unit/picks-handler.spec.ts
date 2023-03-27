@@ -232,7 +232,17 @@ describe("when getting the stats of picks", () => {
     })
   })
 
-  describe("and the checkingUserAddress parameter is not set", () => {})
+  describe("and the checkingUserAddress parameter is not set", () => {
+    beforeEach(() => {
+      url = new URL(`http://localhost/v1/picks/stats?itemId=${itemId}`)
+      getPicksStatsMock.mockResolvedValueOnce([pickStats])
+    })
+
+    it("should request the stats without the user address parameter", async () => {
+      await getPickStatsHandler({ components, url })
+      expect(getPicksStatsMock).toHaveBeenCalledWith([itemId], expect.objectContaining({ userAddress: undefined }))
+    })
+  })
 
   describe("and getting the pick stats fails", () => {
     let error: Error
