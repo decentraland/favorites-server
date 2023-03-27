@@ -1,5 +1,9 @@
-import { fromDBGetPickByItemIdToPickUserAddressesWithCount, PickUserAddressesWithCount } from "../../src/adapters/picks"
-import { DBGetFilteredPicksWithCount } from "../../src/ports/picks"
+import {
+  fromDBGetPickByItemIdToPickUserAddressesWithCount,
+  fromDBPickStatsToPickStats,
+  PickUserAddressesWithCount,
+} from "../../src/adapters/picks"
+import { DBGetFilteredPicksWithCount, DBPickStats } from "../../src/ports/picks"
 
 describe("when transforming DB retrieved picks to pick ids with count", () => {
   let dbGetPicksByItemId: DBGetFilteredPicksWithCount[]
@@ -42,5 +46,42 @@ describe("when transforming DB retrieved picks to pick ids with count", () => {
 
   it("should return the transformed pick user addresses with count", () => {
     expect(fromDBGetPickByItemIdToPickUserAddressesWithCount(dbGetPicksByItemId)).toEqual(picksWithCount)
+  })
+})
+
+describe("when transforming DB retrieved pick stats into pick stats", () => {
+  let dbPickStats: DBPickStats
+  beforeEach(() => {
+    dbPickStats = {
+      item_id: "anItemId",
+      count: 1000,
+    }
+  })
+
+  describe("and the DB pick stats have the picked_by_user property", () => {
+    beforeEach(() => {
+      dbPickStats.picked_by_user = true
+    })
+
+    it("should convert the DB pick stats into pick stats with the pickedByUser property", () => {
+      expect(fromDBPickStatsToPickStats(dbPickStats)).toStrictEqual({
+        itemId: dbPickStats.item_id,
+        count: dbPickStats.count,
+        pickedByUser: dbPickStats.picked_by_user,
+      })
+    })
+  })
+
+  describe("when the pick doesn't have the picked_by_user property", () => {
+    beforeEach(() => {
+      dbPickStats.picked_by_user = undefined
+    })
+
+    it("should convert the DB pick stats into pick stats without the pickedByUser property", () => {
+      expect(fromDBPickStatsToPickStats(dbPickStats)).toStrictEqual({
+        itemId: dbPickStats.item_id,
+        count: dbPickStats.count,
+      })
+    })
   })
 })

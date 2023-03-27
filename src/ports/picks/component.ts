@@ -1,35 +1,42 @@
 import SQL from "sql-template-strings"
 import { AppComponents } from "../../types"
 import { DEFAULT_VOTING_POWER } from "./constants"
-import { DBGetFilteredPicksWithCount, GetPicksByItemIdParameters, IPicksComponent, PickStats } from "./types"
+import { DBGetFilteredPicksWithCount, DBPickStats, GetPicksByItemIdParameters, IPicksComponent } from "./types"
 
 export function createPicksComponent(components: Pick<AppComponents, "pg">): IPicksComponent {
   const { pg } = components
 
-  async function getPickStats(itemId: string, options?: { userAddress?: string; power?: number }): Promise<PickStats> {
+  /**
+   * Gets the picks stats of a set of items.
+   * @param itemIds - The ids of the items to get the stats likes for.
+   * @param options - The userAddress to get check for a favorite from the user and
+   * the power to count votes from user with a voting power greater than the provided number.
+   * @returns One stats entry for each given item id, including the items who's votes are zero.
+   */
+  async function getPicksStats(
+    itemIds: string[],
+    options?: { userAddress?: string; power?: number }
+  ): Promise<DBPickStats[]> {
     const checkIfUserLikedTheItem = Boolean(options?.userAddress)
-    const query = SQL`SELECT COUNT(DISTINCT favorites.picks.user_address)`
-    if (checkIfUserLikedTheItem) {
-      query.append(", (hasLiked.counter > 0) likedByUser")
-    }
-    query.append(" FROM favorites.picks, favorites.voting")
+
+    const query = SQL`SELECT COUNT(DISTINCT favorites.picks.user_address), items_to_find.item_id AS item_id`
     if (checkIfUserLikedTheItem) {
       query.append(
-        SQL`, (SELECT COUNT(*) counter FROM favorites.picks WHERE favorites.picks.user_address = ${options?.userAddress} AND favorites.picks.item_id = ${itemId} LIMIT 1) hasLiked`
+        SQL`, MAX(CASE WHEN favorites.picks.user_address = ${options?.userAddress} THEN 1 ELSE 0 END)::BOOLEAN AS picked_by_user`
       )
     }
+
     query.append(
-      SQL` WHERE favorites.picks.item_id = ${itemId} AND favorites.voting.user_address = favorites.picks.user_address AND favorites.voting.power >= ${
+      SQL` FROM favorites.picks
+      JOIN favorites.voting ON favorites.picks.user_address = favorites.voting.user_address AND favorites.voting.power >=  ${
         options?.power ?? DEFAULT_VOTING_POWER
-      }`
+      }
+      RIGHT JOIN (SELECT unnest(${itemIds}::text[]) AS item_id) AS items_to_find ON favorites.picks.item_id = items_to_find.item_id
+      GROUP BY (items_to_find.item_id, favorites.picks.item_id)`
     )
-    if (checkIfUserLikedTheItem) {
-      query.append(`GROUP BY (hasLiked.counter)`)
-    }
 
-    const result = await pg.query<PickStats>(query)
-
-    return result.rows[0]
+    const result = await pg.query<DBPickStats>(query)
+    return result.rows
   }
 
   async function getPicksByItemId(
@@ -52,5 +59,5 @@ export function createPicksComponent(components: Pick<AppComponents, "pg">): IPi
     return result.rows
   }
 
-  return { getPickStats, getPicksByItemId }
+  return { getPicksStats, getPicksByItemId }
 }
