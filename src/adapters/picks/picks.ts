@@ -1,8 +1,4 @@
-import {
-  DBGetFilteredPicksWithCount,
-  DBPickStats,
-  PickStats
-} from '../../ports/picks'
+import { DBGetFilteredPicksWithCount, DBPickStats, PickStats } from '../../ports/picks'
 import { PickUserAddressesWithCount } from './types'
 
 export function fromDBGetPickByItemIdToPickUserAddressesWithCount(
