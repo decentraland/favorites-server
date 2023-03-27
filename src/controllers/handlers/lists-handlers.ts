@@ -1,22 +1,11 @@
-import {
-  fromDBGetPickByListIdToPickIdsWithCount,
-  fromDBPickToPick
-} from '../../adapters/lists'
+import { fromDBGetPickByListIdToPickIdsWithCount, fromDBPickToPick } from '../../adapters/lists'
 import { TPick } from '../../adapters/picks'
 import { getPaginationParams } from '../../logic/http'
-import {
-  ItemNotFoundError,
-  ListNotFoundError,
-  PickAlreadyExistsError,
-  PickNotFoundError
-} from '../../ports/lists/errors'
+import { ItemNotFoundError, ListNotFoundError, PickAlreadyExistsError, PickNotFoundError } from '../../ports/lists/errors'
 import { HandlerContextWithPath, HTTPResponse, StatusCode } from '../../types'
 
 export async function getPicksByListIdHandler(
-  context: Pick<
-    HandlerContextWithPath<'lists', '/v1/lists/:id/picks'>,
-    'url' | 'components' | 'params' | 'request' | 'verification'
-  >
+  context: Pick<HandlerContextWithPath<'lists', '/v1/lists/:id/picks'>, 'url' | 'components' | 'params' | 'request' | 'verification'>
 ): Promise<HTTPResponse<Pick<TPick, 'itemId'>>> {
   const {
     url,
@@ -42,8 +31,7 @@ export async function getPicksByListIdHandler(
     limit,
     offset
   })
-  const { picks, count } =
-    fromDBGetPickByListIdToPickIdsWithCount(picksByListIdResult)
+  const { picks, count } = fromDBGetPickByListIdToPickIdsWithCount(picksByListIdResult)
 
   return {
     status: StatusCode.OK,
@@ -61,10 +49,7 @@ export async function getPicksByListIdHandler(
 }
 
 export async function createPickInListHandler(
-  context: Pick<
-    HandlerContextWithPath<'lists', '/v1/lists/:id/picks'>,
-    'components' | 'params' | 'request' | 'verification'
-  >
+  context: Pick<HandlerContextWithPath<'lists', '/v1/lists/:id/picks'>, 'components' | 'params' | 'request' | 'verification'>
 ): Promise<HTTPResponse<TPick>> {
   const {
     components: { lists },
@@ -107,11 +92,7 @@ export async function createPickInListHandler(
   }
 
   try {
-    const addPickToListResult = await lists.addPickToList(
-      params.id,
-      body.itemId,
-      userAddress
-    )
+    const addPickToListResult = await lists.addPickToList(params.id, body.itemId, userAddress)
     return {
       status: StatusCode.CREATED,
       body: {
@@ -161,10 +142,7 @@ export async function createPickInListHandler(
 }
 
 export async function deletePickInListHandler(
-  context: Pick<
-    HandlerContextWithPath<'lists', '/v1/lists/:id/picks/:itemId'>,
-    'components' | 'params' | 'request' | 'verification'
-  >
+  context: Pick<HandlerContextWithPath<'lists', '/v1/lists/:id/picks/:itemId'>, 'components' | 'params' | 'request' | 'verification'>
 ): Promise<HTTPResponse<undefined>> {
   const {
     components: { lists },

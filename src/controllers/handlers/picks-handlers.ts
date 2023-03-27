@@ -1,8 +1,4 @@
-import {
-  fromDBGetPickByItemIdToPickUserAddressesWithCount,
-  fromDBPickStatsToPickStats,
-  TPick
-} from '../../adapters/picks'
+import { fromDBGetPickByItemIdToPickUserAddressesWithCount, fromDBPickStatsToPickStats, TPick } from '../../adapters/picks'
 import { isEthereumAddressValid } from '../../logic/ethereum/validations'
 import { getNumberParameter, getPaginationParams } from '../../logic/http'
 import { InvalidParameterError } from '../../logic/http/errors'
@@ -10,10 +6,7 @@ import { PickStats } from '../../ports/picks'
 import { HandlerContextWithPath, HTTPResponse, StatusCode } from '../../types'
 
 export async function getPickStatsOfItemHandler(
-  context: Pick<
-    HandlerContextWithPath<'picks', '/v1/picks/:itemId/stats'>,
-    'url' | 'components' | 'params' | 'request' | 'verification'
-  >
+  context: Pick<HandlerContextWithPath<'picks', '/v1/picks/:itemId/stats'>, 'url' | 'components' | 'params' | 'request' | 'verification'>
 ): Promise<HTTPResponse<PickStats>> {
   const {
     url,
@@ -54,10 +47,7 @@ export async function getPickStatsOfItemHandler(
 }
 
 export async function getPickStatsHandler(
-  context: Pick<
-    HandlerContextWithPath<'picks', '/v1/picks/stats'>,
-    'url' | 'components'
-  >
+  context: Pick<HandlerContextWithPath<'picks', '/v1/picks/stats'>, 'url' | 'components'>
 ): Promise<HTTPResponse<PickStats[]>> {
   const {
     url,
@@ -67,16 +57,14 @@ export async function getPickStatsHandler(
   try {
     const power = getNumberParameter('power', url.searchParams) ?? undefined
     const itemIds = url.searchParams.getAll('itemId')
-    const userAddress =
-      url.searchParams.get('checkingUserAddress')?.toLowerCase() ?? undefined
+    const userAddress = url.searchParams.get('checkingUserAddress')?.toLowerCase() ?? undefined
 
     if (userAddress && !isEthereumAddressValid(userAddress)) {
       return {
         status: StatusCode.BAD_REQUEST,
         body: {
           ok: false,
-          message:
-            'The checking user address parameter must be an Ethereum Address.'
+          message: 'The checking user address parameter must be an Ethereum Address.'
         }
       }
     }
@@ -116,10 +104,7 @@ export async function getPickStatsHandler(
 }
 
 export async function getPicksByItemIdHandler(
-  context: Pick<
-    HandlerContextWithPath<'picks', '/v1/picks/:itemId'>,
-    'url' | 'components' | 'params' | 'request'
-  >
+  context: Pick<HandlerContextWithPath<'picks', '/v1/picks/:itemId'>, 'url' | 'components' | 'params' | 'request'>
 ): Promise<HTTPResponse<Pick<TPick, 'userAddress'>>> {
   const {
     url,
@@ -136,8 +121,7 @@ export async function getPicksByItemIdHandler(
       offset,
       power
     })
-    const { picks: results, count } =
-      fromDBGetPickByItemIdToPickUserAddressesWithCount(picksByItemIdResult)
+    const { picks: results, count } = fromDBGetPickByItemIdToPickUserAddressesWithCount(picksByItemIdResult)
 
     return {
       status: StatusCode.OK,

@@ -1,3 +1,5 @@
+import { ChainId } from '@dcl/schemas'
+
 export const strategies = [
   {
     name: 'multichain',
@@ -5,7 +7,7 @@ export const strategies = [
     params: {
       name: 'multichain',
       graphs: {
-        137: 'https://api.thegraph.com/subgraphs/name/decentraland/blocks-matic-mainnet'
+        [ChainId.MATIC_MAINNET]: 'https://api.thegraph.com/subgraphs/name/decentraland/blocks-matic-mainnet'
       },
       symbol: 'MANA',
       strategies: [

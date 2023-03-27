@@ -8,14 +8,8 @@ export interface IPicksComponent {
    * the power to count votes from user with a voting power greater than the provided number.
    * @returns One stats entry for each given item id, including the items who's votes are zero.
    */
-  getPicksStats(
-    itemId: string[],
-    options?: { userAddress?: string; power?: number }
-  ): Promise<DBPickStats[]>
-  getPicksByItemId(
-    itemId: string,
-    options: GetPicksByItemIdParameters
-  ): Promise<DBGetFilteredPicksWithCount[]>
+  getPicksStats(itemId: string[], options?: { userAddress?: string; power?: number }): Promise<DBPickStats[]>
+  getPicksByItemId(itemId: string, options: GetPicksByItemIdParameters): Promise<DBGetFilteredPicksWithCount[]>
 }
 
 export type DBPickStats = {

@@ -1,58 +1,25 @@
 {
-  "root": true,
-  "parser": "@typescript-eslint/parser",
-  "ignorePatterns": ["package.json", "package-lock.json"],
-  "plugins": ["@typescript-eslint"],
-  "extends": ["eslint:recommended", "prettier"],
-  "env": {
-    "browser": true,
-    "es6": true
-  },
-  "rules": {
-    "@typescript-eslint/ban-types": "error",
-    "@typescript-eslint/ban-tslint-comment": "error",
-    "@typescript-eslint/quotes": ["error", "single", { "avoidEscape": true }],
-    "@typescript-eslint/no-misused-promises": [
-      "error",
-      { "checksVoidReturn": false }
-    ]
+  "extends": ["@dcl/eslint-config/dapps"],
+  "parserOptions": {
+    "project": ["tsconfig.json", "test/tsconfig.json"]
   },
   "overrides": [
     {
-      "files": ["*.ts", "*.tsx"],
-      "extends": [
-        "plugin:@typescript-eslint/recommended",
-        "plugin:@typescript-eslint/recommended-requiring-type-checking",
-        "prettier"
-      ],
+      "files": ["*.ts"],
       "rules": {
-        "@typescript-eslint/no-unnecessary-type-assertion": "error",
-        "@typescript-eslint/explicit-module-boundary-types": "off",
-        "@typescript-eslint/no-unused-vars": [
+        "@typescript-eslint/naming-convention": [
           "error",
-          { "argsIgnorePattern": "^_", "ignoreRestSiblings": true }
-        ],
-        "@typescript-eslint/no-unsafe-assignment": "off", // TODO: migrate code progressively to remove this line. https://typescript-eslint.io/rules/no-unsafe-assignment/
-        "@typescript-eslint/no-unsafe-call": "off", // TODO: migrate code progressively to remove this line. https://typescript-eslint.io/rules/no-unsafe-call/
-        "@typescript-eslint/no-unsafe-member-access": "off", // TODO: migrate code progressively to remove this line. https://typescript-eslint.io/rules/no-unsafe-member-access/
-        "@typescript-eslint/no-unsafe-argument": "off", // TODO: migrate code progressively to remove this line. https://typescript-eslint.io/rules/no-unsafe-argument/
-        "@typescript-eslint/no-explicit-any": "off", // TODO: migrate code progressively to remove this line. https://typescript-eslint.io/rules/no-explicit-any
-        "@typescript-eslint/no-non-null-assertion": "off" // TODO: migrate code progressively to remove this line. https://typescript-eslint.io/rules/no-non-null-assertion
-      },
-      "parserOptions": {
-        "project": ["./tsconfig.json"]
-      }
-    },
-    {
-      "files": ["*.spec.ts"],
-      "rules": {
-        "@typescript-eslint/unbound-method": "off"
-      }
-    },
-    {
-      "files": ["*.js"],
-      "rules": {
-        "@typescript-eslint/no-var-requires": "off"
+          { "selector": "enumMember", "format": ["UPPER_CASE"] },
+          {
+            "selector": "objectLiteralProperty",
+            "format": ["snake_case", "camelCase"],
+            "filter": {
+              // you can expand this regex to add more allowed names
+              "regex": "^.+-.+$",
+              "match": false
+            }
+          }
+        ]
       }
     }
   ]

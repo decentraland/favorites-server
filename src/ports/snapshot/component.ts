@@ -4,9 +4,7 @@ import { strategies } from './constants'
 import { ScoreError } from './errors'
 import { ISnapshotComponent, ScoreRequest, ScoreResponse } from './types'
 
-export async function createSnapshotComponent(
-  components: Pick<AppComponents, 'fetch' | 'config'>
-): Promise<ISnapshotComponent> {
+export async function createSnapshotComponent(components: Pick<AppComponents, 'fetch' | 'config'>): Promise<ISnapshotComponent> {
   const { fetch, config } = components
   const SNAPSHOT_URL = await config.requireString('SNAPSHOT_URL')
 
@@ -34,10 +32,7 @@ export async function createSnapshotComponent(
       const body: ScoreResponse = await res.json()
       return (body?.result?.vp || 0) | 0
     } catch (err) {
-      throw new ScoreError(
-        isErrorWithMessage(err) ? err.message : 'Unknown',
-        address
-      )
+      throw new ScoreError(isErrorWithMessage(err) ? err.message : 'Unknown', address)
     }
   }
 

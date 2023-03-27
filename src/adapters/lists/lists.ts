@@ -2,9 +2,7 @@ import { DBPick, DBGetFilteredPicksWithCount } from '../../ports/picks'
 import { TPick } from '../picks'
 import { PickIdsWithCount } from './types'
 
-export function fromDBGetPickByListIdToPickIdsWithCount(
-  dBGetPicksByListId: DBGetFilteredPicksWithCount[]
-): PickIdsWithCount {
+export function fromDBGetPickByListIdToPickIdsWithCount(dBGetPicksByListId: DBGetFilteredPicksWithCount[]): PickIdsWithCount {
   return {
     picks: dBGetPicksByListId.map(pick => ({
       itemId: pick.item_id

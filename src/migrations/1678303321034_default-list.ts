@@ -5,8 +5,7 @@ const LISTS_TABLE = 'lists'
 export const DEFAULT_LIST_ID = '70ab6873-4a03-4eb2-b331-4b8be0e0b8af'
 const DEFAULT_LIST_NAME = 'Favorites'
 const DEFAULT_LIST_DESCRIPTION = 'Find all your favorites here'
-export const DEFAULT_LIST_USER_ADDRESS =
-  '0x0000000000000000000000000000000000000000'
+export const DEFAULT_LIST_USER_ADDRESS = '0x0000000000000000000000000000000000000000'
 
 export const shorthands: ColumnDefinitions | undefined = undefined
 

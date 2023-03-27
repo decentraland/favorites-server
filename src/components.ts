@@ -1,25 +1,19 @@
 import path from 'path'
 import { createDotEnvConfigComponent } from '@well-known-components/env-config-provider'
-import {
-  createServerComponent,
-  createStatusCheckComponent
-} from '@well-known-components/http-server'
-import { createLogComponent } from '@well-known-components/logger'
-import {
-  createMetricsComponent,
-  instrumentHttpServerWithMetrics
-} from '@well-known-components/metrics'
-import { createHttpTracerComponent } from '@well-known-components/http-tracer-component'
-import { createSubgraphComponent } from '@well-known-components/thegraph-component'
-import { createPgComponent } from '@well-known-components/pg-component'
-import { createTracerComponent } from '@well-known-components/tracer-component'
 import { instrumentHttpServerWithRequestLogger } from '@well-known-components/http-requests-logger-component'
-import { createFetchComponent } from './ports/fetch'
-import { AppComponents, GlobalContext } from './types'
+import { createServerComponent, createStatusCheckComponent } from '@well-known-components/http-server'
+import { createHttpTracerComponent } from '@well-known-components/http-tracer-component'
+import { createLogComponent } from '@well-known-components/logger'
+import { createMetricsComponent, instrumentHttpServerWithMetrics } from '@well-known-components/metrics'
+import { createPgComponent } from '@well-known-components/pg-component'
+import { createSubgraphComponent } from '@well-known-components/thegraph-component'
+import { createTracerComponent } from '@well-known-components/tracer-component'
 import { metricDeclarations } from './metrics'
+import { createFetchComponent } from './ports/fetch'
 import { createListsComponent } from './ports/lists/component'
-import { createSnapshotComponent } from './ports/snapshot'
 import { createPicksComponent } from './ports/picks'
+import { createSnapshotComponent } from './ports/snapshot'
+import { AppComponents, GlobalContext } from './types'
 
 // Initialize all the components of the app
 export async function initComponents(): Promise<AppComponents> {
@@ -30,18 +24,12 @@ export async function initComponents(): Promise<AppComponents> {
   const tracer = createTracerComponent()
   const logs = await createLogComponent({ metrics })
 
-  let databaseUrl: string | undefined = await config.getString(
-    'PG_COMPONENT_PSQL_CONNECTION_STRING'
-  )
-  const COLLECTIONS_SUBGRAPH_URL = await config.requireString(
-    'COLLECTIONS_SUBGRAPH_URL'
-  )
+  let databaseUrl: string | undefined = await config.getString('PG_COMPONENT_PSQL_CONNECTION_STRING')
+  const COLLECTIONS_SUBGRAPH_URL = await config.requireString('COLLECTIONS_SUBGRAPH_URL')
 
   if (!databaseUrl) {
     const dbUser = await config.requireString('PG_COMPONENT_PSQL_USER')
-    const dbDatabaseName = await config.requireString(
-      'PG_COMPONENT_PSQL_DATABASE'
-    )
+    const dbDatabaseName = await config.requireString('PG_COMPONENT_PSQL_DATABASE')
     const dbPort = await config.requireString('PG_COMPONENT_PSQL_PORT')
     const dbHost = await config.requireString('PG_COMPONENT_PSQL_HOST')
     const dbPassword = await config.requireString('PG_COMPONENT_PSQL_PASSWORD')
@@ -64,19 +52,13 @@ export async function initComponents(): Promise<AppComponents> {
     }
   )
 
-  const server = await createServerComponent<GlobalContext>(
-    { config, logs },
-    {}
-  )
+  const server = await createServerComponent<GlobalContext>({ config, logs }, {})
   createHttpTracerComponent({ server, tracer })
   instrumentHttpServerWithRequestLogger({ server, logger: logs })
   await instrumentHttpServerWithMetrics({ metrics, config, server })
   const statusChecks = await createStatusCheckComponent({ server, config })
   const fetch = await createFetchComponent({ tracer })
-  const collectionsSubgraph = await createSubgraphComponent(
-    { logs, config, fetch, metrics },
-    COLLECTIONS_SUBGRAPH_URL
-  )
+  const collectionsSubgraph = await createSubgraphComponent({ logs, config, fetch, metrics }, COLLECTIONS_SUBGRAPH_URL)
   const snapshot = await createSnapshotComponent({ fetch, config })
   const lists = createListsComponent({
     pg,

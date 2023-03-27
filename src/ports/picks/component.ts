@@ -1,16 +1,9 @@
 import SQL from 'sql-template-strings'
 import { AppComponents } from '../../types'
 import { DEFAULT_VOTING_POWER } from './constants'
-import {
-  DBGetFilteredPicksWithCount,
-  DBPickStats,
-  GetPicksByItemIdParameters,
-  IPicksComponent
-} from './types'
+import { DBGetFilteredPicksWithCount, DBPickStats, GetPicksByItemIdParameters, IPicksComponent } from './types'
 
-export function createPicksComponent(
-  components: Pick<AppComponents, 'pg'>
-): IPicksComponent {
+export function createPicksComponent(components: Pick<AppComponents, 'pg'>): IPicksComponent {
   const { pg } = components
 
   /**
@@ -20,10 +13,7 @@ export function createPicksComponent(
    * the power to count votes from user with a voting power greater than the provided number.
    * @returns One stats entry for each given item id, including the items who's votes are zero.
    */
-  async function getPicksStats(
-    itemIds: string[],
-    options?: { userAddress?: string; power?: number }
-  ): Promise<DBPickStats[]> {
+  async function getPicksStats(itemIds: string[], options?: { userAddress?: string; power?: number }): Promise<DBPickStats[]> {
     const checkIfUserLikedTheItem = Boolean(options?.userAddress)
 
     const query = SQL`SELECT COUNT(DISTINCT favorites.picks.user_address), items_to_find.item_id AS item_id`
@@ -46,10 +36,7 @@ export function createPicksComponent(
     return result.rows
   }
 
-  async function getPicksByItemId(
-    itemId: string,
-    options: GetPicksByItemIdParameters
-  ): Promise<DBGetFilteredPicksWithCount[]> {
+  async function getPicksByItemId(itemId: string, options: GetPicksByItemIdParameters): Promise<DBGetFilteredPicksWithCount[]> {
     const { limit, offset } = options
     const result = await pg.query<DBGetFilteredPicksWithCount>(SQL`
         SELECT user_address, COUNT(*) OVER() as picks_count

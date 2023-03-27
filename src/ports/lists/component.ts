@@ -3,28 +3,16 @@ import { isErrorWithMessage } from '../../logic/errors'
 import { DEFAULT_LIST_USER_ADDRESS } from '../../migrations/1678303321034_default-list'
 import { AppComponents } from '../../types'
 import { DBGetFilteredPicksWithCount, DBPick } from '../picks'
-import {
-  ItemNotFoundError,
-  ListNotFoundError,
-  PickAlreadyExistsError,
-  PickNotFoundError,
-  QueryFailure
-} from './errors'
+import { ItemNotFoundError, ListNotFoundError, PickAlreadyExistsError, PickNotFoundError, QueryFailure } from './errors'
 import { GetPicksByListIdParameters, IListsComponents, DBList } from './types'
 
 export function createListsComponent(
-  components: Pick<
-    AppComponents,
-    'pg' | 'collectionsSubgraph' | 'snapshot' | 'logs'
-  >
+  components: Pick<AppComponents, 'pg' | 'collectionsSubgraph' | 'snapshot' | 'logs'>
 ): IListsComponents {
   const { pg, collectionsSubgraph, snapshot, logs } = components
   const logger = logs.getLogger('Lists component')
 
-  async function getPicksByListId(
-    listId: string,
-    params: GetPicksByListIdParameters
-  ): Promise<DBGetFilteredPicksWithCount[]> {
+  async function getPicksByListId(listId: string, params: GetPicksByListIdParameters): Promise<DBGetFilteredPicksWithCount[]> {
     const { userAddress, limit, offset } = params
     const result = await pg.query<DBGetFilteredPicksWithCount>(SQL`
         SELECT p.*, COUNT(*) OVER() as picks_count FROM favorites.picks p
@@ -46,11 +34,7 @@ export function createListsComponent(
     return result.rows[0]
   }
 
-  async function addPickToList(
-    listId: string,
-    itemId: string,
-    userAddress: string
-  ): Promise<DBPick> {
+  async function addPickToList(listId: string, itemId: string, userAddress: string): Promise<DBPick> {
     const list = await getList(listId, userAddress)
     const [queryResult, power] = await Promise.allSettled([
       collectionsSubgraph.query<{ items: { id: string }[] }>(
@@ -66,29 +50,17 @@ export function createListsComponent(
 
     if (queryResult.status === 'rejected') {
       logger.error('Querying the collections subgraph failed.')
-      throw new QueryFailure(
-        isErrorWithMessage(queryResult.reason)
-          ? queryResult.reason.message
-          : 'Unknown'
-      )
+      throw new QueryFailure(isErrorWithMessage(queryResult.reason) ? queryResult.reason.message : 'Unknown')
     }
 
     const vpQuery = SQL`INSERT INTO favorites.voting (user_address, power) `
 
     // If the snapshot query fails, try to set the VP to 0 without overwriting it if it already exists
     if (power.status === 'rejected') {
-      logger.error(
-        `Querying snapshot failed: ${
-          isErrorWithMessage(power.reason) ? power.reason.message : 'Unknown'
-        }`
-      )
-      vpQuery.append(
-        SQL`VALUES (${userAddress}, ${0}) ON CONFLICT (user_address) DO NOTHING`
-      )
+      logger.error(`Querying snapshot failed: ${isErrorWithMessage(power.reason) ? power.reason.message : 'Unknown'}`)
+      vpQuery.append(SQL`VALUES (${userAddress}, ${0}) ON CONFLICT (user_address) DO NOTHING`)
     } else {
-      vpQuery.append(
-        SQL`VALUES (${userAddress}, ${power.value}) ON CONFLICT (user_address) DO UPDATE SET power = ${power.value}`
-      )
+      vpQuery.append(SQL`VALUES (${userAddress}, ${power.value}) ON CONFLICT (user_address) DO UPDATE SET power = ${power.value}`)
     }
 
     if (queryResult.value.items.length === 0) {
@@ -109,12 +81,7 @@ export function createListsComponent(
       return results[0].rows[0]
     } catch (error) {
       await client.query('ROLLBACK')
-      if (
-        error &&
-        typeof error === 'object' &&
-        'constraint' in error &&
-        error.constraint === 'item_id_user_address_list_id_primary_key'
-      ) {
+      if (error && typeof error === 'object' && 'constraint' in error && error.constraint === 'item_id_user_address_list_id_primary_key') {
         throw new PickAlreadyExistsError(listId, itemId)
       }
 
@@ -126,11 +93,7 @@ export function createListsComponent(
     }
   }
 
-  async function deletePickInList(
-    listId: string,
-    itemId: string,
-    userAddress: string
-  ): Promise<void> {
+  async function deletePickInList(listId: string, itemId: string, userAddress: string): Promise<void> {
     const result = await pg.query(
       SQL`DELETE FROM favorites.picks
       WHERE favorites.picks.list_id = ${listId}
