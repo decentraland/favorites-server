@@ -1,21 +1,8 @@
 import { Router } from '@well-known-components/http-server'
 import * as authorizationMiddleware from 'decentraland-crypto-middleware'
 import { GlobalContext } from '../types'
-import {
-  createPickInListHandler,
-  deletePickInListHandler,
-  getPicksByListIdHandler,
-  createPickInListHandler,
-  deletePickInListHandler,
-  getPicksByListIdHandler
-} from './handlers/lists-handlers'
-import {
-  getPickStatsHandler,
-  getPicksByItemIdHandler,
-  getPickStatsOfItemHandler,
-  getPicksByItemIdHandler,
-  getPickStatsHandler
-} from './handlers/picks-handlers'
+import { createPickInListHandler, deletePickInListHandler, getPicksByListIdHandler } from './handlers/lists-handlers'
+import { getPickStatsHandler, getPicksByItemIdHandler, getPickStatsOfItemHandler } from './handlers/picks-handlers'
 import { pingHandler } from './handlers/ping-handler'
 
 const FIVE_MINUTES = 5 * 60 * 1000
