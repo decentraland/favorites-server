@@ -1,4 +1,4 @@
-import { PaginationParameters } from "../../logic/http"
+import { PaginationParameters } from '../../logic/http'
 
 export interface IPicksComponent {
   /**
@@ -24,7 +24,9 @@ export type PickStats = {
   count: number
 }
 
-export type GetPicksByItemIdParameters = { power?: number } & PaginationParameters
+export type GetPicksByItemIdParameters = {
+  power?: number
+} & PaginationParameters
 
 export type DBPick = {
   item_id: string

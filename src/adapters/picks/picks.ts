@@ -1,14 +1,14 @@
-import { DBGetFilteredPicksWithCount, DBPickStats, PickStats } from "../../ports/picks"
-import { PickUserAddressesWithCount } from "./types"
+import { DBGetFilteredPicksWithCount, DBPickStats, PickStats } from '../../ports/picks'
+import { PickUserAddressesWithCount } from './types'
 
 export function fromDBGetPickByItemIdToPickUserAddressesWithCount(
   dBGetPicksByListId: DBGetFilteredPicksWithCount[]
 ): PickUserAddressesWithCount {
   return {
-    picks: dBGetPicksByListId.map((pick) => ({
-      userAddress: pick.user_address,
+    picks: dBGetPicksByListId.map(pick => ({
+      userAddress: pick.user_address
     })),
-    count: dBGetPicksByListId[0]?.picks_count ?? 0,
+    count: dBGetPicksByListId[0]?.picks_count ?? 0
   }
 }
 
@@ -19,7 +19,7 @@ export function fromDBGetPickByItemIdToPickUserAddressesWithCount(
 export function fromDBPickStatsToPickStats(dbPickStat: DBPickStats): PickStats {
   const stats: PickStats = {
     itemId: dbPickStat.item_id,
-    count: dbPickStat.count,
+    count: dbPickStat.count
   }
 
   if (dbPickStat.picked_by_user) {

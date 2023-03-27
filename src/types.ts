@@ -1,20 +1,20 @@
-import type { IFetchComponent } from "@well-known-components/http-server"
-import type * as authorizationMiddleware from "decentraland-crypto-middleware"
+import { IPgComponent } from '@well-known-components/pg-component'
+import { ISubgraphComponent } from '@well-known-components/thegraph-component'
+import type * as authorizationMiddleware from 'decentraland-crypto-middleware'
+import { PaginatedResponse } from './logic/http'
+import { metricDeclarations } from './metrics'
+import { IListsComponents } from './ports/lists/types'
+import { IPicksComponent } from './ports/picks'
+import { ISnapshotComponent } from './ports/snapshot'
+import type { IFetchComponent } from '@well-known-components/http-server'
 import type {
   IConfigComponent,
   ILoggerComponent,
   IHttpServerComponent,
   IBaseComponent,
   IMetricsComponent,
-  IDatabase,
-} from "@well-known-components/interfaces"
-import { IPgComponent } from "@well-known-components/pg-component"
-import { ISubgraphComponent } from "@well-known-components/thegraph-component"
-import { PaginatedResponse } from "./logic/http"
-import { metricDeclarations } from "./metrics"
-import { IListsComponents } from "./ports/lists/types"
-import { ISnapshotComponent } from "./ports/snapshot"
-import { IPicksComponent } from "./ports/picks"
+  IDatabase
+} from '@well-known-components/interfaces'
 
 export type GlobalContext = {
   components: BaseComponents
@@ -57,7 +57,7 @@ export type HandlerContextWithPath<
   Path
 >
 
-export type Context<Path extends string = any> = IHttpServerComponent.PathAwareContext<GlobalContext, Path>
+export type Context<Path extends string = never> = IHttpServerComponent.PathAwareContext<GlobalContext, Path>
 
 export enum StatusCode {
   OK = 200,
@@ -68,7 +68,7 @@ export enum StatusCode {
   LOCKED = 423,
   CONFLICT = 409,
   ERROR = 500,
-  UNPROCESSABLE_CONTENT = 422,
+  UNPROCESSABLE_CONTENT = 422
 }
 
 export type HTTPResponse<T> = {

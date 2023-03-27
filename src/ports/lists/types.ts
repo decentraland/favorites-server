@@ -1,5 +1,5 @@
-import { PaginationParameters } from "../../logic/http"
-import { DBGetFilteredPicksWithCount, DBPick } from "../../ports/picks"
+import { PaginationParameters } from '../../logic/http'
+import { DBGetFilteredPicksWithCount, DBPick } from '../../ports/picks'
 
 export interface IListsComponents {
   getPicksByListId(listId: string, options?: GetPicksByListIdParameters): Promise<DBGetFilteredPicksWithCount[]>

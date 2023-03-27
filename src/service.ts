@@ -1,12 +1,14 @@
-import { Lifecycle } from "@well-known-components/interfaces"
-import { setupRouter } from "./controllers/routes"
-import { AppComponents, GlobalContext, TestComponents } from "./types"
+import { Lifecycle } from '@well-known-components/interfaces'
+import { setupRouter } from './controllers/routes'
+import { AppComponents, GlobalContext, TestComponents } from './types'
 
 // this function wires the business logic (adapters & controllers) with the components (ports)
 export async function main(program: Lifecycle.EntryPointParameters<AppComponents | TestComponents>) {
+  // TODO: handle the following eslint-disable statement
+  // eslint-disable-next-line @typescript-eslint/unbound-method
   const { components, startComponents } = program
   const globalContext: GlobalContext = {
-    components,
+    components
   }
 
   // wire the HTTP router (make it automatic? TBD)

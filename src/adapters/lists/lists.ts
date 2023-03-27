@@ -1,15 +1,13 @@
-import { DBPick, DBGetFilteredPicksWithCount } from "../../ports/picks"
-import { TPick } from "../picks"
-import { PickIdsWithCount } from "./types"
+import { DBPick, DBGetFilteredPicksWithCount } from '../../ports/picks'
+import { TPick } from '../picks'
+import { PickIdsWithCount } from './types'
 
-export function fromDBGetPickByListIdToPickIdsWithCount(
-  dBGetPicksByListId: DBGetFilteredPicksWithCount[]
-): PickIdsWithCount {
+export function fromDBGetPickByListIdToPickIdsWithCount(dBGetPicksByListId: DBGetFilteredPicksWithCount[]): PickIdsWithCount {
   return {
-    picks: dBGetPicksByListId.map((pick) => ({
-      itemId: pick.item_id,
+    picks: dBGetPicksByListId.map(pick => ({
+      itemId: pick.item_id
     })),
-    count: dBGetPicksByListId[0].picks_count,
+    count: dBGetPicksByListId[0].picks_count
   }
 }
 
@@ -18,6 +16,6 @@ export function fromDBPickToPick(dbPick: DBPick): TPick {
     itemId: dbPick.item_id,
     userAddress: dbPick.user_address,
     listId: dbPick.list_id,
-    createdAt: Number(dbPick.created_at),
+    createdAt: Number(dbPick.created_at)
   }
 }

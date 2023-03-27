@@ -1,21 +1,18 @@
-import SQL from "sql-template-strings"
-import { isErrorWithMessage } from "../../logic/errors"
-import { DEFAULT_LIST_USER_ADDRESS } from "../../migrations/1678303321034_default-list"
-import { AppComponents } from "../../types"
-import { DBGetFilteredPicksWithCount, DBPick } from "../picks"
-import { ItemNotFoundError, ListNotFoundError, PickAlreadyExistsError, PickNotFoundError, QueryFailure } from "./errors"
-import { GetPicksByListIdParameters, IListsComponents, DBList } from "./types"
+import SQL from 'sql-template-strings'
+import { isErrorWithMessage } from '../../logic/errors'
+import { DEFAULT_LIST_USER_ADDRESS } from '../../migrations/1678303321034_default-list'
+import { AppComponents } from '../../types'
+import { DBGetFilteredPicksWithCount, DBPick } from '../picks'
+import { ItemNotFoundError, ListNotFoundError, PickAlreadyExistsError, PickNotFoundError, QueryFailure } from './errors'
+import { GetPicksByListIdParameters, IListsComponents, DBList } from './types'
 
 export function createListsComponent(
-  components: Pick<AppComponents, "pg" | "collectionsSubgraph" | "snapshot" | "logs">
+  components: Pick<AppComponents, 'pg' | 'collectionsSubgraph' | 'snapshot' | 'logs'>
 ): IListsComponents {
   const { pg, collectionsSubgraph, snapshot, logs } = components
-  const logger = logs.getLogger("Lists component")
+  const logger = logs.getLogger('Lists component')
 
-  async function getPicksByListId(
-    listId: string,
-    params: GetPicksByListIdParameters
-  ): Promise<DBGetFilteredPicksWithCount[]> {
+  async function getPicksByListId(listId: string, params: GetPicksByListIdParameters): Promise<DBGetFilteredPicksWithCount[]> {
     const { userAddress, limit, offset } = params
     const result = await pg.query<DBGetFilteredPicksWithCount>(SQL`
         SELECT p.*, COUNT(*) OVER() as picks_count FROM favorites.picks p
@@ -48,24 +45,22 @@ export function createListsComponent(
       }`,
         { itemId }
       ),
-      snapshot.getScore(userAddress),
+      snapshot.getScore(userAddress)
     ])
 
-    if (queryResult.status === "rejected") {
-      logger.error("Querying the collections subgraph failed.")
-      throw new QueryFailure(isErrorWithMessage(queryResult.reason) ? queryResult.reason.message : "Unknown")
+    if (queryResult.status === 'rejected') {
+      logger.error('Querying the collections subgraph failed.')
+      throw new QueryFailure(isErrorWithMessage(queryResult.reason) ? queryResult.reason.message : 'Unknown')
     }
 
-    let vpQuery = SQL`INSERT INTO favorites.voting (user_address, power) `
+    const vpQuery = SQL`INSERT INTO favorites.voting (user_address, power) `
 
     // If the snapshot query fails, try to set the VP to 0 without overwriting it if it already exists
-    if (power.status === "rejected") {
-      logger.error(`Querying snapshot failed: ${isErrorWithMessage(power.reason) ? power.reason.message : "Unknown"}`)
+    if (power.status === 'rejected') {
+      logger.error(`Querying snapshot failed: ${isErrorWithMessage(power.reason) ? power.reason.message : 'Unknown'}`)
       vpQuery.append(SQL`VALUES (${userAddress}, ${0}) ON CONFLICT (user_address) DO NOTHING`)
     } else {
-      vpQuery.append(
-        SQL`VALUES (${userAddress}, ${power.value}) ON CONFLICT (user_address) DO UPDATE SET power = ${power.value}`
-      )
+      vpQuery.append(SQL`VALUES (${userAddress}, ${power.value}) ON CONFLICT (user_address) DO UPDATE SET power = ${power.value}`)
     }
 
     if (queryResult.value.items.length === 0) {
@@ -74,29 +69,26 @@ export function createListsComponent(
 
     const client = await pg.getPool().connect()
     try {
-      await client.query("BEGIN")
+      await client.query('BEGIN')
       const results = await Promise.all([
         client.query<DBPick>(
           SQL`INSERT INTO favorites.picks (item_id, user_address, list_id) VALUES (${itemId}, ${userAddress}, ${list.id}) RETURNING *`
         ),
-        client.query(vpQuery),
+        client.query(vpQuery)
       ])
-      await client.query("COMMIT")
+      await client.query('COMMIT')
 
       return results[0].rows[0]
     } catch (error) {
-      await client.query("ROLLBACK")
-      if (
-        error &&
-        typeof error === "object" &&
-        "constraint" in error &&
-        error.constraint === "item_id_user_address_list_id_primary_key"
-      ) {
+      await client.query('ROLLBACK')
+      if (error && typeof error === 'object' && 'constraint' in error && error.constraint === 'item_id_user_address_list_id_primary_key') {
         throw new PickAlreadyExistsError(listId, itemId)
       }
 
       throw new Error("The pick couldn't be created")
     } finally {
+      // TODO: handle the following eslint-disable statement
+      // eslint-disable-next-line @typescript-eslint/await-thenable
       await client.release()
     }
   }
