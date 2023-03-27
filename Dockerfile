@@ -13,6 +13,9 @@ ENV TINI_VERSION v0.19.0
 ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
 RUN chmod +x /tini
 
+# Disable husky pre-commit script before installing dependencies
+ENV HUSKY 0
+
 # install dependencies
 COPY package.json /app/package.json
 COPY package-lock.json /app/package-lock.json
