@@ -1,4 +1,4 @@
-import { DBGetFilteredPicksWithCount } from "../../ports/picks"
+import { DBGetFilteredPicksWithCount, DBPickStats, PickStats } from "../../ports/picks"
 import { PickUserAddressesWithCount } from "./types"
 
 export function fromDBGetPickByItemIdToPickUserAddressesWithCount(
@@ -10,4 +10,21 @@ export function fromDBGetPickByItemIdToPickUserAddressesWithCount(
     })),
     count: dBGetPicksByListId[0]?.picks_count ?? 0,
   }
+}
+
+/**
+ * Converts a DB retrieved Pick Stats to a Pick Stats.
+ * @param dbPickStat - The pick stats to convert from.
+ */
+export function fromDBPickStatsToPickStats(dbPickStat: DBPickStats): PickStats {
+  const stats: PickStats = {
+    itemId: dbPickStat.item_id,
+    count: dbPickStat.count,
+  }
+
+  if (dbPickStat.picked_by_user) {
+    stats.pickedByUser = dbPickStat.picked_by_user
+  }
+
+  return stats
 }

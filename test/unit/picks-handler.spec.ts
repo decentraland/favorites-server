@@ -1,7 +1,11 @@
 import * as authorizationMiddleware from "decentraland-crypto-middleware"
-import { TPick } from "../../src/adapters/picks"
-import { getPicksByItemIdHandler, getPickStatsHandler } from "../../src/controllers/handlers/picks-handlers"
-import { DBGetFilteredPicksWithCount, PickStats } from "../../src/ports/picks"
+import { fromDBPickStatsToPickStats, TPick } from "../../src/adapters/picks"
+import {
+  getPicksByItemIdHandler,
+  getPickStatsHandler,
+  getPickStatsOfItemHandler,
+} from "../../src/controllers/handlers/picks-handlers"
+import { DBGetFilteredPicksWithCount, DBPickStats } from "../../src/ports/picks"
 import { AppComponents, HandlerContextWithPath, StatusCode } from "../../src/types"
 import { createTestPicksComponent } from "../components"
 
@@ -10,18 +14,24 @@ let userAddress: string
 let verification: authorizationMiddleware.DecentralandSignatureData | undefined
 let components: Pick<AppComponents, "picks">
 let itemId: string
-let getPickStatsMock: jest.Mock
+let pickStats: DBPickStats
+let getPicksStatsMock: jest.Mock
 
 beforeEach(() => {
   userAddress = "0x58ae4c4cb2b35632ea98f214a2918b171f1e1247"
   verification = { auth: userAddress, authMetadata: {} }
-  itemId = "item-id"
+  itemId = "0x0023693cd7f5ac9931ce9fc482c5c328198bc819-1"
+  pickStats = {
+    picked_by_user: true,
+    item_id: itemId,
+    count: 1000,
+  }
 })
 
 beforeEach(() => {
-  getPickStatsMock = jest.fn()
+  getPicksStatsMock = jest.fn()
   components = {
-    picks: createTestPicksComponent({ getPickStats: getPickStatsMock }),
+    picks: createTestPicksComponent({ getPicksStats: getPicksStatsMock }),
   }
 })
 
@@ -41,7 +51,7 @@ describe("when getting the stats of a pick", () => {
     })
 
     it("should return a bad request response", () => {
-      return expect(getPickStatsHandler({ params, components, url, request, verification })).resolves.toEqual({
+      return expect(getPickStatsOfItemHandler({ params, components, url, request, verification })).resolves.toEqual({
         status: StatusCode.BAD_REQUEST,
         body: {
           ok: false,
@@ -54,36 +64,46 @@ describe("when getting the stats of a pick", () => {
   describe("and the power parameter is set as a number", () => {
     beforeEach(() => {
       url = new URL(`http://localhost/v1/picks/${itemId}/stats?power=200`)
+      getPicksStatsMock.mockResolvedValueOnce([pickStats])
     })
 
     it("should request the stats using the power parameter", async () => {
-      await getPickStatsHandler({ params, components, url, request, verification })
-      expect(getPickStatsMock).toHaveBeenCalledWith(itemId, expect.objectContaining({ power: 200 }))
+      await getPickStatsOfItemHandler({ params, components, url, request, verification })
+      expect(getPicksStatsMock).toHaveBeenCalledWith([itemId], expect.objectContaining({ power: 200 }))
     })
   })
 
   describe("and the power parameter is not set", () => {
     beforeEach(() => {
       url = new URL(`http://localhost/v1/picks/${itemId}/stats`)
+      getPicksStatsMock.mockResolvedValueOnce([pickStats])
     })
 
     it("should request the stats without the power parameter", async () => {
-      await getPickStatsHandler({ params, components, url, request, verification })
-      expect(getPickStatsMock).toHaveBeenCalledWith(itemId, expect.objectContaining({ power: undefined }))
+      await getPickStatsOfItemHandler({ params, components, url, request, verification })
+      expect(getPicksStatsMock).toHaveBeenCalledWith([itemId], expect.objectContaining({ power: undefined }))
     })
   })
 
   describe("and the request is authenticated with a signature", () => {
+    beforeEach(() => {
+      getPicksStatsMock.mockResolvedValueOnce([pickStats])
+    })
+
     it("should request the stats using the user address of the authenticated user", async () => {
-      await getPickStatsHandler({ params, components, url, request, verification })
-      expect(getPickStatsMock).toHaveBeenCalledWith(itemId, expect.objectContaining({ userAddress }))
+      await getPickStatsOfItemHandler({ params, components, url, request, verification })
+      expect(getPicksStatsMock).toHaveBeenCalledWith([itemId], expect.objectContaining({ userAddress }))
     })
   })
 
   describe("and the request is not authenticated with a signature", () => {
+    beforeEach(() => {
+      getPicksStatsMock.mockResolvedValueOnce([pickStats])
+    })
+
     it("should request the stats without a user address", async () => {
-      await getPickStatsHandler({ params, components, url, request, verification: undefined })
-      expect(getPickStatsMock).toHaveBeenCalledWith(itemId, expect.objectContaining({ userAddress: undefined }))
+      await getPickStatsOfItemHandler({ params, components, url, request, verification: undefined })
+      expect(getPicksStatsMock).toHaveBeenCalledWith([itemId], expect.objectContaining({ userAddress: undefined }))
     })
   })
 
@@ -92,31 +112,164 @@ describe("when getting the stats of a pick", () => {
 
     beforeEach(() => {
       error = new Error("anError")
-      getPickStatsMock.mockRejectedValueOnce(error)
+      getPicksStatsMock.mockRejectedValueOnce(error)
     })
 
     it("should propagate the error", () => {
-      return expect(getPickStatsHandler({ params, components, url, request, verification })).rejects.toEqual(error)
+      return expect(getPickStatsOfItemHandler({ params, components, url, request, verification })).rejects.toEqual(
+        error
+      )
     })
   })
 
   describe("and the request is successful", () => {
-    let pickStats: PickStats
-
     beforeEach(() => {
-      pickStats = {
-        likedByUser: true,
-        count: 1000,
-      }
-      getPickStatsMock.mockResolvedValueOnce(pickStats)
+      getPicksStatsMock.mockResolvedValueOnce([pickStats])
     })
 
     it("should return an ok response with the stats", () => {
-      return expect(getPickStatsHandler({ params, components, url, request, verification })).resolves.toEqual({
+      return expect(getPickStatsOfItemHandler({ params, components, url, request, verification })).resolves.toEqual({
         status: StatusCode.OK,
         body: {
           ok: true,
-          data: pickStats,
+          data: fromDBPickStatsToPickStats(pickStats),
+        },
+      })
+    })
+  })
+})
+
+describe("when getting the stats of picks", () => {
+  beforeEach(() => {
+    url = new URL(`http://localhost/v1/picks/stats`)
+  })
+
+  describe("and there are no item ids sent as query parameters", () => {
+    it("should return a bad request response", () => {
+      return expect(getPickStatsHandler({ components, url })).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: "The request must include at least one item id.",
+        },
+      })
+    })
+  })
+
+  describe("and the power parameter is set and it's not a number", () => {
+    beforeEach(() => {
+      url = new URL(`http://localhost/v1/picks/stats?power=anInvalidValue&itemId=${itemId}`)
+    })
+
+    it("should return a bad request response", () => {
+      return expect(getPickStatsHandler({ components, url })).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: "The value of the power parameter is invalid: anInvalidValue",
+        },
+      })
+    })
+  })
+
+  describe("and the power parameter is set as a number", () => {
+    beforeEach(() => {
+      url = new URL(`http://localhost/v1/picks/stats?power=200&itemId=${itemId}`)
+      getPicksStatsMock.mockResolvedValueOnce([pickStats])
+    })
+
+    it("should request the stats using the power parameter", async () => {
+      await getPickStatsHandler({ components, url })
+      expect(getPicksStatsMock).toHaveBeenCalledWith([itemId], expect.objectContaining({ power: 200 }))
+    })
+  })
+
+  describe("and the power parameter is not set", () => {
+    beforeEach(() => {
+      url = new URL(`http://localhost/v1/picks/stats?itemId=${itemId}`)
+      getPicksStatsMock.mockResolvedValueOnce([pickStats])
+    })
+
+    it("should request the stats without the power parameter", async () => {
+      await getPickStatsHandler({ components, url })
+      expect(getPicksStatsMock).toHaveBeenCalledWith([itemId], expect.objectContaining({ power: undefined }))
+    })
+  })
+
+  describe("and the checkingUserAddress parameter is set", () => {
+    beforeEach(() => {
+      getPicksStatsMock.mockResolvedValueOnce([pickStats])
+    })
+
+    describe("and the address is not an ethereum address", () => {
+      beforeEach(() => {
+        url = new URL(`http://localhost/v1/picks/stats?checkingUserAddress=somethingNotAddress&itemId=${itemId}`)
+      })
+
+      it("should return a bad request response", () => {
+        return expect(getPickStatsHandler({ components, url })).resolves.toEqual({
+          status: StatusCode.BAD_REQUEST,
+          body: {
+            ok: false,
+            message: "The checking user address parameter must be an Ethereum Address.",
+          },
+        })
+      })
+    })
+
+    describe("and the address is an ethereum address", () => {
+      beforeEach(() => {
+        url = new URL(`http://localhost/v1/picks/stats?checkingUserAddress=${userAddress}&itemId=${itemId}`)
+      })
+
+      it("should request the stats with the user address", async () => {
+        await getPickStatsHandler({ components, url })
+        expect(getPicksStatsMock).toHaveBeenCalledWith(
+          [itemId],
+          expect.objectContaining({ power: undefined, userAddress })
+        )
+      })
+    })
+  })
+
+  describe("and the checkingUserAddress parameter is not set", () => {
+    beforeEach(() => {
+      url = new URL(`http://localhost/v1/picks/stats?itemId=${itemId}`)
+      getPicksStatsMock.mockResolvedValueOnce([pickStats])
+    })
+
+    it("should request the stats without the user address parameter", async () => {
+      await getPickStatsHandler({ components, url })
+      expect(getPicksStatsMock).toHaveBeenCalledWith([itemId], expect.objectContaining({ userAddress: undefined }))
+    })
+  })
+
+  describe("and getting the pick stats fails", () => {
+    let error: Error
+
+    beforeEach(() => {
+      error = new Error("anError")
+      url = new URL(`http://localhost/v1/picks/stats?itemId=${itemId}`)
+      getPicksStatsMock.mockRejectedValueOnce(error)
+    })
+
+    it("should propagate the error", () => {
+      return expect(getPickStatsHandler({ components, url })).rejects.toEqual(error)
+    })
+  })
+
+  describe("and the request is successful", () => {
+    beforeEach(() => {
+      url = new URL(`http://localhost/v1/picks/stats?itemId=${itemId}`)
+      getPicksStatsMock.mockResolvedValueOnce([pickStats])
+    })
+
+    it("should return an ok response with the stats", () => {
+      return expect(getPickStatsHandler({ components, url })).resolves.toEqual({
+        status: StatusCode.OK,
+        body: {
+          ok: true,
+          data: [fromDBPickStatsToPickStats(pickStats)],
         },
       })
     })
