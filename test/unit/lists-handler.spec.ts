@@ -289,7 +289,7 @@ describe('when creating a pick', () => {
       pick = {
         item_id: itemId,
         list_id: listId,
-        user_address: verification.auth ?? '',
+        user_address: verification?.auth ?? '',
         created_at: new Date()
       }
       jsonMock.mockResolvedValueOnce({ itemId })
