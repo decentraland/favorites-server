@@ -45,9 +45,7 @@ describe('when transforming DB retrieved picks to pick ids with count', () => {
   })
 
   it('should return the transformed pick user addresses with count', () => {
-    expect(
-      fromDBGetPickByItemIdToPickUserAddressesWithCount(dbGetPicksByItemId)
-    ).toEqual(picksWithCount)
+    expect(fromDBGetPickByItemIdToPickUserAddressesWithCount(dbGetPicksByItemId)).toEqual(picksWithCount)
   })
 })
 

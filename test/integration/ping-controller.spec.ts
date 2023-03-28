@@ -1,9 +1,6 @@
 import { test } from '../components'
 
-test('integration sanity tests using a real server backend', function ({
-  components,
-  spyComponents
-}) {
+test('integration sanity tests using a real server backend', function ({ components, spyComponents }) {
   it('responds /ping', async () => {
     const { localFetch } = components
 
@@ -24,10 +21,7 @@ test('integration sanity tests using a real server backend', function ({
     expect(r.status).toEqual(200)
     expect(await r.text()).toEqual('/ping')
 
-    expect(spyComponents.metrics.increment).toBeCalledWith(
-      'test_ping_counter',
-      { pathname: '/ping' }
-    )
+    expect(spyComponents.metrics.increment).toBeCalledWith('test_ping_counter', { pathname: '/ping' })
   })
 
   it('random url responds 404', async () => {

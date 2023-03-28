@@ -4,7 +4,7 @@ export type ScoreRequest = {
   params: {
     address: string
     network: '1'
-    strategies: any[]
+    strategies: unknown[]
     snapshot?: number
     space: string
     delegation: boolean
