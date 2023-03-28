@@ -8,7 +8,7 @@
     "migrate": "node-pg-migrate --database-url-var PG_COMPONENT_PSQL_CONNECTION_STRING --envPath .env -j ts --tsconfig tsconfig.json -m ./src/migrations",
     "test": "jest --forceExit --detectOpenHandles --coverage --verbose",
     "test:watch": "jest --watch --verbose",
-    "lint": "eslint -c .eslintrc.json --ext='.ts' {src,test}",
+    "lint": "eslint -c .eslintrc.json {src/**/*.ts,test/**/*.ts}",
     "check:code": "eslint -c .eslintrc.json {src,test}",
     "check:prettier": "prettier -c '{src,test}/**/*.{js,ts,json,yml,md}'",
     "fix:code": "npm run check:code -- --fix",
