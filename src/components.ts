@@ -26,6 +26,10 @@ export async function initComponents(): Promise<AppComponents> {
 
   let databaseUrl: string | undefined = await config.getString('PG_COMPONENT_PSQL_CONNECTION_STRING')
   const COLLECTIONS_SUBGRAPH_URL = await config.requireString('COLLECTIONS_SUBGRAPH_URL')
+  const cors = {
+    origin: await config.requireString('CORS_ORIGIN'),
+    methods: await config.requireString('CORS_METHODS')
+  }
 
   if (!databaseUrl) {
     const dbUser = await config.requireString('PG_COMPONENT_PSQL_USER')
@@ -52,7 +56,7 @@ export async function initComponents(): Promise<AppComponents> {
     }
   )
 
-  const server = await createServerComponent<GlobalContext>({ config, logs }, {})
+  const server = await createServerComponent<GlobalContext>({ config, logs }, { cors })
   createHttpTracerComponent({ server, tracer })
   instrumentHttpServerWithRequestLogger({ server, logger: logs })
   await instrumentHttpServerWithMetrics({ metrics, config, server })
