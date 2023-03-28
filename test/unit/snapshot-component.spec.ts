@@ -1,9 +1,6 @@
 import { IFetchComponent } from '@well-known-components/http-server'
 import { IConfigComponent } from '@well-known-components/interfaces'
-import {
-  createSnapshotComponent,
-  ISnapshotComponent
-} from '../../src/ports/snapshot'
+import { createSnapshotComponent, ISnapshotComponent } from '../../src/ports/snapshot'
 import { ScoreError } from '../../src/ports/snapshot/errors'
 
 let snapshotComponent: ISnapshotComponent
@@ -41,9 +38,7 @@ describe("when getting the user's score", () => {
     })
 
     it('should throw a score error with the reason', () => {
-      return expect(snapshotComponent.getScore(address)).rejects.toEqual(
-        new ScoreError('An error occurred', address)
-      )
+      return expect(snapshotComponent.getScore(address)).rejects.toEqual(new ScoreError('An error occurred', address))
     })
   })
 

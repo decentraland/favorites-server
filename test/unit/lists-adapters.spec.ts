@@ -1,8 +1,4 @@
-import {
-  fromDBGetPickByListIdToPickIdsWithCount,
-  fromDBPickToPick,
-  PickIdsWithCount
-} from '../../src/adapters/lists'
+import { fromDBGetPickByListIdToPickIdsWithCount, fromDBPickToPick, PickIdsWithCount } from '../../src/adapters/lists'
 import { DBGetFilteredPicksWithCount, DBPick } from '../../src/ports/picks'
 
 describe('when transforming DB retrieved picks to pick ids with count', () => {
@@ -41,9 +37,7 @@ describe('when transforming DB retrieved picks to pick ids with count', () => {
   })
 
   it('should return the transformed picks with count', () => {
-    expect(fromDBGetPickByListIdToPickIdsWithCount(dbGetPicksByListId)).toEqual(
-      picksWithCount
-    )
+    expect(fromDBGetPickByListIdToPickIdsWithCount(dbGetPicksByListId)).toEqual(picksWithCount)
   })
 })
 

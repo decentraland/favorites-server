@@ -5,9 +5,7 @@ import { InvalidParameterError } from '../../src/logic/http/errors'
 describe('when getting the pagination params', () => {
   describe('and the limit is greater than the max limit', () => {
     it('should return the default limit', () => {
-      expect(
-        getPaginationParams(new URLSearchParams({ limit: '200' }))
-      ).toEqual({
+      expect(getPaginationParams(new URLSearchParams({ limit: '200' }))).toEqual({
         limit: 100,
         offset: 0
       })
@@ -16,9 +14,7 @@ describe('when getting the pagination params', () => {
 
   describe('and the limit is set to a negative number', () => {
     it('should return the default limit', () => {
-      expect(
-        getPaginationParams(new URLSearchParams({ limit: '-100' }))
-      ).toEqual({
+      expect(getPaginationParams(new URLSearchParams({ limit: '-100' }))).toEqual({
         limit: 100,
         offset: 0
       })
@@ -27,9 +23,7 @@ describe('when getting the pagination params', () => {
 
   describe("and the limit is set to a a value that can't be parsed as a number", () => {
     it('should return the default limit', () => {
-      expect(
-        getPaginationParams(new URLSearchParams({ limit: 'notAnInteger' }))
-      ).toEqual({
+      expect(getPaginationParams(new URLSearchParams({ limit: 'notAnInteger' }))).toEqual({
         limit: 100,
         offset: 0
       })
@@ -38,12 +32,10 @@ describe('when getting the pagination params', () => {
 
   describe('and the limit is set to a valid value', () => {
     it('should return the value as the limit', () => {
-      expect(getPaginationParams(new URLSearchParams({ limit: '10' }))).toEqual(
-        {
-          limit: 10,
-          offset: 0
-        }
-      )
+      expect(getPaginationParams(new URLSearchParams({ limit: '10' }))).toEqual({
+        limit: 10,
+        offset: 0
+      })
     })
   })
 
@@ -58,9 +50,7 @@ describe('when getting the pagination params', () => {
 
   describe("and the page is set to a a value that can't be parsed as a number", () => {
     it('should return the default offset', () => {
-      expect(
-        getPaginationParams(new URLSearchParams({ page: 'notAnInteger' }))
-      ).toEqual({
+      expect(getPaginationParams(new URLSearchParams({ page: 'notAnInteger' }))).toEqual({
         limit: 100,
         offset: 0
       })
@@ -69,12 +59,10 @@ describe('when getting the pagination params', () => {
 
   describe('and the page is set to a negative integer', () => {
     it('should return the default offset', () => {
-      expect(getPaginationParams(new URLSearchParams({ page: '-20' }))).toEqual(
-        {
-          limit: 100,
-          offset: 0
-        }
-      )
+      expect(getPaginationParams(new URLSearchParams({ page: '-20' }))).toEqual({
+        limit: 100,
+        offset: 0
+      })
     })
   })
 
@@ -117,9 +105,7 @@ describe('getNumberParameter', () => {
     })
 
     it('should throw InvalidParameterError', () => {
-      expect(() => getNumberParameter('parameterName', searchParams)).toThrow(
-        new InvalidParameterError('parameterName', 'test')
-      )
+      expect(() => getNumberParameter('parameterName', searchParams)).toThrow(new InvalidParameterError('parameterName', 'test'))
     })
   })
 })

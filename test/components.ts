@@ -1,36 +1,21 @@
 // This file is the "test-environment" analogous for src/components.ts
 // Here we define the test components to be used in the testing environment
 
-import { ILoggerComponent } from '@well-known-components/interfaces'
-import {
-  createRunner,
-  createLocalFetchCompoment
-} from '@well-known-components/test-helpers'
-import {
-  instrumentHttpServerWithRequestLogger,
-  Verbosity
-} from '@well-known-components/http-requests-logger-component'
 import { createDotEnvConfigComponent } from '@well-known-components/env-config-provider'
-import { createMetricsComponent } from '@well-known-components/metrics'
-import { createLogComponent } from '@well-known-components/logger'
+import { instrumentHttpServerWithRequestLogger, Verbosity } from '@well-known-components/http-requests-logger-component'
 import { createServerComponent } from '@well-known-components/http-server'
+import { ILoggerComponent } from '@well-known-components/interfaces'
+import { createLogComponent } from '@well-known-components/logger'
+import { createMetricsComponent } from '@well-known-components/metrics'
+import { createPgComponent, IPgComponent } from '@well-known-components/pg-component'
+import { createRunner, createLocalFetchCompoment } from '@well-known-components/test-helpers'
+import { createSubgraphComponent, ISubgraphComponent } from '@well-known-components/thegraph-component'
 import { createTracerComponent } from '@well-known-components/tracer-component'
-import {
-  createSubgraphComponent,
-  ISubgraphComponent
-} from '@well-known-components/thegraph-component'
-import {
-  createPgComponent,
-  IPgComponent
-} from '@well-known-components/pg-component'
+import { metricDeclarations } from '../src/metrics'
 import { createFetchComponent } from '../src/ports/fetch'
-import {
-  createSnapshotComponent,
-  ISnapshotComponent
-} from '../src/ports/snapshot'
 import { createListsComponent, IListsComponents } from '../src/ports/lists'
 import { createPicksComponent, IPicksComponent } from '../src/ports/picks'
-import { metricDeclarations } from '../src/metrics'
+import { createSnapshotComponent, ISnapshotComponent } from '../src/ports/snapshot'
 import { main } from '../src/service'
 import { GlobalContext, TestComponents } from '../src/types'
 
@@ -78,19 +63,10 @@ async function initComponents(): Promise<TestComponents> {
   // Mock the start function to avoid connecting to a local database
   jest.spyOn(pg, 'start').mockResolvedValue()
 
-  const server = await createServerComponent<GlobalContext>(
-    { config, logs },
-    {}
-  )
+  const server = await createServerComponent<GlobalContext>({ config, logs }, {})
   const fetch = await createFetchComponent({ tracer })
-  instrumentHttpServerWithRequestLogger(
-    { server, logger: logs },
-    { verbosity: Verbosity.INFO }
-  )
-  const collectionsSubgraph = await createSubgraphComponent(
-    { logs, config, fetch, metrics },
-    'subgraph-url'
-  )
+  instrumentHttpServerWithRequestLogger({ server, logger: logs }, { verbosity: Verbosity.INFO })
+  const collectionsSubgraph = await createSubgraphComponent({ logs, config, fetch, metrics }, 'subgraph-url')
   const snapshot = await createSnapshotComponent({ fetch, config })
   const lists = createListsComponent({
     pg,
@@ -115,9 +91,7 @@ async function initComponents(): Promise<TestComponents> {
   }
 }
 
-export function createTestLogsComponent(
-  { getLogger = jest.fn() } = { getLogger: jest.fn() }
-): ILoggerComponent {
+export function createTestLogsComponent({ getLogger = jest.fn() } = { getLogger: jest.fn() }): ILoggerComponent {
   return {
     getLogger
   }
@@ -135,20 +109,14 @@ export function createTestPicksComponent(
   }
 }
 
-export function createTestSnapshotComponent(
-  { getScore = jest.fn() } = { getScore: jest.fn() }
-): ISnapshotComponent {
+export function createTestSnapshotComponent({ getScore = jest.fn() } = { getScore: jest.fn() }): ISnapshotComponent {
   return {
     getScore
   }
 }
 
 export function createTestListsComponent(
-  {
-    getPicksByListId = jest.fn(),
-    addPickToList = jest.fn(),
-    deletePickInList = jest.fn()
-  } = {
+  { getPicksByListId = jest.fn(), addPickToList = jest.fn(), deletePickInList = jest.fn() } = {
     getPicksByListId: jest.fn(),
     addPickToList: jest.fn(),
     deletePickInList: jest.fn()
@@ -161,22 +129,14 @@ export function createTestListsComponent(
   }
 }
 
-export function createTestSubgraphComponent(
-  { query = jest.fn() } = { query: jest.fn() }
-): ISubgraphComponent {
+export function createTestSubgraphComponent({ query = jest.fn() } = { query: jest.fn() }): ISubgraphComponent {
   return {
     query
   }
 }
 
 export function createTestPgComponent(
-  {
-    query = jest.fn(),
-    start = jest.fn(),
-    streamQuery = jest.fn(),
-    getPool = jest.fn(),
-    stop = jest.fn()
-  } = {
+  { query = jest.fn(), start = jest.fn(), streamQuery = jest.fn(), getPool = jest.fn(), stop = jest.fn() } = {
     query: jest.fn(),
     start: jest.fn(),
     streamQuery: jest.fn(),

@@ -1,11 +1,6 @@
 import { IDatabase } from '@well-known-components/interfaces'
 import { IPgComponent } from '@well-known-components/pg-component'
-import {
-  createPicksComponent,
-  DBGetFilteredPicksWithCount,
-  DBPickStats,
-  IPicksComponent
-} from '../../src/ports/picks'
+import { createPicksComponent, DBGetFilteredPicksWithCount, DBPickStats, IPicksComponent } from '../../src/ports/picks'
 import { createTestPgComponent } from '../components'
 
 let options: {
@@ -46,7 +41,7 @@ describe('when getting the pick stats of an item', () => {
     it('should query the favorites that were done by users with power greater and equal than the given power', () => {
       expect(dbQueryMock).toBeCalledWith(
         expect.objectContaining({
-          text: expect.stringContaining(`voting.power >= `),
+          text: expect.stringContaining('voting.power >= '),
           values: expect.arrayContaining([options.power])
         })
       )
@@ -67,7 +62,7 @@ describe('when getting the pick stats of an item', () => {
     it('should query the favorites that were done by users with power greater and equal than default power', () => {
       expect(dbQueryMock).toBeCalledWith(
         expect.objectContaining({
-          text: expect.stringContaining(`voting.power >= `),
+          text: expect.stringContaining('voting.power >= '),
           values: expect.arrayContaining([1])
         })
       )
@@ -90,9 +85,7 @@ describe('when getting the pick stats of an item', () => {
     it('should check in the query if the user has picked the item', () => {
       expect(dbQueryMock).toBeCalledWith(
         expect.objectContaining({
-          text: expect.stringContaining(
-            'MAX(CASE WHEN favorites.picks.user_address = '
-          ),
+          text: expect.stringContaining('MAX(CASE WHEN favorites.picks.user_address = '),
           values: expect.arrayContaining([options.userAddress])
         })
       )
@@ -113,9 +106,7 @@ describe('when getting the pick stats of an item', () => {
     it('should not check in the query if the user has picked the item', () => {
       expect(dbQueryMock).not.toBeCalledWith(
         expect.objectContaining({
-          text: expect.stringContaining(
-            'MAX(CASE WHEN favorites.picks.user_address = '
-          ),
+          text: expect.stringContaining('MAX(CASE WHEN favorites.picks.user_address = '),
           values: expect.arrayContaining([options.userAddress])
         })
       )
@@ -173,9 +164,7 @@ describe('when getting picks by item id', () => {
 
       expect(dbQueryMock).toBeCalledWith(
         expect.objectContaining({
-          text: expect.stringContaining(
-            'AND favorites.voting.user_address = favorites.picks.user_address AND favorites.voting.power >= '
-          ),
+          text: expect.stringContaining('AND favorites.voting.user_address = favorites.picks.user_address AND favorites.voting.power >= '),
           values: expect.arrayContaining([5])
         })
       )
