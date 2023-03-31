@@ -2,21 +2,10 @@ import { IDatabase, ILoggerComponent } from '@well-known-components/interfaces'
 import { IPgComponent } from '@well-known-components/pg-component'
 import { ISubgraphComponent } from '@well-known-components/thegraph-component'
 import { createListsComponent, IListsComponents } from '../../src/ports/lists'
+import { ItemNotFoundError, ListNotFoundError, PickAlreadyExistsError, PickNotFoundError, QueryFailure } from '../../src/ports/lists/errors'
 import { DBGetFilteredPicksWithCount, DBPick } from '../../src/ports/picks'
-import {
-  ItemNotFoundError,
-  ListNotFoundError,
-  PickAlreadyExistsError,
-  PickNotFoundError,
-  QueryFailure
-} from '../../src/ports/lists/errors'
 import { ISnapshotComponent } from '../../src/ports/snapshot'
-import {
-  createTestSnapshotComponent,
-  createTestPgComponent,
-  createTestSubgraphComponent,
-  createTestLogsComponent
-} from '../components'
+import { createTestSnapshotComponent, createTestPgComponent, createTestSubgraphComponent, createTestLogsComponent } from '../components'
 
 let listId: string
 let itemId: string
@@ -106,16 +95,14 @@ describe('when getting picks from a list by list id', () => {
       ).resolves.toEqual(dbGetPicksByListId)
       expect(dbQueryMock).toBeCalledWith(
         expect.objectContaining({
-          text: expect.stringContaining(
-            `WHERE list_id = $1 AND user_address = $2`
-          ),
+          text: expect.stringContaining('WHERE list_id = $1 AND user_address = $2'),
           values: expect.arrayContaining(['list-id', '0xuseraddress'])
         })
       )
 
       expect(dbQueryMock).toBeCalledWith(
         expect.objectContaining({
-          text: expect.stringContaining(`LIMIT $3 OFFSET $4`),
+          text: expect.stringContaining('LIMIT $3 OFFSET $4'),
           values: expect.arrayContaining([10, 0])
         })
       )
@@ -133,9 +120,7 @@ describe('when creating a new pick', () => {
     })
 
     it('should throw a list not found error', () => {
-      return expect(
-        listsComponent.addPickToList(listId, itemId, userAddress)
-      ).rejects.toEqual(error)
+      return expect(listsComponent.addPickToList(listId, itemId, userAddress)).rejects.toEqual(error)
     })
   })
 
@@ -156,9 +141,7 @@ describe('when creating a new pick', () => {
     })
 
     it('should throw an error saying that the request failed', () => {
-      return expect(
-        listsComponent.addPickToList(listId, itemId, userAddress)
-      ).rejects.toEqual(new QueryFailure('anError'))
+      return expect(listsComponent.addPickToList(listId, itemId, userAddress)).rejects.toEqual(new QueryFailure('anError'))
     })
   })
 
@@ -180,9 +163,7 @@ describe('when creating a new pick', () => {
     })
 
     it('should throw an item not found error', () => {
-      return expect(
-        listsComponent.addPickToList(listId, itemId, userAddress)
-      ).rejects.toEqual(new ItemNotFoundError(itemId))
+      return expect(listsComponent.addPickToList(listId, itemId, userAddress)).rejects.toEqual(new ItemNotFoundError(itemId))
     })
   })
 
@@ -217,9 +198,7 @@ describe('when creating a new pick', () => {
       })
 
       it('should rollback the changes and release the client and throw a pick already exists error', async () => {
-        await expect(
-          listsComponent.addPickToList(listId, itemId, userAddress)
-        ).rejects.toEqual(new PickAlreadyExistsError(listId, itemId))
+        await expect(listsComponent.addPickToList(listId, itemId, userAddress)).rejects.toEqual(new PickAlreadyExistsError(listId, itemId))
         expect(dbClientQueryMock).toHaveBeenCalledWith('ROLLBACK')
         expect(dbClientReleaseMock).toHaveBeenCalled()
       })
@@ -247,21 +226,13 @@ describe('when creating a new pick', () => {
       describe('and the request to get the voting power failed', () => {
         beforeEach(async () => {
           getScoreMock.mockRejectedValueOnce(new Error())
-          result = await listsComponent.addPickToList(
-            listId,
-            itemId,
-            userAddress
-          )
+          result = await listsComponent.addPickToList(listId, itemId, userAddress)
         })
 
         it('should create the pick', () => {
           expect(dbClientQueryMock).toHaveBeenCalledWith(
             expect.objectContaining({
-              strings: expect.arrayContaining([
-                expect.stringContaining(
-                  'INSERT INTO favorites.picks (item_id, user_address, list_id)'
-                )
-              ]),
+              strings: expect.arrayContaining([expect.stringContaining('INSERT INTO favorites.picks (item_id, user_address, list_id)')]),
               values: [itemId, userAddress, listId]
             })
           )
@@ -270,20 +241,14 @@ describe('when creating a new pick', () => {
         it('should insert the voting power as 0 without overwriting it', () => {
           expect(dbClientQueryMock).toHaveBeenCalledWith(
             expect.objectContaining({
-              strings: expect.arrayContaining([
-                expect.stringContaining(
-                  'INSERT INTO favorites.voting (user_address, power) VALUES'
-                )
-              ]),
+              strings: expect.arrayContaining([expect.stringContaining('INSERT INTO favorites.voting (user_address, power) VALUES')]),
               values: [userAddress, 0]
             })
           )
 
           expect(dbClientQueryMock).toHaveBeenCalledWith(
             expect.objectContaining({
-              strings: expect.arrayContaining([
-                expect.stringContaining('ON CONFLICT (user_address) DO NOTHING')
-              ])
+              strings: expect.arrayContaining([expect.stringContaining('ON CONFLICT (user_address) DO NOTHING')])
             })
           )
         })
@@ -301,21 +266,13 @@ describe('when creating a new pick', () => {
       describe('and the request to get the voting power was successful', () => {
         beforeEach(async () => {
           getScoreMock.mockResolvedValueOnce(10)
-          result = await listsComponent.addPickToList(
-            listId,
-            itemId,
-            userAddress
-          )
+          result = await listsComponent.addPickToList(listId, itemId, userAddress)
         })
 
         it('should create the pick', () => {
           expect(dbClientQueryMock).toHaveBeenCalledWith(
             expect.objectContaining({
-              strings: expect.arrayContaining([
-                expect.stringContaining(
-                  'INSERT INTO favorites.picks (item_id, user_address, list_id)'
-                )
-              ]),
+              strings: expect.arrayContaining([expect.stringContaining('INSERT INTO favorites.picks (item_id, user_address, list_id)')]),
               values: [itemId, userAddress, listId]
             })
           )
@@ -324,22 +281,14 @@ describe('when creating a new pick', () => {
         it('should insert the voting power or overwrite it', () => {
           expect(dbClientQueryMock).toHaveBeenCalledWith(
             expect.objectContaining({
-              strings: expect.arrayContaining([
-                expect.stringContaining(
-                  'INSERT INTO favorites.voting (user_address, power) VALUES'
-                )
-              ]),
+              strings: expect.arrayContaining([expect.stringContaining('INSERT INTO favorites.voting (user_address, power) VALUES')]),
               values: [userAddress, 10, 10]
             })
           )
 
           expect(dbClientQueryMock).toHaveBeenCalledWith(
             expect.objectContaining({
-              strings: expect.arrayContaining([
-                expect.stringContaining(
-                  'ON CONFLICT (user_address) DO UPDATE SET power ='
-                )
-              ])
+              strings: expect.arrayContaining([expect.stringContaining('ON CONFLICT (user_address) DO UPDATE SET power =')])
             })
           )
         })
@@ -367,9 +316,7 @@ describe('when deleting a pick', () => {
     })
 
     it('should throw a pick not found error', () => {
-      return expect(
-        listsComponent.deletePickInList(listId, itemId, userAddress)
-      ).rejects.toEqual(error)
+      return expect(listsComponent.deletePickInList(listId, itemId, userAddress)).rejects.toEqual(error)
     })
   })
 
@@ -379,9 +326,7 @@ describe('when deleting a pick', () => {
     })
 
     it('should resolve', () => {
-      return expect(
-        listsComponent.deletePickInList(listId, itemId, userAddress)
-      ).resolves.toEqual(undefined)
+      return expect(listsComponent.deletePickInList(listId, itemId, userAddress)).resolves.toEqual(undefined)
     })
   })
 })

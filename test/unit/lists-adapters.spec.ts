@@ -14,7 +14,7 @@ describe('when transforming DB retrieved picks to pick ids with count', () => {
       }
     })
 
-    it('should return the transformed picks with count', () => {
+    it('should return an empty array of picks and the count property as 0', () => {
       expect(fromDBGetPickByListIdToPickIdsWithCount(dbGetPicksByListId)).toEqual(picksWithCount)
     })
   })
