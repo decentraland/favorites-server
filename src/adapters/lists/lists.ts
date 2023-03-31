@@ -7,7 +7,7 @@ export function fromDBGetPickByListIdToPickIdsWithCount(dBGetPicksByListId: DBGe
     picks: dBGetPicksByListId.map(pick => ({
       itemId: pick.item_id
     })),
-    count: dBGetPicksByListId[0].picks_count
+    count: dBGetPicksByListId[0]?.picks_count ?? 0
   }
 }
 
