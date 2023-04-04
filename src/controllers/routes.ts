@@ -51,9 +51,9 @@ export async function setupRouter(_globalContext: GlobalContext): Promise<Router
     getPickStatsOfItemHandler
   )
 
-  router.get('/v1/picks/:itemId', getPicksByItemIdHandler)
-
   router.get('/v1/picks/stats', getPickStatsHandler)
+
+  router.get('/v1/picks/:itemId', getPicksByItemIdHandler)
 
   return router
 }
