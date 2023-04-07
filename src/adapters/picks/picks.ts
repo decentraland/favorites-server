@@ -8,7 +8,7 @@ export function fromDBGetPickByItemIdToPickUserAddressesWithCount(
     picks: dBGetPicksByListId.map(pick => ({
       userAddress: pick.user_address
     })),
-    count: dBGetPicksByListId[0]?.picks_count ?? 0
+    count: Number(dBGetPicksByListId[0]?.picks_count ?? 0)
   }
 }
 
@@ -19,7 +19,7 @@ export function fromDBGetPickByItemIdToPickUserAddressesWithCount(
 export function fromDBPickStatsToPickStats(dbPickStat: DBPickStats): PickStats {
   const stats: PickStats = {
     itemId: dbPickStat.item_id,
-    count: dbPickStat.count
+    count: Number(dbPickStat.count)
   }
 
   if (dbPickStat.picked_by_user) {

@@ -28,21 +28,21 @@ describe('when transforming DB retrieved picks to pick ids with count', () => {
           user_address: '0x45abb534BD927284F84b03d43f33dF0E5C91C21f',
           list_id: 'e96df126-f5bf-4311-94d8-6e261f368bb2',
           created_at: createdAt,
-          picks_count: 3
+          picks_count: '3'
         },
         {
           item_id: '11',
           user_address: '0x45abb534BD927284F84b03d43f33dF0E5C91C21f',
           list_id: 'e96df126-f5bf-4311-94d8-6e261f368bb2',
           created_at: createdAt,
-          picks_count: 3
+          picks_count: '3'
         },
         {
           item_id: '111',
           user_address: '0x45abb534BD927284F84b03d43f33dF0E5C91C21f',
           list_id: 'e96df126-f5bf-4311-94d8-6e261f368bb2',
           created_at: createdAt,
-          picks_count: 3
+          picks_count: '3'
         }
       ]
       picksWithCount = {

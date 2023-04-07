@@ -20,7 +20,7 @@ beforeEach(() => {
   pickStats = {
     picked_by_user: true,
     item_id: itemId,
-    count: 1000
+    count: '1000'
   }
 })
 
@@ -297,14 +297,14 @@ describe('when getting the picks for an item', () => {
         user_address: userAddress,
         list_id: 'e96df126-f5bf-4311-94d8-6e261f368bb2',
         created_at: new Date(),
-        picks_count: 2
+        picks_count: '2'
       },
       {
         item_id: '1',
         user_address: anotherUserAddress,
         list_id: 'f96df126-f5bf-4311-94d8-6e261f368bb4',
         created_at: new Date(),
-        picks_count: 2
+        picks_count: '2'
       }
     ]
   })
