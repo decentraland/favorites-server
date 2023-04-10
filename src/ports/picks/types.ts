@@ -15,7 +15,7 @@ export interface IPicksComponent {
 export type DBPickStats = {
   picked_by_user?: boolean
   item_id: string
-  count: number
+  count: string
 }
 
 export type PickStats = {
@@ -36,5 +36,5 @@ export type DBPick = {
 }
 
 export type DBGetFilteredPicksWithCount = DBPick & {
-  picks_count: number
+  picks_count: string
 }

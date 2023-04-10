@@ -90,7 +90,7 @@ describe('when getting the picks of a list', () => {
           user_address: '0x45abb534BD927284F84b03d43f33dF0E5C91C21f',
           list_id: 'e96df126-f5bf-4311-94d8-6e261f368bb2',
           created_at: new Date(),
-          picks_count: 1
+          picks_count: '1'
         }
       ]
       picks = [{ itemId: '1' }]
