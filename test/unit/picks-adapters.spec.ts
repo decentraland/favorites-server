@@ -59,15 +59,31 @@ describe('when transforming DB retrieved pick stats into pick stats', () => {
   })
 
   describe('and the DB pick stats have the picked_by_user property', () => {
-    beforeEach(() => {
-      dbPickStats.picked_by_user = true
+    describe('and its false', () => {
+      beforeEach(() => {
+        dbPickStats.picked_by_user = false
+      })
+
+      it('should convert the DB pick stats into pick stats with the pickedByUser property', () => {
+        expect(fromDBPickStatsToPickStats(dbPickStats)).toStrictEqual({
+          itemId: dbPickStats.item_id,
+          count: Number(dbPickStats.count),
+          pickedByUser: dbPickStats.picked_by_user
+        })
+      })
     })
 
-    it('should convert the DB pick stats into pick stats with the pickedByUser property', () => {
-      expect(fromDBPickStatsToPickStats(dbPickStats)).toStrictEqual({
-        itemId: dbPickStats.item_id,
-        count: Number(dbPickStats.count),
-        pickedByUser: dbPickStats.picked_by_user
+    describe('and its true', () => {
+      beforeEach(() => {
+        dbPickStats.picked_by_user = true
+      })
+
+      it('should convert the DB pick stats into pick stats with the pickedByUser property', () => {
+        expect(fromDBPickStatsToPickStats(dbPickStats)).toStrictEqual({
+          itemId: dbPickStats.item_id,
+          count: Number(dbPickStats.count),
+          pickedByUser: dbPickStats.picked_by_user
+        })
       })
     })
   })
