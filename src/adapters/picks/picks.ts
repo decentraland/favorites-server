@@ -22,7 +22,7 @@ export function fromDBPickStatsToPickStats(dbPickStat: DBPickStats): PickStats {
     count: Number(dbPickStat.count)
   }
 
-  if (dbPickStat.picked_by_user) {
+  if (dbPickStat.picked_by_user !== undefined) {
     stats.pickedByUser = dbPickStat.picked_by_user
   }
 
