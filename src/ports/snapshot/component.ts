@@ -1,3 +1,4 @@
+import { ChainId } from '@dcl/schemas'
 import { isErrorWithMessage } from '../../logic/errors'
 import { AppComponents } from '../../types'
 import { strategies } from './constants'
@@ -7,16 +8,21 @@ import { ISnapshotComponent, ScoreRequest, ScoreResponse } from './types'
 export async function createSnapshotComponent(components: Pick<AppComponents, 'fetch' | 'config'>): Promise<ISnapshotComponent> {
   const { fetch, config } = components
   const SNAPSHOT_URL = await config.requireString('SNAPSHOT_URL')
+  const SNAPSHOT_NETWORK: ChainId.ETHEREUM_GOERLI | ChainId.ETHEREUM_MAINNET = await config.requireNumber('SNAPSHOT_NETWORK')
+  const SNAPSHOT_SPACE = await config.requireString('SNAPSHOT_SPACE')
+  if (SNAPSHOT_NETWORK !== ChainId.ETHEREUM_GOERLI && SNAPSHOT_NETWORK !== ChainId.ETHEREUM_MAINNET) {
+    throw new Error('The snapshot network id was not correctly set to either 1 or 5')
+  }
 
   async function getScore(address: string): Promise<number> {
     const data: ScoreRequest = {
       jsonrpc: '2.0',
       method: 'get_vp',
       params: {
-        network: '1',
+        network: SNAPSHOT_NETWORK.toString(),
         address: address.toLowerCase(),
-        strategies,
-        space: 'snapshot.dcl.eth',
+        strategies: strategies[SNAPSHOT_NETWORK],
+        space: SNAPSHOT_SPACE,
         delegation: false
       }
     }

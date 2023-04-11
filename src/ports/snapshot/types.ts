@@ -3,7 +3,7 @@ export type ScoreRequest = {
   method: 'get_vp'
   params: {
     address: string
-    network: '1'
+    network: string
     strategies: unknown[]
     snapshot?: number
     space: string

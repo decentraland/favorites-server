@@ -42,6 +42,8 @@ async function initComponents(): Promise<TestComponents> {
   // default config from process.env + .env file
   const defaultConfig = {
     SNAPSHOT_URL: 'https://snapshot-url.com',
+    SNAPSHOT_NETWORK: '1',
+    SNAPSHOT_SPACE: 'snapshot.dcl.eth',
     HTTP_SERVER_PORT: (currentPort + 1).toString(),
     HTTP_SERVER_HOST: 'localhost',
     COLLECTIONS_SUBGRAPH_URL: 'https://some-url.com',
