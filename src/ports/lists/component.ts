@@ -60,6 +60,7 @@ export function createListsComponent(
       logger.error(`Querying snapshot failed: ${isErrorWithMessage(power.reason) ? power.reason.message : 'Unknown'}`)
       vpQuery.append(SQL`VALUES (${userAddress}, ${0}) ON CONFLICT (user_address) DO NOTHING`)
     } else {
+      logger.info(`The voting power for ${userAddress} was updated to ${power.value}`)
       vpQuery.append(SQL`VALUES (${userAddress}, ${power.value}) ON CONFLICT (user_address) DO UPDATE SET power = ${power.value}`)
     }
 
