@@ -39,7 +39,7 @@ beforeEach(async () => {
     })
   })
   logs = createTestLogsComponent({
-    getLogger: jest.fn().mockReturnValue({ error: () => undefined })
+    getLogger: jest.fn().mockReturnValue({ error: () => undefined, info: () => undefined })
   })
   snapshot = createTestSnapshotComponent({ getScore: getScoreMock })
   collectionsSubgraph = createTestSubgraphComponent({
