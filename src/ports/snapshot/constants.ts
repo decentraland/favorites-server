@@ -1,6 +1,6 @@
 import { ChainId } from '@dcl/schemas'
 
-export const strategies = {
+export const strategiesByChainId = {
   [ChainId.ETHEREUM_MAINNET]: [
     {
       name: 'multichain',

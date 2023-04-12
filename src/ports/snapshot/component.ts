@@ -1,7 +1,7 @@
 import { ChainId } from '@dcl/schemas'
 import { isErrorWithMessage } from '../../logic/errors'
 import { AppComponents } from '../../types'
-import { strategies } from './constants'
+import { strategiesByChainId } from './constants'
 import { ScoreError } from './errors'
 import { ISnapshotComponent, ScoreRequest, ScoreResponse } from './types'
 
@@ -11,7 +11,7 @@ export async function createSnapshotComponent(components: Pick<AppComponents, 'f
   const SNAPSHOT_NETWORK: ChainId.ETHEREUM_GOERLI | ChainId.ETHEREUM_MAINNET = await config.requireNumber('SNAPSHOT_NETWORK')
   const SNAPSHOT_SPACE = await config.requireString('SNAPSHOT_SPACE')
   if (SNAPSHOT_NETWORK !== ChainId.ETHEREUM_GOERLI && SNAPSHOT_NETWORK !== ChainId.ETHEREUM_MAINNET) {
-    throw new Error('The snapshot network id was not correctly set to either 1 or 5')
+    throw new Error(`The snapshot network id was not correctly set to either ${ChainId.ETHEREUM_MAINNET} or ${ChainId.ETHEREUM_GOERLI}`)
   }
 
   async function getScore(address: string): Promise<number> {
@@ -21,7 +21,7 @@ export async function createSnapshotComponent(components: Pick<AppComponents, 'f
       params: {
         network: SNAPSHOT_NETWORK.toString(),
         address: address.toLowerCase(),
-        strategies: strategies[SNAPSHOT_NETWORK],
+        strategies: strategiesByChainId[SNAPSHOT_NETWORK],
         space: SNAPSHOT_SPACE,
         delegation: false
       }
