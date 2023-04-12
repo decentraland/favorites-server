@@ -1,6 +1,6 @@
 // This file is the "test-environment" analogous for src/components.ts
 // Here we define the test components to be used in the testing environment
-
+import path from 'node:path'
 import { createDotEnvConfigComponent } from '@well-known-components/env-config-provider'
 import { instrumentHttpServerWithRequestLogger, Verbosity } from '@well-known-components/http-requests-logger-component'
 import { createServerComponent } from '@well-known-components/http-server'
@@ -41,22 +41,10 @@ async function initComponents(): Promise<TestComponents> {
   const currentPort = getFreePort()
   // default config from process.env + .env file
   const defaultConfig = {
-    SNAPSHOT_URL: 'https://snapshot-url.com',
-    SNAPSHOT_NETWORK: '1',
-    SNAPSHOT_SPACE: 'snapshot.dcl.eth',
-    HTTP_SERVER_PORT: (currentPort + 1).toString(),
-    HTTP_SERVER_HOST: 'localhost',
-    COLLECTIONS_SUBGRAPH_URL: 'https://some-url.com',
-    SUBGRAPH_COMPONENT_RETRIES: '0',
-    PG_COMPONENT_PSQL_DATABASE: 'marketplace',
-    PG_COMPONENT_PSQL_SCHEMA: 'favorites',
-    PG_COMPONENT_PSQL_PORT: '5432',
-    PG_COMPONENT_PSQL_HOST: 'localhost',
-    PG_COMPONENT_PSQL_USER: 'username',
-    PG_COMPONENT_PSQL_PASSWORD: 'password'
+    HTTP_SERVER_PORT: (currentPort + 1).toString()
   }
 
-  const config = await createDotEnvConfigComponent({}, defaultConfig)
+  const config = await createDotEnvConfigComponent({ path: path.resolve(__dirname, '../.env.default') }, defaultConfig)
   const metrics = await createMetricsComponent(metricDeclarations, { config })
   const tracer = createTracerComponent()
   const logs = await createLogComponent({ metrics, tracer })
