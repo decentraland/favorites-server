@@ -159,7 +159,7 @@ describe('when getting picks by item id', () => {
 
         expect(dbQueryMock).toBeCalledWith(
           expect.objectContaining({
-            text: expect.stringContaining('CASE WHEN user_address = '),
+            text: expect.stringContaining('user_address = '),
             values: expect.arrayContaining(['user-address'])
           })
         )
@@ -192,7 +192,7 @@ describe('when getting picks by item id', () => {
           )
 
           expect(dbQueryMock).toBeCalledWith(
-            expect.objectContaining({ text: expect.stringContaining('ORDER BY picked_by_user DESC, user_address') })
+            expect.objectContaining({ text: expect.stringContaining('ORDER BY picked_by_user DESC, created_at DESC') })
           )
 
           expect(dbQueryMock).toBeCalledWith(

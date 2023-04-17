@@ -41,18 +41,18 @@ export function createPicksComponent(components: Pick<AppComponents, 'pg'>): IPi
     const query = SQL`SELECT user_address, COUNT(*) OVER() as picks_count`
 
     if (userAddress) {
-      query.append(SQL`, (CASE WHEN user_address = ${userAddress} THEN 1 ELSE 0 END)::BOOLEAN AS picked_by_user`)
+      query.append(SQL`, user_address = ${userAddress} AS picked_by_user`)
     } else {
       query.append(SQL`, false AS picked_by_user`)
     }
 
     query.append(
       SQL` FROM (
-        SELECT DISTINCT favorites.picks.user_address FROM favorites.picks, favorites.voting
+        SELECT DISTINCT favorites.picks.user_address, favorites.picks.created_at FROM favorites.picks, favorites.voting
         WHERE favorites.picks.item_id = ${itemId}
         AND favorites.voting.user_address = favorites.picks.user_address AND favorites.voting.power >= ${power ?? DEFAULT_VOTING_POWER}
       ) AS temp
-      ORDER BY picked_by_user DESC, user_address
+      ORDER BY picked_by_user DESC, created_at DESC
       LIMIT ${limit} OFFSET ${offset}`
     )
 
