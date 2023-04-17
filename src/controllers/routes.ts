@@ -53,7 +53,14 @@ export async function setupRouter(_globalContext: GlobalContext): Promise<Router
 
   router.get('/v1/picks/stats', getPickStatsHandler)
 
-  router.get('/v1/picks/:itemId', getPicksByItemIdHandler)
+  router.get(
+    '/v1/picks/:itemId',
+    authorizationMiddleware.wellKnownComponents({
+      optional: true,
+      expiration: FIVE_MINUTES
+    }),
+    getPicksByItemIdHandler
+  )
 
   return router
 }

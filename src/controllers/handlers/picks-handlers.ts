@@ -104,13 +104,16 @@ export async function getPickStatsHandler(
 }
 
 export async function getPicksByItemIdHandler(
-  context: Pick<HandlerContextWithPath<'picks', '/v1/picks/:itemId'>, 'url' | 'components' | 'params' | 'request'>
+  context: Pick<HandlerContextWithPath<'picks', '/v1/picks/:itemId'>, 'url' | 'components' | 'params' | 'request' | 'verification'>
 ): Promise<HTTPResponse<Pick<TPick, 'userAddress'>>> {
   const {
     url,
     components: { picks },
-    params
+    params,
+    verification
   } = context
+
+  const userAddress: string | undefined = verification?.auth.toLowerCase()
 
   const { limit, offset } = getPaginationParams(url.searchParams)
 
@@ -119,7 +122,8 @@ export async function getPicksByItemIdHandler(
     const picksByItemIdResult = await picks.getPicksByItemId(params.itemId, {
       limit,
       offset,
-      power
+      power,
+      userAddress
     })
     const { picks: results, count } = fromDBGetPickByItemIdToPickUserAddressesWithCount(picksByItemIdResult)
 
