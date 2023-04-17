@@ -140,41 +140,69 @@ describe('when getting picks by item id', () => {
     })
   })
 
-  describe('and the list id, limit, and offset are all set', () => {
+  describe('and the list id, limit, offset, and power are all set', () => {
     beforeEach(() => {
       dbGetPicksByItemId = []
       dbQueryMock.mockResolvedValueOnce({ rows: dbGetPicksByItemId })
     })
 
-    it('should have made the query to get the picks matching those conditions', async () => {
-      await expect(
-        picksComponent.getPicksByItemId('item-id', {
-          offset: 0,
-          limit: 10,
-          power: 5
-        })
-      ).resolves.toEqual(dbGetPicksByItemId)
+    describe('and the user address is also set', () => {
+      it('should have made the query selecting the current user address as the first row', async () => {
+        await expect(
+          picksComponent.getPicksByItemId('item-id', {
+            offset: 0,
+            limit: 10,
+            power: 5,
+            userAddress: 'user-address'
+          })
+        ).resolves.toEqual(dbGetPicksByItemId)
 
-      expect(dbQueryMock).toBeCalledWith(
-        expect.objectContaining({
-          text: expect.stringContaining('WHERE favorites.picks.item_id ='),
-          values: expect.arrayContaining(['item-id'])
-        })
-      )
+        expect(dbQueryMock).toBeCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining('CASE WHEN user_address = '),
+            values: expect.arrayContaining(['user-address'])
+          })
+        )
+      })
 
-      expect(dbQueryMock).toBeCalledWith(
-        expect.objectContaining({
-          text: expect.stringContaining('AND favorites.voting.user_address = favorites.picks.user_address AND favorites.voting.power >= '),
-          values: expect.arrayContaining([5])
-        })
-      )
+      describe('and the user address is not set', () => {
+        it('should have made the query to get the picks matching those conditions', async () => {
+          await expect(
+            picksComponent.getPicksByItemId('item-id', {
+              offset: 0,
+              limit: 10,
+              power: 5
+            })
+          ).resolves.toEqual(dbGetPicksByItemId)
 
-      expect(dbQueryMock).toBeCalledWith(
-        expect.objectContaining({
-          text: expect.stringContaining('LIMIT $3 OFFSET $4'),
-          values: expect.arrayContaining([10, 0])
+          expect(dbQueryMock).toBeCalledWith(
+            expect.objectContaining({
+              text: expect.stringContaining('WHERE favorites.picks.item_id ='),
+              values: expect.arrayContaining(['item-id'])
+            })
+          )
+
+          expect(dbQueryMock).toBeCalledWith(
+            expect.objectContaining({
+              text: expect.stringContaining(
+                'AND favorites.voting.user_address = favorites.picks.user_address AND favorites.voting.power >= '
+              ),
+              values: expect.arrayContaining([5])
+            })
+          )
+
+          expect(dbQueryMock).toBeCalledWith(
+            expect.objectContaining({ text: expect.stringContaining('ORDER BY picked_by_user DESC, user_address') })
+          )
+
+          expect(dbQueryMock).toBeCalledWith(
+            expect.objectContaining({
+              text: expect.stringContaining('LIMIT $3 OFFSET $4'),
+              values: expect.arrayContaining([10, 0])
+            })
+          )
         })
-      )
+      })
     })
   })
 })
