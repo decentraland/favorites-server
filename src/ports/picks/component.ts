@@ -48,7 +48,9 @@ export function createPicksComponent(components: Pick<AppComponents, 'pg'>): IPi
 
     query.append(
       SQL` FROM (
-        SELECT DISTINCT favorites.picks.user_address, favorites.picks.created_at FROM favorites.picks, favorites.voting
+        SELECT DISTINCT ON (favorites.picks.user_address)
+          favorites.picks.user_address, favorites.picks.created_at
+        FROM favorites.picks, favorites.voting
         WHERE favorites.picks.item_id = ${itemId}
         AND favorites.voting.user_address = favorites.picks.user_address AND favorites.voting.power >= ${power ?? DEFAULT_VOTING_POWER}
       ) AS temp
