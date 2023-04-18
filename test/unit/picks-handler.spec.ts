@@ -318,7 +318,7 @@ describe('when getting the picks for an item', () => {
     })
 
     it('should propagate the error', () => {
-      return expect(getPicksByItemIdHandler({ params, components, url, request })).rejects.toEqual(error)
+      return expect(getPicksByItemIdHandler({ params, components, url, request, verification })).rejects.toEqual(error)
     })
   })
 
@@ -328,7 +328,7 @@ describe('when getting the picks for an item', () => {
     })
 
     it('should return a bad request response', () => {
-      return expect(getPicksByItemIdHandler({ params, components, url, request })).resolves.toEqual({
+      return expect(getPicksByItemIdHandler({ params, components, url, request, verification })).resolves.toEqual({
         status: StatusCode.BAD_REQUEST,
         body: {
           ok: false,
@@ -345,7 +345,7 @@ describe('when getting the picks for an item', () => {
     })
 
     it('should request the picks by item id using the power parameter', async () => {
-      await getPicksByItemIdHandler({ params, components, url, request })
+      await getPicksByItemIdHandler({ params, components, url, request, verification })
       expect(getPicksByItemIdMock).toHaveBeenCalledWith(itemId, expect.objectContaining({ power: 200 }))
     })
   })
@@ -357,8 +357,30 @@ describe('when getting the picks for an item', () => {
     })
 
     it('should request the picks by item id without the power parameter', async () => {
-      await getPicksByItemIdHandler({ params, components, url, request })
+      await getPicksByItemIdHandler({ params, components, url, request, verification })
       expect(getPicksByItemIdMock).toHaveBeenCalledWith(itemId, expect.objectContaining({ power: undefined }))
+    })
+  })
+
+  describe('and the request is authenticated with a signature', () => {
+    beforeEach(() => {
+      getPicksByItemIdMock.mockResolvedValueOnce(dbPicksByItemId)
+    })
+
+    it('should request the picks by item id using the user address of the authenticated user', async () => {
+      await getPicksByItemIdHandler({ params, components, url, request, verification })
+      expect(getPicksByItemIdMock).toHaveBeenCalledWith(itemId, expect.objectContaining({ userAddress: verification?.auth }))
+    })
+  })
+
+  describe('and the request is not authenticated with a signature', () => {
+    beforeEach(() => {
+      getPicksByItemIdMock.mockResolvedValueOnce(dbPicksByItemId)
+    })
+
+    it('should request the picks by item id without a user address', async () => {
+      await getPicksByItemIdHandler({ params, components, url, request, verification: undefined })
+      expect(getPicksByItemIdMock).toHaveBeenCalledWith(itemId, expect.objectContaining({ userAddress: undefined }))
     })
   })
 
@@ -395,7 +417,7 @@ describe('when getting the picks for an item', () => {
         })
 
         it('should return an array with the first pick', () => {
-          return expect(getPicksByItemIdHandler({ url, components, request, params })).resolves.toEqual({
+          return expect(getPicksByItemIdHandler({ url, components, request, params, verification })).resolves.toEqual({
             status: StatusCode.OK,
             body: {
               ok: true,
@@ -419,7 +441,7 @@ describe('when getting the picks for an item', () => {
         })
 
         it('should return an array with the second pick', () => {
-          return expect(getPicksByItemIdHandler({ url, components, request, params })).resolves.toEqual({
+          return expect(getPicksByItemIdHandler({ url, components, request, params, verification })).resolves.toEqual({
             status: StatusCode.OK,
             body: {
               ok: true,

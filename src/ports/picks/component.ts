@@ -37,19 +37,28 @@ export function createPicksComponent(components: Pick<AppComponents, 'pg'>): IPi
   }
 
   async function getPicksByItemId(itemId: string, options: GetPicksByItemIdParameters): Promise<DBGetFilteredPicksWithCount[]> {
-    const { limit, offset } = options
-    const result = await pg.query<DBGetFilteredPicksWithCount>(SQL`
-        SELECT user_address, COUNT(*) OVER() as picks_count
-        FROM (
-          SELECT DISTINCT favorites.picks.user_address FROM favorites.picks, favorites.voting
-          WHERE favorites.picks.item_id = ${itemId}
-          AND favorites.voting.user_address = favorites.picks.user_address AND favorites.voting.power >= ${
-            options.power ?? DEFAULT_VOTING_POWER
-          }
-        ) AS temp
-        ORDER BY user_address
-        LIMIT ${limit} OFFSET ${offset}
-    `)
+    const { limit, offset, power, userAddress } = options
+    const query = SQL`SELECT user_address, COUNT(*) OVER() as picks_count`
+
+    if (userAddress) {
+      query.append(SQL`, user_address = ${userAddress} AS picked_by_user`)
+    } else {
+      query.append(SQL`, false AS picked_by_user`)
+    }
+
+    query.append(
+      SQL` FROM (
+        SELECT DISTINCT ON (favorites.picks.user_address)
+          favorites.picks.user_address, favorites.picks.created_at
+        FROM favorites.picks, favorites.voting
+        WHERE favorites.picks.item_id = ${itemId}
+        AND favorites.voting.user_address = favorites.picks.user_address AND favorites.voting.power >= ${power ?? DEFAULT_VOTING_POWER}
+      ) AS temp
+      ORDER BY picked_by_user DESC, created_at DESC
+      LIMIT ${limit} OFFSET ${offset}`
+    )
+
+    const result = await pg.query<DBGetFilteredPicksWithCount>(query)
     return result.rows
   }
 
