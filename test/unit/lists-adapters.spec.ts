@@ -46,7 +46,11 @@ describe('when transforming DB retrieved picks to pick ids with count', () => {
         }
       ]
       picksWithCount = {
-        picks: [{ itemId: '1' }, { itemId: '11' }, { itemId: '111' }],
+        picks: [
+          { itemId: '1', createdAt: Number(createdAt) },
+          { itemId: '11', createdAt: Number(createdAt) },
+          { itemId: '111', createdAt: Number(createdAt) }
+        ],
         count: 3
       }
     })
