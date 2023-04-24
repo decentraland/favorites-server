@@ -5,7 +5,8 @@ import { PickIdsWithCount } from './types'
 export function fromDBGetPickByListIdToPickIdsWithCount(dBGetPicksByListId: DBGetFilteredPicksWithCount[]): PickIdsWithCount {
   return {
     picks: dBGetPicksByListId.map(pick => ({
-      itemId: pick.item_id
+      itemId: pick.item_id,
+      createdAt: Number(pick.created_at)
     })),
     count: Number(dBGetPicksByListId[0]?.picks_count ?? 0)
   }

@@ -81,7 +81,7 @@ describe('when getting the picks of a list', () => {
 
   describe('and the process to get the picks is successful', () => {
     let dbPicksByListId: DBGetFilteredPicksWithCount[]
-    let picks: Pick<TPick, 'itemId'>[]
+    let picks: Pick<TPick, 'itemId' | 'createdAt'>[]
 
     beforeEach(() => {
       dbPicksByListId = [
@@ -93,7 +93,7 @@ describe('when getting the picks of a list', () => {
           picks_count: '1'
         }
       ]
-      picks = [{ itemId: '1' }]
+      picks = [{ itemId: '1', createdAt: Number(dbPicksByListId[0].created_at) }]
       getPicksByListIdMock.mockResolvedValueOnce(dbPicksByListId)
     })
 
