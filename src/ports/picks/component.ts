@@ -25,12 +25,15 @@ export function createPicksComponent(components: Pick<AppComponents, 'pg'>): IPi
 
     query.append(
       SQL` FROM favorites.picks
-      JOIN favorites.voting ON favorites.picks.user_address = favorites.voting.user_address AND favorites.voting.power >=  ${
+      JOIN favorites.voting ON favorites.picks.user_address = favorites.voting.user_address AND (favorites.voting.power >= ${
         options?.power ?? DEFAULT_VOTING_POWER
-      }
-      RIGHT JOIN (SELECT unnest(${itemIds}::text[]) AS item_id) AS items_to_find ON favorites.picks.item_id = items_to_find.item_id
-      GROUP BY (items_to_find.item_id, favorites.picks.item_id)`
+      }`
     )
+    if (options?.userAddress) {
+      query.append(SQL` OR favorites.picks.user_address = ${options.userAddress}`)
+    }
+    query.append(SQL`) RIGHT JOIN (SELECT unnest(${itemIds}::text[]) AS item_id) AS items_to_find ON favorites.picks.item_id = items_to_find.item_id
+      GROUP BY (items_to_find.item_id, favorites.picks.item_id)`)
 
     const result = await pg.query<DBPickStats>(query)
     return result.rows
@@ -52,11 +55,14 @@ export function createPicksComponent(components: Pick<AppComponents, 'pg'>): IPi
           favorites.picks.user_address, favorites.picks.created_at
         FROM favorites.picks, favorites.voting
         WHERE favorites.picks.item_id = ${itemId}
-        AND favorites.voting.user_address = favorites.picks.user_address AND favorites.voting.power >= ${power ?? DEFAULT_VOTING_POWER}
-      ) AS temp
-      ORDER BY picked_by_user DESC, created_at DESC
-      LIMIT ${limit} OFFSET ${offset}`
+        AND favorites.voting.user_address = favorites.picks.user_address AND (favorites.voting.power >= ${power ?? DEFAULT_VOTING_POWER}`
     )
+    if (userAddress) {
+      query.append(SQL` OR favorites.picks.user_address = ${userAddress}`)
+    }
+    query.append(SQL`)) AS temp
+      ORDER BY picked_by_user DESC, created_at DESC
+      LIMIT ${limit} OFFSET ${offset}`)
 
     const result = await pg.query<DBGetFilteredPicksWithCount>(query)
     return result.rows

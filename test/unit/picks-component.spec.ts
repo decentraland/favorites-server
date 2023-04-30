@@ -91,6 +91,15 @@ describe('when getting the pick stats of an item', () => {
       )
     })
 
+    it('should count the picks even if the voting power is not enough', () => {
+      expect(dbQueryMock).toBeCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining(' OR favorites.picks.user_address = '),
+          values: expect.arrayContaining([options.userAddress])
+        })
+      )
+    })
+
     it('should return the amount of favorites and the picked by user property', () => {
       expect(result).toEqual([{ picked_by_user: false, item_id, count: 1000 }])
     })
@@ -107,6 +116,15 @@ describe('when getting the pick stats of an item', () => {
       expect(dbQueryMock).not.toBeCalledWith(
         expect.objectContaining({
           text: expect.stringContaining('MAX(CASE WHEN favorites.picks.user_address = '),
+          values: expect.arrayContaining([options.userAddress])
+        })
+      )
+    })
+
+    it('should not count the picks if the voting power is not enough', () => {
+      expect(dbQueryMock).not.toBeCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining(' OR favorites.picks.user_address = '),
           values: expect.arrayContaining([options.userAddress])
         })
       )
@@ -141,22 +159,28 @@ describe('when getting picks by item id', () => {
   })
 
   describe('and the list id, limit, offset, and power are all set', () => {
+    let result: DBGetFilteredPicksWithCount[]
+
     beforeEach(() => {
       dbGetPicksByItemId = []
       dbQueryMock.mockResolvedValueOnce({ rows: dbGetPicksByItemId })
     })
 
     describe('and the user address is also set', () => {
-      it('should have made the query selecting the current user address as the first row', async () => {
-        await expect(
-          picksComponent.getPicksByItemId('item-id', {
-            offset: 0,
-            limit: 10,
-            power: 5,
-            userAddress: 'user-address'
-          })
-        ).resolves.toEqual(dbGetPicksByItemId)
+      beforeEach(async () => {
+        result = await picksComponent.getPicksByItemId('item-id', {
+          offset: 0,
+          limit: 10,
+          power: 5,
+          userAddress: 'user-address'
+        })
+      })
 
+      it('should return the query result', () => {
+        expect(result).toEqual(dbGetPicksByItemId)
+      })
+
+      it('should have made the query selecting the current user address as the first row', () => {
         expect(dbQueryMock).toBeCalledWith(
           expect.objectContaining({
             text: expect.stringContaining('user_address = '),
@@ -165,43 +189,65 @@ describe('when getting picks by item id', () => {
         )
       })
 
-      describe('and the user address is not set', () => {
-        it('should have made the query to get the picks matching those conditions', async () => {
-          await expect(
-            picksComponent.getPicksByItemId('item-id', {
-              offset: 0,
-              limit: 10,
-              power: 5
-            })
-          ).resolves.toEqual(dbGetPicksByItemId)
+      it('should count the picks even if the voting power is not enough', () => {
+        expect(dbQueryMock).toBeCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining(' OR favorites.picks.user_address = '),
+            values: expect.arrayContaining(['user-address'])
+          })
+        )
+      })
+    })
 
-          expect(dbQueryMock).toBeCalledWith(
-            expect.objectContaining({
-              text: expect.stringContaining('WHERE favorites.picks.item_id ='),
-              values: expect.arrayContaining(['item-id'])
-            })
-          )
-
-          expect(dbQueryMock).toBeCalledWith(
-            expect.objectContaining({
-              text: expect.stringContaining(
-                'AND favorites.voting.user_address = favorites.picks.user_address AND favorites.voting.power >= '
-              ),
-              values: expect.arrayContaining([5])
-            })
-          )
-
-          expect(dbQueryMock).toBeCalledWith(
-            expect.objectContaining({ text: expect.stringContaining('ORDER BY picked_by_user DESC, created_at DESC') })
-          )
-
-          expect(dbQueryMock).toBeCalledWith(
-            expect.objectContaining({
-              text: expect.stringContaining('LIMIT $3 OFFSET $4'),
-              values: expect.arrayContaining([10, 0])
-            })
-          )
+    describe('and the user address is not set', () => {
+      beforeEach(async () => {
+        result = await picksComponent.getPicksByItemId('item-id', {
+          offset: 0,
+          limit: 10,
+          power: 5
         })
+      })
+
+      it('should return the query result', () => {
+        expect(result).toEqual(dbGetPicksByItemId)
+      })
+
+      it('should have made the query to get the picks matching those conditions', async () => {
+        expect(dbQueryMock).toBeCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining('WHERE favorites.picks.item_id ='),
+            values: expect.arrayContaining(['item-id'])
+          })
+        )
+
+        expect(dbQueryMock).toBeCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining(
+              'AND favorites.voting.user_address = favorites.picks.user_address AND (favorites.voting.power >= '
+            ),
+            values: expect.arrayContaining([5])
+          })
+        )
+
+        expect(dbQueryMock).toBeCalledWith(
+          expect.objectContaining({ text: expect.stringContaining('ORDER BY picked_by_user DESC, created_at DESC') })
+        )
+
+        expect(dbQueryMock).toBeCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining('LIMIT $3 OFFSET $4'),
+            values: expect.arrayContaining([10, 0])
+          })
+        )
+      })
+
+      it('should not count the picks if the voting power is not enough', () => {
+        expect(dbQueryMock).not.toBeCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining(' OR favorites.picks.user_address = '),
+            values: expect.arrayContaining([options.userAddress])
+          })
+        )
       })
     })
   })
