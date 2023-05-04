@@ -5,11 +5,11 @@ on:
       - created
 jobs:
   build:
-    name: 'Build & publish: {{github.ref}}'
+    name: 'Build & publish: ${{github.ref}}'
     uses: decentraland/actions/.github/workflows/build-quay-main.yml@main
     with:
       service-name: marketplace-favorites-server
-      docker-tag: '{{ github.ref }}'
+      docker-tag: '${{ github.ref }}'
     secrets:
       QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
       QUAY_TOKEN: ${{ secrets.QUAY_TOKEN }}
