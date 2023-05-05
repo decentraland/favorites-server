@@ -104,7 +104,7 @@ describe('when transforming DB retrieved lists to lists with count', () => {
       }
     })
 
-    it('should return an empty array of picks and the count property as 0', () => {
+    it('should return an empty array of lists and the count property as 0', () => {
       expect(fromDBGetListsToListsWithCount(dbGetLists)).toEqual(listsWithCount)
     })
   })
