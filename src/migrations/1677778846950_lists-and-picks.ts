@@ -2,7 +2,7 @@
 import { MigrationBuilder, ColumnDefinitions } from 'node-pg-migrate'
 
 const PICKS_TABLE = 'picks'
-const LISTS_TABLE = 'lists'
+export const LISTS_TABLE = 'lists'
 
 export const shorthands: ColumnDefinitions | undefined = undefined
 
