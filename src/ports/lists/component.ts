@@ -108,10 +108,12 @@ export function createListsComponent(
 
   async function getLists(params: GetAuthenticatedAndPaginatedParameters): Promise<DBGetListsWithCount[]> {
     const { userAddress, limit, offset } = params
+    // TODO: do we want to sort the lists using another criteria?
     const result = await pg.query<DBGetListsWithCount>(SQL`
-        SELECT l.*, COUNT(*) OVER() as lists_count FROM favorites.lists l
-        WHERE user_address = ${userAddress}
-        ORDER BY created_at DESC
+        SELECT l.*, COUNT(*) OVER() as lists_count, user_address = ${DEFAULT_LIST_USER_ADDRESS} as is_default_list
+        FROM favorites.lists l
+        WHERE user_address = ${userAddress} OR user_address = ${DEFAULT_LIST_USER_ADDRESS}
+        ORDER BY is_default_list DESC
         LIMIT ${limit} OFFSET ${offset}
     `)
     return result.rows

@@ -1,6 +1,7 @@
 import { IDatabase, ILoggerComponent } from '@well-known-components/interfaces'
 import { IPgComponent } from '@well-known-components/pg-component'
 import { ISubgraphComponent } from '@well-known-components/thegraph-component'
+import { DEFAULT_LIST_USER_ADDRESS } from '../../src/migrations/1678303321034_default-list'
 import { createListsComponent, DBGetListsWithCount, IListsComponents } from '../../src/ports/lists'
 import { ItemNotFoundError, ListNotFoundError, PickAlreadyExistsError, PickNotFoundError, QueryFailure } from '../../src/ports/lists/errors'
 import { DBGetFilteredPicksWithCount, DBPick } from '../../src/ports/picks'
@@ -371,14 +372,14 @@ describe('when getting lists', () => {
 
       expect(dbQueryMock).toBeCalledWith(
         expect.objectContaining({
-          text: expect.stringContaining('WHERE user_address = $1'),
-          values: expect.arrayContaining(['0xuseraddress'])
+          text: expect.stringContaining('WHERE user_address = $2 OR user_address = $3'),
+          values: expect.arrayContaining(['0xuseraddress', DEFAULT_LIST_USER_ADDRESS])
         })
       )
 
       expect(dbQueryMock).toBeCalledWith(
         expect.objectContaining({
-          text: expect.stringContaining('LIMIT $2 OFFSET $3'),
+          text: expect.stringContaining('LIMIT $4 OFFSET $5'),
           values: expect.arrayContaining([10, 0])
         })
       )
