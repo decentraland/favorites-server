@@ -147,7 +147,7 @@ describe('when creating a pick', () => {
     }
     request = {
       json: jsonMock
-    } as any
+    } as unknown as HandlerContextWithPath<'lists', '/v1/lists/:id'>['request']
     params = { id: listId }
   })
 
