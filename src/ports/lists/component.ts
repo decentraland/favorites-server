@@ -4,7 +4,7 @@ import { DEFAULT_LIST_USER_ADDRESS } from '../../migrations/1678303321034_defaul
 import { AppComponents } from '../../types'
 import { DBGetFilteredPicksWithCount, DBPick } from '../picks'
 import { ItemNotFoundError, ListNotFoundError, PickAlreadyExistsError, PickNotFoundError, QueryFailure } from './errors'
-import { GetPicksByListIdParameters, IListsComponents, DBList } from './types'
+import { GetAuthenticatedAndPaginatedParameters, IListsComponents, DBList, DBGetListsWithCount } from './types'
 
 export function createListsComponent(
   components: Pick<AppComponents, 'pg' | 'collectionsSubgraph' | 'snapshot' | 'logs'>
@@ -12,7 +12,7 @@ export function createListsComponent(
   const { pg, collectionsSubgraph, snapshot, logs } = components
   const logger = logs.getLogger('Lists component')
 
-  async function getPicksByListId(listId: string, params: GetPicksByListIdParameters): Promise<DBGetFilteredPicksWithCount[]> {
+  async function getPicksByListId(listId: string, params: GetAuthenticatedAndPaginatedParameters): Promise<DBGetFilteredPicksWithCount[]> {
     const { userAddress, limit, offset } = params
     const result = await pg.query<DBGetFilteredPicksWithCount>(SQL`
         SELECT p.*, COUNT(*) OVER() as picks_count FROM favorites.picks p
@@ -106,5 +106,16 @@ export function createListsComponent(
     }
   }
 
-  return { getPicksByListId, addPickToList, deletePickInList }
+  async function getLists(params: GetAuthenticatedAndPaginatedParameters): Promise<DBGetListsWithCount[]> {
+    const { userAddress, limit, offset } = params
+    const result = await pg.query<DBGetListsWithCount>(SQL`
+        SELECT l.*, COUNT(*) OVER() as lists_count FROM favorites.lists l
+        WHERE user_address = ${userAddress}
+        ORDER BY created_at DESC
+        LIMIT ${limit} OFFSET ${offset}
+    `)
+    return result.rows
+  }
+
+  return { getPicksByListId, addPickToList, deletePickInList, getLists }
 }

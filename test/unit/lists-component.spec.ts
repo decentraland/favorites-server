@@ -1,7 +1,7 @@
 import { IDatabase, ILoggerComponent } from '@well-known-components/interfaces'
 import { IPgComponent } from '@well-known-components/pg-component'
 import { ISubgraphComponent } from '@well-known-components/thegraph-component'
-import { createListsComponent, IListsComponents } from '../../src/ports/lists'
+import { createListsComponent, DBGetListsWithCount, IListsComponents } from '../../src/ports/lists'
 import { ItemNotFoundError, ListNotFoundError, PickAlreadyExistsError, PickNotFoundError, QueryFailure } from '../../src/ports/lists/errors'
 import { DBGetFilteredPicksWithCount, DBPick } from '../../src/ports/picks'
 import { ISnapshotComponent } from '../../src/ports/snapshot'
@@ -327,6 +327,61 @@ describe('when deleting a pick', () => {
 
     it('should resolve', () => {
       return expect(listsComponent.deletePickInList(listId, itemId, userAddress)).resolves.toEqual(undefined)
+    })
+  })
+})
+
+describe('when getting lists', () => {
+  let dbGetLists: DBGetListsWithCount[]
+
+  describe('and the query throws an error', () => {
+    const errorMessage = 'Something went wrong while querying the database'
+
+    beforeEach(() => {
+      dbQueryMock.mockRejectedValueOnce(new Error(errorMessage))
+    })
+
+    it('should propagate the error', () => {
+      // TODO: handle the following eslint-disable statement
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+      expect(
+        listsComponent.getLists({
+          offset: 0,
+          limit: 10,
+          userAddress: '0xuseraddress'
+        })
+      ).rejects.toThrowError(errorMessage)
+    })
+  })
+
+  describe('and the limit, offset, and user address are all set', () => {
+    beforeEach(() => {
+      dbGetLists = []
+      dbQueryMock.mockResolvedValueOnce({ rows: dbGetLists })
+    })
+
+    it('should have made the query to get the lists matching those conditions', async () => {
+      await expect(
+        listsComponent.getLists({
+          offset: 0,
+          limit: 10,
+          userAddress: '0xuseraddress'
+        })
+      ).resolves.toEqual(dbGetLists)
+
+      expect(dbQueryMock).toBeCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('WHERE user_address = $1'),
+          values: expect.arrayContaining(['0xuseraddress'])
+        })
+      )
+
+      expect(dbQueryMock).toBeCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('LIMIT $2 OFFSET $3'),
+          values: expect.arrayContaining([10, 0])
+        })
+      )
     })
   })
 })

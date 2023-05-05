@@ -2,12 +2,13 @@ import { PaginationParameters } from '../../logic/http'
 import { DBGetFilteredPicksWithCount, DBPick } from '../../ports/picks'
 
 export interface IListsComponents {
-  getPicksByListId(listId: string, options?: GetPicksByListIdParameters): Promise<DBGetFilteredPicksWithCount[]>
+  getPicksByListId(listId: string, options?: GetAuthenticatedAndPaginatedParameters): Promise<DBGetFilteredPicksWithCount[]>
   addPickToList(listId: string, itemId: string, userAddress: string): Promise<DBPick>
   deletePickInList(listId: string, itemId: string, userAddress: string): Promise<void>
+  getLists(options?: GetAuthenticatedAndPaginatedParameters): Promise<DBGetListsWithCount[]>
 }
 
-export type GetPicksByListIdParameters = {
+export type GetAuthenticatedAndPaginatedParameters = {
   userAddress: string
 } & PaginationParameters
 
@@ -16,4 +17,8 @@ export type DBList = {
   name: string
   description: string | null
   user_address: string
+}
+
+export type DBGetListsWithCount = DBList & {
+  lists_count: string
 }

@@ -1,7 +1,7 @@
 import { Router } from '@well-known-components/http-server'
 import * as authorizationMiddleware from 'decentraland-crypto-middleware'
 import { GlobalContext } from '../types'
-import { createPickInListHandler, deletePickInListHandler, getPicksByListIdHandler } from './handlers/lists-handlers'
+import { createPickInListHandler, deletePickInListHandler, getPicksByListIdHandler, getListsHandler } from './handlers/lists-handlers'
 import { getPickStatsHandler, getPicksByItemIdHandler, getPickStatsOfItemHandler } from './handlers/picks-handlers'
 import { pingHandler } from './handlers/ping-handler'
 
@@ -60,6 +60,15 @@ export async function setupRouter(_globalContext: GlobalContext): Promise<Router
       expiration: FIVE_MINUTES
     }),
     getPicksByItemIdHandler
+  )
+
+  router.get(
+    '/v1/lists',
+    authorizationMiddleware.wellKnownComponents({
+      optional: false,
+      expiration: FIVE_MINUTES
+    }),
+    getListsHandler
   )
 
   return router

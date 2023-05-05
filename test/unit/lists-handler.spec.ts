@@ -1,6 +1,13 @@
 import * as authorizationMiddleware from 'decentraland-crypto-middleware'
+import { List } from '../../src/adapters/lists'
 import { TPick } from '../../src/adapters/picks'
-import { createPickInListHandler, deletePickInListHandler, getPicksByListIdHandler } from '../../src/controllers/handlers/lists-handlers'
+import {
+  createPickInListHandler,
+  deletePickInListHandler,
+  getPicksByListIdHandler,
+  getListsHandler
+} from '../../src/controllers/handlers/lists-handlers'
+import { DBGetListsWithCount } from '../../src/ports/lists'
 import { ItemNotFoundError, ListNotFoundError, PickAlreadyExistsError, PickNotFoundError } from '../../src/ports/lists/errors'
 import { DBGetFilteredPicksWithCount, DBPick } from '../../src/ports/picks'
 import { AppComponents, HandlerContextWithPath, StatusCode } from '../../src/types'
@@ -392,6 +399,104 @@ describe('when deleting a pick', () => {
 
     it('should propagate the error', () => {
       return expect(deletePickInListHandler({ components, verification, request, params })).rejects.toEqual(error)
+    })
+  })
+})
+
+describe('when getting the lists', () => {
+  let url: URL
+  let getListsMock: jest.Mock
+
+  beforeEach(() => {
+    getListsMock = jest.fn()
+    components = {
+      lists: createTestListsComponent({
+        getLists: getListsMock
+      })
+    }
+    url = new URL('http://localhost/v1/lists')
+  })
+
+  describe('and the request is not authenticated', () => {
+    beforeEach(() => {
+      verification = undefined
+    })
+
+    it('should return an unauthorized response', () => {
+      return expect(
+        getListsHandler({
+          url,
+          components,
+          verification
+        })
+      ).resolves.toEqual({
+        status: StatusCode.UNAUTHORIZED,
+        body: {
+          ok: false,
+          message: 'Unauthorized',
+          data: undefined
+        }
+      })
+    })
+  })
+
+  describe('and the process to get the lists fails', () => {
+    let error: Error
+
+    beforeEach(() => {
+      error = new Error('anError')
+      getListsMock.mockRejectedValueOnce(error)
+    })
+
+    it('should propagate the error', () => {
+      return expect(
+        getListsHandler({
+          url,
+          components,
+          verification
+        })
+      ).rejects.toEqual(error)
+    })
+  })
+
+  describe('and the process to get the lists is successful', () => {
+    let dbLists: DBGetListsWithCount[]
+    let lists: Pick<List, 'id' | 'name'>[]
+
+    beforeEach(() => {
+      dbLists = [
+        {
+          id: 'e96df126-f5bf-4311-94d8-6e261f368bb2',
+          name: 'List #1',
+          description: 'Description of List #1',
+          user_address: '0x45abb534BD927284F84b03d43f33dF0E5C91C21f',
+          lists_count: '1'
+        }
+      ]
+      lists = [{ id: 'e96df126-f5bf-4311-94d8-6e261f368bb2', name: 'List #1' }]
+      getListsMock.mockResolvedValueOnce(dbLists)
+    })
+
+    it('should return a response with an ok status code and the lists', () => {
+      return expect(
+        getListsHandler({
+          url,
+          components,
+          verification
+        })
+      ).resolves.toEqual({
+        status: StatusCode.OK,
+        body: {
+          ok: true,
+          data: {
+            results: lists,
+            total: 1,
+            page: 0,
+            pages: 1,
+            limit: 100
+          }
+        }
+      })
     })
   })
 })
