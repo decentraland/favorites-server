@@ -109,7 +109,7 @@ describe('when transforming DB retrieved lists to lists with count', () => {
     })
   })
 
-  describe('and there are multiple DB retrieved picks', () => {
+  describe('and there are multiple DB retrieved lists', () => {
     beforeEach(() => {
       dbGetLists = [
         {
