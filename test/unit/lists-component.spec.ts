@@ -2,8 +2,15 @@ import { IDatabase, ILoggerComponent } from '@well-known-components/interfaces'
 import { IPgComponent } from '@well-known-components/pg-component'
 import { ISubgraphComponent } from '@well-known-components/thegraph-component'
 import { DEFAULT_LIST_USER_ADDRESS } from '../../src/migrations/1678303321034_default-list'
-import { createListsComponent, DBGetListsWithCount, IListsComponents } from '../../src/ports/lists'
-import { ItemNotFoundError, ListNotFoundError, PickAlreadyExistsError, PickNotFoundError, QueryFailure } from '../../src/ports/lists/errors'
+import { createListsComponent, DBGetListsWithCount, DBList, IListsComponents } from '../../src/ports/lists'
+import {
+  DuplicatedListError,
+  ItemNotFoundError,
+  ListNotFoundError,
+  PickAlreadyExistsError,
+  PickNotFoundError,
+  QueryFailure
+} from '../../src/ports/lists/errors'
 import { DBGetFilteredPicksWithCount, DBPick } from '../../src/ports/picks'
 import { ISnapshotComponent } from '../../src/ports/snapshot'
 import { createTestSnapshotComponent, createTestPgComponent, createTestSubgraphComponent, createTestLogsComponent } from '../components'
@@ -383,6 +390,59 @@ describe('when getting lists', () => {
           values: expect.arrayContaining([10, 0])
         })
       )
+    })
+  })
+})
+
+describe('when creating a new list', () => {
+  let name: string
+
+  describe('and there is already a list created with the same name', () => {
+    beforeEach(() => {
+      name = 'Test List'
+      // Insert pick mock
+      dbQueryMock.mockRejectedValueOnce({
+        constraint: 'name_user_address_unique'
+      })
+    })
+
+    it('should throw a duplicated list name error', async () => {
+      await expect(listsComponent.addList({ name, userAddress })).rejects.toEqual(new DuplicatedListError(name))
+    })
+  })
+
+  describe('and there are no lists with the same name', () => {
+    let dbList: DBList
+    let result: DBList
+
+    // TODO: handle the following eslint-disable statement
+    // eslint-disable-next-line @typescript-eslint/require-await
+    beforeEach(async () => {
+      name = 'Test List'
+      dbList = {
+        id: listId,
+        name,
+        user_address: userAddress,
+        description: null
+      }
+      dbQueryMock.mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [dbList]
+      })
+      result = await listsComponent.addList({ name, userAddress })
+    })
+
+    it('should create the pick', () => {
+      expect(dbQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          strings: expect.arrayContaining([expect.stringContaining('INSERT INTO favorites.lists (name, user_address)')]),
+          values: [name, userAddress]
+        })
+      )
+    })
+
+    it('should resolve with the new pick', () => {
+      expect(result).toEqual(dbList)
     })
   })
 })

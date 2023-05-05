@@ -1,11 +1,12 @@
 import {
   fromDBGetListsToListsWithCount,
   fromDBGetPickByListIdToPickIdsWithCount,
+  fromDBListToList,
   fromDBPickToPick,
   ListsWithCount,
   PickIdsWithCount
 } from '../../src/adapters/lists'
-import { DBGetListsWithCount } from '../../src/ports/lists'
+import { DBGetListsWithCount, DBList } from '../../src/ports/lists'
 import { DBGetFilteredPicksWithCount, DBPick } from '../../src/ports/picks'
 
 describe('when transforming DB retrieved picks to pick ids with count', () => {
@@ -81,7 +82,7 @@ describe('when transforming a DB retrieved pick to a pick', () => {
     }
   })
 
-  it('should return the transformed picks', () => {
+  it('should return the transformed pick', () => {
     expect(fromDBPickToPick(dbPick)).toEqual({
       itemId: dbPick.item_id,
       userAddress: dbPick.user_address,
@@ -146,6 +147,28 @@ describe('when transforming DB retrieved lists to lists with count', () => {
 
     it('should return the transformed picks with count', () => {
       expect(fromDBGetListsToListsWithCount(dbGetLists)).toEqual(listsWithCount)
+    })
+  })
+})
+
+describe('when transforming a DB retrieved list to a list', () => {
+  let dbList: DBList
+
+  beforeEach(() => {
+    dbList = {
+      id: 'e96df126-f5bf-4311-94d8-6e261f368bb2',
+      name: 'List #1',
+      user_address: '0x45abb534BD927284F84b03d43f33dF0E5C91C21f',
+      description: 'This is a list'
+    }
+  })
+
+  it('should return the transformed list', () => {
+    expect(fromDBListToList(dbList)).toEqual({
+      id: dbList.id,
+      name: dbList.name,
+      userAddress: dbList.user_address,
+      description: dbList.description
     })
   })
 })
