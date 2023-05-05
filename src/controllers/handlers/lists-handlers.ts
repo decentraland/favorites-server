@@ -1,4 +1,4 @@
-import { fromDBGetPickByListIdToPickIdsWithCount, fromDBPickToPick } from '../../adapters/lists'
+import { List, fromDBGetListsToListsWithCount, fromDBGetPickByListIdToPickIdsWithCount, fromDBPickToPick } from '../../adapters/lists'
 import { TPick } from '../../adapters/picks'
 import { getPaginationParams } from '../../logic/http'
 import { ItemNotFoundError, ListNotFoundError, PickAlreadyExistsError, PickNotFoundError } from '../../ports/lists/errors'
@@ -187,5 +187,49 @@ export async function deletePickInListHandler(
     }
 
     throw error
+  }
+}
+
+export async function getListsHandler(
+  context: Pick<HandlerContextWithPath<'lists', '/v1/lists'>, 'components' | 'url' | 'verification'>
+): Promise<HTTPResponse<Pick<List, 'id' | 'name'>>> {
+  const {
+    components: { lists: listsComponent },
+    url,
+    verification
+  } = context
+  const userAddress: string | undefined = verification?.auth.toLowerCase()
+
+  if (!userAddress) {
+    return {
+      status: StatusCode.UNAUTHORIZED,
+      body: {
+        ok: false,
+        message: 'Unauthorized'
+      }
+    }
+  }
+
+  const { limit, offset } = getPaginationParams(url.searchParams)
+
+  const listsResult = await listsComponent.getLists({
+    userAddress,
+    limit,
+    offset
+  })
+  const { lists, count } = fromDBGetListsToListsWithCount(listsResult)
+
+  return {
+    status: StatusCode.OK,
+    body: {
+      ok: true,
+      data: {
+        results: lists,
+        total: lists.length > 0 ? count : 0,
+        page: Math.floor(offset / limit),
+        pages: lists.length > 0 ? Math.ceil(count / limit) : 0,
+        limit
+      }
+    }
   }
 }
