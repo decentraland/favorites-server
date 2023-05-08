@@ -4,7 +4,7 @@ import { LISTS_TABLE } from './1677778846950_lists-and-picks'
 
 export const shorthands: ColumnDefinitions | undefined = undefined
 const ACL_TABLE = 'acl'
-const PERMISSION_TYPE = 'permission'
+const PERMISSION_TYPE = 'permissions'
 
 export async function up(pgm: MigrationBuilder): Promise<void> {
   pgm.createType(PERMISSION_TYPE, ['edit', 'view'])
@@ -16,10 +16,10 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
       references: `${LISTS_TABLE}(id)`,
       onDelete: 'CASCADE'
     },
-    permission: { type: 'permission', notNull: true },
+    permission: { type: 'permissions', notNull: true },
     grantee: { type: 'text', notNull: true }
   })
-  pgm.addConstraint(ACL_TABLE, 'list_id_permission_grantee_primary_key', {
+  pgm.addConstraint(ACL_TABLE, 'list_id_permissions_grantee_primary_key', {
     primaryKey: ['list_id', 'permission', 'grantee']
   })
 }
