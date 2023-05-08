@@ -7,7 +7,7 @@ import {
 } from '../../adapters/lists'
 import { TPick } from '../../adapters/picks'
 import { getPaginationParams } from '../../logic/http'
-import { AddListRequestBody } from '../../ports/lists'
+import { AddListRequestBody, ListSortBy, ListSortDirection } from '../../ports/lists'
 import {
   DuplicatedListError,
   ItemNotFoundError,
@@ -224,11 +224,15 @@ export async function getListsHandler(
   }
 
   const { limit, offset } = getPaginationParams(url.searchParams)
+  const sortBy = url.searchParams.get('sortBy') as ListSortBy | undefined
+  const sortDirection = url.searchParams.get('sortDirection') as ListSortDirection | undefined
 
   const listsResult = await listsComponent.getLists({
     userAddress,
     limit,
-    offset
+    offset,
+    sortBy,
+    sortDirection: sortDirection && Object.values(ListSortDirection).includes(sortDirection) ? sortDirection : undefined
   })
   const { lists, count } = fromDBGetListsToListsWithCount(listsResult)
 

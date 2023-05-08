@@ -2,7 +2,7 @@ import { IDatabase, ILoggerComponent } from '@well-known-components/interfaces'
 import { IPgComponent } from '@well-known-components/pg-component'
 import { ISubgraphComponent } from '@well-known-components/thegraph-component'
 import { DEFAULT_LIST_USER_ADDRESS } from '../../src/migrations/1678303321034_default-list'
-import { createListsComponent, DBGetListsWithCount, DBList, IListsComponents } from '../../src/ports/lists'
+import { createListsComponent, DBGetListsWithCount, DBList, IListsComponents, ListSortBy, ListSortDirection } from '../../src/ports/lists'
 import {
   DuplicatedListError,
   ItemNotFoundError,
@@ -344,8 +344,6 @@ describe('when getting lists', () => {
     })
 
     it('should propagate the error', () => {
-      // TODO: handle the following eslint-disable statement
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       expect(
         listsComponent.getLists({
           offset: 0,
@@ -362,28 +360,114 @@ describe('when getting lists', () => {
       dbQueryMock.mockResolvedValueOnce({ rows: dbGetLists })
     })
 
-    it('should have made the query to get the lists matching those conditions', async () => {
-      await expect(
-        listsComponent.getLists({
-          offset: 0,
-          limit: 10,
-          userAddress: '0xuseraddress'
-        })
-      ).resolves.toEqual(dbGetLists)
+    describe('and the sorting parameters are not set', () => {
+      it('should have made the query to get the lists matching those conditions', async () => {
+        await expect(
+          listsComponent.getLists({
+            offset: 0,
+            limit: 10,
+            userAddress: '0xuseraddress'
+          })
+        ).resolves.toEqual(dbGetLists)
 
-      expect(dbQueryMock).toBeCalledWith(
-        expect.objectContaining({
-          text: expect.stringContaining('WHERE user_address = $2 OR user_address = $3'),
-          values: expect.arrayContaining(['0xuseraddress', DEFAULT_LIST_USER_ADDRESS])
-        })
-      )
+        expect(dbQueryMock).toBeCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining('WHERE user_address = $2 OR user_address = $3'),
+            values: expect.arrayContaining(['0xuseraddress', DEFAULT_LIST_USER_ADDRESS])
+          })
+        )
 
-      expect(dbQueryMock).toBeCalledWith(
-        expect.objectContaining({
-          text: expect.stringContaining('LIMIT $4 OFFSET $5'),
-          values: expect.arrayContaining([10, 0])
+        expect(dbQueryMock).toBeCalledWith(
+          expect.objectContaining({ text: expect.stringContaining('ORDER BY is_default_list DESC, created_at DESC') })
+        )
+
+        expect(dbQueryMock).toBeCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining('LIMIT $4 OFFSET $5'),
+            values: expect.arrayContaining([10, 0])
+          })
+        )
+      })
+    })
+
+    describe('and the sorting parameters are set', () => {
+      describe('and the sort by is "newest"', () => {
+        it('should have made the query to get the lists matching those conditions', async () => {
+          await expect(
+            listsComponent.getLists({
+              offset: 0,
+              limit: 10,
+              userAddress: '0xuseraddress',
+              sortBy: ListSortBy.NEWEST
+            })
+          ).resolves.toEqual(dbGetLists)
+
+          expect(dbQueryMock).toBeCalledWith(
+            expect.objectContaining({ text: expect.stringContaining('ORDER BY is_default_list DESC, created_at DESC') })
+          )
+
+          expect(dbQueryMock).toBeCalledWith(
+            expect.objectContaining({
+              text: expect.stringContaining('LIMIT $4 OFFSET $5'),
+              values: expect.arrayContaining([10, 0])
+            })
+          )
         })
-      )
+      })
+
+      describe('and the sort by is "name"', () => {
+        describe.each([ListSortDirection.ASC, ListSortDirection.DESC])('and the sort direction is "%s"', sortDirection => {
+          it('should have made the query to get the lists matching those conditions', async () => {
+            await expect(
+              listsComponent.getLists({
+                offset: 0,
+                limit: 10,
+                userAddress: '0xuseraddress',
+                sortBy: ListSortBy.NAME,
+                sortDirection
+              })
+            ).resolves.toEqual(dbGetLists)
+
+            expect(dbQueryMock).toBeCalledWith(
+              expect.objectContaining({
+                text: expect.stringContaining('ORDER BY is_default_list DESC, name $4'),
+                values: expect.arrayContaining([sortDirection])
+              })
+            )
+
+            expect(dbQueryMock).toBeCalledWith(
+              expect.objectContaining({
+                text: expect.stringContaining('LIMIT $5 OFFSET $6'),
+                values: expect.arrayContaining([10, 0])
+              })
+            )
+          })
+        })
+      })
+
+      describe('and the sort by is "oldest"', () => {
+        it('should have made the query to get the lists matching those conditions', async () => {
+          await expect(
+            listsComponent.getLists({
+              offset: 0,
+              limit: 10,
+              userAddress: '0xuseraddress',
+              sortBy: ListSortBy.OLDEST
+            })
+          ).resolves.toEqual(dbGetLists)
+
+          expect(dbQueryMock).toBeCalledWith(
+            expect.objectContaining({ text: expect.stringContaining('ORDER BY is_default_list DESC, created_at ASC') })
+          )
+
+          expect(dbQueryMock).toBeCalledWith(
+            expect.objectContaining({
+              text: expect.stringContaining('LIMIT $4 OFFSET $5'),
+              values: expect.arrayContaining([10, 0])
+            })
+          )
+        })
+      })
     })
   })
 })
