@@ -3,7 +3,7 @@ import { MigrationBuilder, ColumnDefinitions } from 'node-pg-migrate'
 import { LISTS_TABLE } from './1677778846950_lists-and-picks'
 
 export const shorthands: ColumnDefinitions | undefined = undefined
-const ACL_TABLE = 'ACL'
+const ACL_TABLE = 'acl'
 const PERMISSION_TYPE = 'permission'
 
 export async function up(pgm: MigrationBuilder): Promise<void> {
