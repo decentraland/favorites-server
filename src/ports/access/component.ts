@@ -15,8 +15,8 @@ export function createAccessComponent(components: Pick<AppComponents, 'pg' | 'lo
     AND favorites.ACL.list_id = ${listId}
     AND favorites.lists.user_address = ${listOwner}
     AND favorites.ACL.permission = ${permission}
-    AND favorites.ACL.grantee = ${grantee}
-`)
+    AND favorites.ACL.grantee = ${grantee}`)
+
     if (!result.rowCount) {
       throw new AccessNotFoundError(listId, permission, grantee)
     }
