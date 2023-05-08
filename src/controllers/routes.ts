@@ -1,16 +1,19 @@
 import { Router } from '@well-known-components/http-server'
 import * as authorizationMiddleware from 'decentraland-crypto-middleware'
 import { GlobalContext } from '../types'
-import { createPickInListHandler, deletePickInListHandler, getPicksByListIdHandler, getListsHandler } from './handlers/lists-handlers'
+import {
+  createPickInListHandler,
+  deletePickInListHandler,
+  getPicksByListIdHandler,
+  getListsHandler,
+  deleteAccess
+} from './handlers/lists-handlers'
 import { getPickStatsHandler, getPicksByItemIdHandler, getPickStatsOfItemHandler } from './handlers/picks-handlers'
 import { pingHandler } from './handlers/ping-handler'
 
 const FIVE_MINUTES = 5 * 60 * 1000
 
-// We return the entire router because it will be easier to test than a whole server
-// TODO: handle the following eslint-disable statement
-// eslint-disable-next-line @typescript-eslint/require-await
-export async function setupRouter(_globalContext: GlobalContext): Promise<Router<GlobalContext>> {
+export function setupRouter(_globalContext: GlobalContext): Promise<Router<GlobalContext>> {
   const router = new Router<GlobalContext>()
 
   router.get('/ping', pingHandler)
@@ -71,5 +74,14 @@ export async function setupRouter(_globalContext: GlobalContext): Promise<Router
     getListsHandler
   )
 
-  return router
+  router.delete(
+    '/v1/lists/:id/access',
+    authorizationMiddleware.wellKnownComponents({
+      optional: false,
+      expiration: FIVE_MINUTES
+    }),
+    deleteAccess
+  )
+
+  return Promise.resolve(router)
 }

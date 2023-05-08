@@ -1,6 +1,9 @@
 import { List, fromDBGetListsToListsWithCount, fromDBGetPickByListIdToPickIdsWithCount, fromDBPickToPick } from '../../adapters/lists'
 import { TPick } from '../../adapters/picks'
+import { isEthereumAddressValid } from '../../logic/ethereum/validations'
 import { getPaginationParams } from '../../logic/http'
+import { Permission } from '../../ports/access'
+import { AccessNotFoundError } from '../../ports/access/errors'
 import { ItemNotFoundError, ListNotFoundError, PickAlreadyExistsError, PickNotFoundError } from '../../ports/lists/errors'
 import { HandlerContextWithPath, HTTPResponse, StatusCode } from '../../types'
 
@@ -142,7 +145,7 @@ export async function createPickInListHandler(
 }
 
 export async function deletePickInListHandler(
-  context: Pick<HandlerContextWithPath<'lists', '/v1/lists/:id/picks/:itemId'>, 'components' | 'params' | 'request' | 'verification'>
+  context: Pick<HandlerContextWithPath<'lists', '/v1/lists/:id/picks/:itemId'>, 'components' | 'params' | 'verification'>
 ): Promise<HTTPResponse<undefined>> {
   const {
     components: { lists },
@@ -181,6 +184,98 @@ export async function deletePickInListHandler(
           data: {
             listId: error.listId,
             itemId: error.itemId
+          }
+        }
+      }
+    }
+
+    throw error
+  }
+}
+
+export async function deleteAccess(
+  context: Pick<HandlerContextWithPath<'access', '/v1/lists/:id/access'>, 'components' | 'params' | 'request' | 'verification'>
+) {
+  const {
+    components: { access },
+    verification,
+    params,
+    request
+  } = context
+  const userAddress: string | undefined = verification?.auth.toLowerCase()
+  const { id } = params
+
+  if (!userAddress) {
+    return {
+      status: StatusCode.UNAUTHORIZED,
+      body: {
+        ok: false,
+        message: 'Unauthorized'
+      }
+    }
+  }
+
+  let body: { permission: Permission; grantee: string }
+
+  try {
+    body = await request.json()
+    if (!body.grantee || (body.grantee && typeof body.grantee !== 'string')) {
+      return {
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The property grantee is missing or is not of string type.'
+        }
+      }
+    } else if (body.grantee !== '*' && !isEthereumAddressValid(body.grantee)) {
+      return {
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The property grantee is not valued as "*" or as an ethereum address.'
+        }
+      }
+    }
+
+    if (!body.permission || !Object.values(Permission).includes(body.permission)) {
+      return {
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The property permission is missing or is not valued as view or edit.'
+        }
+      }
+    }
+  } catch (error) {
+    return {
+      status: StatusCode.BAD_REQUEST,
+      body: {
+        ok: false,
+        message: 'The body must contain a parsable JSON.'
+      }
+    }
+  }
+
+  try {
+    await access.deleteAccess(id, body.permission, body.grantee.toLowerCase(), userAddress)
+
+    return {
+      status: StatusCode.OK,
+      body: {
+        ok: true
+      }
+    }
+  } catch (error) {
+    if (error instanceof AccessNotFoundError) {
+      return {
+        status: StatusCode.NOT_FOUND,
+        body: {
+          ok: false,
+          message: error.message,
+          data: {
+            listId: error.listId,
+            permission: error.permission,
+            grantee: error.grantee
           }
         }
       }

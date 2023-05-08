@@ -3,6 +3,7 @@ import { ISubgraphComponent } from '@well-known-components/thegraph-component'
 import type * as authorizationMiddleware from 'decentraland-crypto-middleware'
 import { PaginatedResponse } from './logic/http'
 import { metricDeclarations } from './metrics'
+import { IAccessComponent } from './ports/access'
 import { IListsComponents } from './ports/lists/types'
 import { IPicksComponent } from './ports/picks'
 import { ISnapshotComponent } from './ports/snapshot'
@@ -32,6 +33,7 @@ export type BaseComponents = {
   collectionsSubgraph: ISubgraphComponent
   snapshot: ISnapshotComponent
   picks: IPicksComponent
+  access: IAccessComponent
 }
 
 // components used in runtime
