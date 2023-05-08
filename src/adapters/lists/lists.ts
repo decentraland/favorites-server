@@ -1,7 +1,7 @@
-import { DBGetListsWithCount } from '../../ports/lists'
+import { DBGetListsWithCount, DBList } from '../../ports/lists'
 import { DBPick, DBGetFilteredPicksWithCount } from '../../ports/picks'
 import { TPick } from '../picks'
-import { ListsWithCount, PickIdsWithCount } from './types'
+import { ListsWithCount, List, PickIdsWithCount } from './types'
 
 export function fromDBGetPickByListIdToPickIdsWithCount(dBGetPicksByListId: DBGetFilteredPicksWithCount[]): PickIdsWithCount {
   return {
@@ -29,5 +29,14 @@ export function fromDBGetListsToListsWithCount(dbLists: DBGetListsWithCount[]): 
       name: list.name
     })),
     count: Number(dbLists[0]?.lists_count ?? 0)
+  }
+}
+
+export function fromDBListToList(dbList: DBList): List {
+  return {
+    id: dbList.id,
+    name: dbList.name,
+    description: dbList.description,
+    userAddress: dbList.user_address
   }
 }

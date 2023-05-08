@@ -106,18 +106,20 @@ export function createTestSnapshotComponent({ getScore = jest.fn() } = { getScor
 }
 
 export function createTestListsComponent(
-  { getPicksByListId = jest.fn(), addPickToList = jest.fn(), deletePickInList = jest.fn(), getLists = jest.fn() } = {
+  { getPicksByListId = jest.fn(), addPickToList = jest.fn(), deletePickInList = jest.fn(), getLists = jest.fn(), addList = jest.fn() } = {
     getPicksByListId: jest.fn(),
     addPickToList: jest.fn(),
     deletePickInList: jest.fn(),
-    getLists: jest.fn()
+    getLists: jest.fn(),
+    addList: jest.fn()
   }
 ): IListsComponents {
   return {
     getPicksByListId,
     addPickToList,
     deletePickInList,
-    getLists
+    getLists,
+    addList
   }
 }
 

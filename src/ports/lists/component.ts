@@ -3,8 +3,15 @@ import { isErrorWithMessage } from '../../logic/errors'
 import { DEFAULT_LIST_USER_ADDRESS } from '../../migrations/1678303321034_default-list'
 import { AppComponents } from '../../types'
 import { DBGetFilteredPicksWithCount, DBPick } from '../picks'
-import { ItemNotFoundError, ListNotFoundError, PickAlreadyExistsError, PickNotFoundError, QueryFailure } from './errors'
-import { GetAuthenticatedAndPaginatedParameters, IListsComponents, DBList, DBGetListsWithCount } from './types'
+import {
+  DuplicatedListError,
+  ItemNotFoundError,
+  ListNotFoundError,
+  PickAlreadyExistsError,
+  PickNotFoundError,
+  QueryFailure
+} from './errors'
+import { GetAuthenticatedAndPaginatedParameters, IListsComponents, DBList, DBGetListsWithCount, AddListRequestBody } from './types'
 
 export function createListsComponent(
   components: Pick<AppComponents, 'pg' | 'collectionsSubgraph' | 'snapshot' | 'logs'>
@@ -119,5 +126,21 @@ export function createListsComponent(
     return result.rows
   }
 
-  return { getPicksByListId, addPickToList, deletePickInList, getLists }
+  async function addList({ name, userAddress }: AddListRequestBody): Promise<DBList> {
+    try {
+      const result = await pg.query<DBList>(
+        SQL`INSERT INTO favorites.lists (name, user_address) VALUES (${name}, ${userAddress}) RETURNING *`
+      )
+
+      return result.rows[0]
+    } catch (error) {
+      if (error && typeof error === 'object' && 'constraint' in error && error.constraint === 'name_user_address_unique') {
+        throw new DuplicatedListError(name)
+      }
+
+      throw new Error("The list couldn't be created")
+    }
+  }
+
+  return { getPicksByListId, addPickToList, deletePickInList, getLists, addList }
 }

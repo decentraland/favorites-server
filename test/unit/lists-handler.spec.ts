@@ -2,13 +2,20 @@ import * as authorizationMiddleware from 'decentraland-crypto-middleware'
 import { List } from '../../src/adapters/lists'
 import { TPick } from '../../src/adapters/picks'
 import {
+  createListHandler,
   createPickInListHandler,
   deletePickInListHandler,
   getPicksByListIdHandler,
   getListsHandler
 } from '../../src/controllers/handlers/lists-handlers'
-import { DBGetListsWithCount } from '../../src/ports/lists'
-import { ItemNotFoundError, ListNotFoundError, PickAlreadyExistsError, PickNotFoundError } from '../../src/ports/lists/errors'
+import { DBGetListsWithCount, DBList } from '../../src/ports/lists'
+import {
+  DuplicatedListError,
+  ItemNotFoundError,
+  ListNotFoundError,
+  PickAlreadyExistsError,
+  PickNotFoundError
+} from '../../src/ports/lists/errors'
 import { DBGetFilteredPicksWithCount, DBPick } from '../../src/ports/picks'
 import { AppComponents, HandlerContextWithPath, StatusCode } from '../../src/types'
 import { createTestListsComponent } from '../components'
@@ -494,6 +501,152 @@ describe('when getting the lists', () => {
             page: 0,
             pages: 1,
             limit: 100
+          }
+        }
+      })
+    })
+  })
+})
+
+describe('when creating a list', () => {
+  let name: string
+  let request: HandlerContextWithPath<'lists', '/v1/lists'>['request']
+  let jsonMock: jest.Mock
+  let addListMock: jest.Mock
+
+  beforeEach(() => {
+    name = 'Test List'
+    jsonMock = jest.fn()
+    addListMock = jest.fn()
+    components = {
+      lists: createTestListsComponent({ addList: addListMock })
+    }
+    request = {
+      json: jsonMock
+    } as unknown as HandlerContextWithPath<'lists', '/v1/lists'>['request']
+  })
+
+  describe('and the request is not authenticated', () => {
+    beforeEach(() => {
+      verification = undefined
+    })
+
+    it('should return an unauthorized response', () => {
+      return expect(createListHandler({ components, verification, request })).resolves.toEqual({
+        status: StatusCode.UNAUTHORIZED,
+        body: {
+          ok: false,
+          message: 'Unauthorized'
+        }
+      })
+    })
+  })
+
+  describe('and the request body does not contain a valid JSON', () => {
+    beforeEach(() => {
+      jsonMock.mockRejectedValueOnce(new Error())
+    })
+
+    it('should return a response with a message saying that the body must be a parsable JSON and the 400 status code', () => {
+      return expect(createListHandler({ components, verification, request })).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The body must contain a parsable JSON.'
+        }
+      })
+    })
+  })
+
+  describe('and the request body does not contain the name property', () => {
+    beforeEach(() => {
+      jsonMock.mockResolvedValueOnce({})
+    })
+
+    it('should return a response with a message saying that the name property is not correct and the 400 status code', () => {
+      return expect(createListHandler({ components, verification, request })).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The property name is missing or is not of string type.'
+        }
+      })
+    })
+  })
+
+  describe('and the request body does contains the name property but is not of string type', () => {
+    beforeEach(() => {
+      jsonMock.mockResolvedValueOnce({ name: 1 })
+    })
+
+    it('should return a response with a message saying that the name property is not correct and the 400 status code', () => {
+      return expect(createListHandler({ components, verification, request })).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The property name is missing or is not of string type.'
+        }
+      })
+    })
+  })
+
+  describe('and the process to add a list fails with a duplicated list name error', () => {
+    beforeEach(() => {
+      jsonMock.mockResolvedValueOnce({ name })
+      addListMock.mockRejectedValueOnce(new DuplicatedListError(name))
+    })
+
+    it('should return a response with a message saying that the list name is duplicated and the 422 status code', () => {
+      return expect(createListHandler({ components, verification, request })).resolves.toEqual({
+        status: StatusCode.UNPROCESSABLE_CONTENT,
+        body: {
+          ok: false,
+          message: `There is already a list with the same name: ${name}.`,
+          data: {
+            name
+          }
+        }
+      })
+    })
+  })
+
+  describe('and the process to add a list fails with an unknown error', () => {
+    const error = new Error('anError')
+
+    beforeEach(() => {
+      jsonMock.mockResolvedValueOnce({ name })
+      addListMock.mockRejectedValueOnce(error)
+    })
+
+    it('should propagate the error', () => {
+      return expect(createListHandler({ components, verification, request })).rejects.toEqual(error)
+    })
+  })
+
+  describe('and the list gets added correctly', () => {
+    let list: DBList
+
+    beforeEach(() => {
+      list = {
+        id: listId,
+        name,
+        user_address: verification?.auth ?? '',
+        description: null
+      }
+      jsonMock.mockResolvedValueOnce({ name })
+      addListMock.mockResolvedValueOnce(list)
+    })
+
+    it('should convert the created database list into a list and return it with the status 201', () => {
+      return expect(createListHandler({ components, verification, request })).resolves.toEqual({
+        status: StatusCode.CREATED,
+        body: {
+          ok: true,
+          data: {
+            id: listId,
+            name,
+            userAddress: verification?.auth,
+            description: null
           }
         }
       })

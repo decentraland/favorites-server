@@ -1,7 +1,20 @@
-import { List, fromDBGetListsToListsWithCount, fromDBGetPickByListIdToPickIdsWithCount, fromDBPickToPick } from '../../adapters/lists'
+import {
+  fromDBGetListsToListsWithCount,
+  fromDBGetPickByListIdToPickIdsWithCount,
+  fromDBPickToPick,
+  fromDBListToList,
+  List
+} from '../../adapters/lists'
 import { TPick } from '../../adapters/picks'
 import { getPaginationParams } from '../../logic/http'
-import { ItemNotFoundError, ListNotFoundError, PickAlreadyExistsError, PickNotFoundError } from '../../ports/lists/errors'
+import { AddListRequestBody } from '../../ports/lists'
+import {
+  DuplicatedListError,
+  ItemNotFoundError,
+  ListNotFoundError,
+  PickAlreadyExistsError,
+  PickNotFoundError
+} from '../../ports/lists/errors'
 import { HandlerContextWithPath, HTTPResponse, StatusCode } from '../../types'
 
 export async function getPicksByListIdHandler(
@@ -231,5 +244,74 @@ export async function getListsHandler(
         limit
       }
     }
+  }
+}
+
+export async function createListHandler(
+  context: Pick<HandlerContextWithPath<'lists', '/v1/lists'>, 'components' | 'request' | 'verification'>
+): Promise<HTTPResponse<List>> {
+  const {
+    components: { lists },
+    verification,
+    request
+  } = context
+  const userAddress: string | undefined = verification?.auth.toLowerCase()
+  let body: AddListRequestBody
+
+  if (!userAddress) {
+    return {
+      status: StatusCode.UNAUTHORIZED,
+      body: {
+        ok: false,
+        message: 'Unauthorized'
+      }
+    }
+  }
+
+  try {
+    body = await request.json()
+    if (!body.name || (body.name && typeof body.name !== 'string')) {
+      return {
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The property name is missing or is not of string type.'
+        }
+      }
+    }
+  } catch (error) {
+    return {
+      status: StatusCode.BAD_REQUEST,
+      body: {
+        ok: false,
+        message: 'The body must contain a parsable JSON.'
+      }
+    }
+  }
+
+  try {
+    const addListResult = await lists.addList({ name: body.name, userAddress })
+    return {
+      status: StatusCode.CREATED,
+      body: {
+        ok: true,
+        data: fromDBListToList(addListResult)
+      }
+    }
+  } catch (error) {
+    if (error instanceof DuplicatedListError) {
+      return {
+        status: StatusCode.UNPROCESSABLE_CONTENT,
+        body: {
+          ok: false,
+          message: error.message,
+          data: {
+            name: error.name
+          }
+        }
+      }
+    }
+
+    throw error
   }
 }
