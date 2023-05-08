@@ -25,6 +25,6 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
 }
 
 export async function down(pgm: MigrationBuilder): Promise<void> {
-  pgm.dropType(PERMISSION_TYPE)
   pgm.dropTable(ACL_TABLE)
+  pgm.dropType(PERMISSION_TYPE)
 }
