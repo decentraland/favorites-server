@@ -269,7 +269,6 @@ export async function createListHandler(
         }
       }
     }
-    // TODO: validate name different to the default list name
   } catch (error) {
     return {
       status: StatusCode.BAD_REQUEST,
