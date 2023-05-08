@@ -438,3 +438,28 @@ describe('when creating a new list', () => {
     })
   })
 })
+
+describe('when deleting a list', () => {
+  describe('and the list was not found or was not accessible by the user', () => {
+    let error: Error
+
+    beforeEach(() => {
+      error = new ListNotFoundError(listId)
+      dbQueryMock.mockResolvedValueOnce({ rowCount: 0 })
+    })
+
+    it('should throw a list not found error', () => {
+      return expect(listsComponent.deleteList(listId, userAddress)).rejects.toEqual(error)
+    })
+  })
+
+  describe('and the list was successfully deleted', () => {
+    beforeEach(() => {
+      dbQueryMock.mockResolvedValueOnce({ rowCount: 1 })
+    })
+
+    it('should resolve', () => {
+      return expect(listsComponent.deleteList(listId, userAddress)).resolves.toEqual(undefined)
+    })
+  })
+})

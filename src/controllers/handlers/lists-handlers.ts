@@ -7,6 +7,7 @@ import {
 } from '../../adapters/lists'
 import { TPick } from '../../adapters/picks'
 import { getPaginationParams } from '../../logic/http'
+import { DEFAULT_LIST_ID } from '../../migrations/1678303321034_default-list'
 import { AddListRequestBody } from '../../ports/lists'
 import {
   DuplicatedListError,
@@ -307,6 +308,64 @@ export async function createListHandler(
           message: error.message,
           data: {
             name: error.name
+          }
+        }
+      }
+    }
+
+    throw error
+  }
+}
+
+export async function deleteListHandler(
+  context: Pick<HandlerContextWithPath<'lists', '/v1/lists/:id'>, 'components' | 'params' | 'request' | 'verification'>
+): Promise<HTTPResponse<undefined>> {
+  const {
+    components: { lists },
+    verification,
+    params
+  } = context
+  const userAddress: string | undefined = verification?.auth.toLowerCase()
+  const { id } = params
+
+  if (!userAddress) {
+    return {
+      status: StatusCode.UNAUTHORIZED,
+      body: {
+        ok: false,
+        message: 'Unauthorized'
+      }
+    }
+  }
+
+  if (id === DEFAULT_LIST_ID) {
+    return {
+      status: StatusCode.BAD_REQUEST,
+      body: {
+        ok: false,
+        message: 'This list cannot be deleted'
+      }
+    }
+  }
+
+  try {
+    await lists.deleteList(id, userAddress)
+    return {
+      status: StatusCode.OK,
+      body: {
+        ok: true,
+        data: undefined
+      }
+    }
+  } catch (error) {
+    if (error instanceof ListNotFoundError) {
+      return {
+        status: StatusCode.NOT_FOUND,
+        body: {
+          ok: false,
+          message: error.message,
+          data: {
+            listId: error.listId
           }
         }
       }

@@ -6,8 +6,10 @@ import {
   createPickInListHandler,
   deletePickInListHandler,
   getPicksByListIdHandler,
-  getListsHandler
+  getListsHandler,
+  deleteListHandler
 } from '../../src/controllers/handlers/lists-handlers'
+import { DEFAULT_LIST_ID } from '../../src/migrations/1678303321034_default-list'
 import { DBGetListsWithCount, DBList } from '../../src/ports/lists'
 import {
   DuplicatedListError,
@@ -233,7 +235,7 @@ describe('when creating a pick', () => {
         status: StatusCode.NOT_FOUND,
         body: {
           ok: false,
-          message: 'The favorites list was not found.',
+          message: 'The list was not found.',
           data: {
             listId
           }
@@ -342,7 +344,7 @@ describe('when deleting a pick', () => {
         deletePickInList: deletePickInListMock
       })
     }
-    request = {} as HandlerContextWithPath<'lists', '/v1/lists/:id/picks'>['request']
+    request = {} as HandlerContextWithPath<'lists', '/v1/lists/:id/picks/:itemId'>['request']
     params = { id: listId, itemId }
   })
 
@@ -352,7 +354,7 @@ describe('when deleting a pick', () => {
     })
 
     it('should return an unauthorized response', () => {
-      return expect(createPickInListHandler({ components, verification, request, params })).resolves.toEqual({
+      return expect(deletePickInListHandler({ components, verification, request, params })).resolves.toEqual({
         status: StatusCode.UNAUTHORIZED,
         body: {
           ok: false,
@@ -397,7 +399,7 @@ describe('when deleting a pick', () => {
     })
   })
 
-  describe('and the process to add the picks fails with an unknown error', () => {
+  describe('and the process to delete a pick fails with an unknown error', () => {
     const error = new Error('anError')
 
     beforeEach(() => {
@@ -650,6 +652,103 @@ describe('when creating a list', () => {
           }
         }
       })
+    })
+  })
+})
+
+describe('when deleting a list', () => {
+  let request: HandlerContextWithPath<'lists', '/v1/lists/:id'>['request']
+  let params: HandlerContextWithPath<'lists', '/v1/lists/:id'>['params']
+  let deleteListMock: jest.Mock
+
+  beforeEach(() => {
+    listId = 'list-id'
+    deleteListMock = jest.fn()
+    components = {
+      lists: createTestListsComponent({
+        deleteList: deleteListMock
+      })
+    }
+    request = {} as HandlerContextWithPath<'lists', '/v1/lists/:id'>['request']
+    params = { id: listId }
+  })
+
+  describe('and the request is not authenticated', () => {
+    beforeEach(() => {
+      verification = undefined
+    })
+
+    it('should return an unauthorized response', () => {
+      return expect(deleteListHandler({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.UNAUTHORIZED,
+        body: {
+          ok: false,
+          message: 'Unauthorized'
+        }
+      })
+    })
+  })
+
+  describe('and the user is trying to delete the default global list', () => {
+    beforeEach(() => {
+      listId = DEFAULT_LIST_ID
+      params = { id: listId }
+    })
+
+    it('should return an bad request response', () => {
+      return expect(deleteListHandler({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'This list cannot be deleted'
+        }
+      })
+    })
+  })
+
+  describe('and the request failed due to the list not existing or not being accessible', () => {
+    beforeEach(() => {
+      deleteListMock.mockRejectedValueOnce(new ListNotFoundError(listId))
+    })
+
+    it('should return a not found response', () => {
+      return expect(deleteListHandler({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.NOT_FOUND,
+        body: {
+          ok: false,
+          message: 'The list was not found.',
+          data: {
+            listId
+          }
+        }
+      })
+    })
+  })
+
+  describe('and the request is successful', () => {
+    beforeEach(() => {
+      deleteListMock.mockResolvedValueOnce(undefined)
+    })
+
+    it('should return an ok response', () => {
+      return expect(deleteListHandler({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.OK,
+        body: {
+          ok: true
+        }
+      })
+    })
+  })
+
+  describe('and the process to delete a list fails with an unknown error', () => {
+    const error = new Error('anError')
+
+    beforeEach(() => {
+      deleteListMock.mockRejectedValueOnce(error)
+    })
+
+    it('should propagate the error', () => {
+      return expect(deleteListHandler({ components, verification, request, params })).rejects.toEqual(error)
     })
   })
 })
