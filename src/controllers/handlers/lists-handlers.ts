@@ -258,6 +258,16 @@ export async function createListHandler(
   const userAddress: string | undefined = verification?.auth.toLowerCase()
   let body: AddListRequestBody
 
+  if (!userAddress) {
+    return {
+      status: StatusCode.UNAUTHORIZED,
+      body: {
+        ok: false,
+        message: 'Unauthorized'
+      }
+    }
+  }
+
   try {
     body = await request.json()
     if (!body.name || (body.name && typeof body.name !== 'string')) {
