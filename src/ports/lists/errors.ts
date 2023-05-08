@@ -27,3 +27,9 @@ export class QueryFailure extends Error {
     super(`Querying the subgraph failed: ${message}`)
   }
 }
+
+export class DuplicatedListError extends Error {
+  constructor(public name: string) {
+    super(`There is already a list with the same name: ${name}.`)
+  }
+}
