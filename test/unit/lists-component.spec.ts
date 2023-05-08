@@ -29,9 +29,7 @@ let collectionsSubgraph: ISubgraphComponent
 let snapshot: ISnapshotComponent
 let logs: ILoggerComponent
 
-// TODO: handle the following eslint-disable statement
-// eslint-disable-next-line @typescript-eslint/require-await
-beforeEach(async () => {
+beforeEach(() => {
   dbQueryMock = jest.fn()
   collectionsSubgraphQueryMock = jest.fn()
   getScoreMock = jest.fn()
@@ -75,8 +73,6 @@ describe('when getting picks from a list by list id', () => {
     })
 
     it('should propagate the error', () => {
-      // TODO: handle the following eslint-disable statement
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       expect(
         listsComponent.getPicksByListId('list-id', {
           offset: 0,
@@ -216,9 +212,7 @@ describe('when creating a new pick', () => {
       let dbPick: DBPick
       let result: DBPick
 
-      // TODO: handle the following eslint-disable statement
-      // eslint-disable-next-line @typescript-eslint/require-await
-      beforeEach(async () => {
+      beforeEach(() => {
         dbPick = {
           item_id: itemId,
           user_address: userAddress,
@@ -415,8 +409,6 @@ describe('when creating a new list', () => {
     let dbList: DBList
     let result: DBList
 
-    // TODO: handle the following eslint-disable statement
-    // eslint-disable-next-line @typescript-eslint/require-await
     beforeEach(async () => {
       name = 'Test List'
       dbList = {

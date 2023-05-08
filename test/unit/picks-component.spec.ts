@@ -147,8 +147,6 @@ describe('when getting picks by item id', () => {
     })
 
     it('should propagate the error', () => {
-      // TODO: handle the following eslint-disable statement
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       expect(
         picksComponent.getPicksByItemId('item-id', {
           offset: 0,

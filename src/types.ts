@@ -46,10 +46,7 @@ export type TestComponents = BaseComponents & {
 }
 
 // this type simplifies the typings of http handlers
-export type HandlerContextWithPath<
-  ComponentNames extends keyof AppComponents,
-  Path extends string = any
-> = IHttpServerComponent.PathAwareContext<
+export type HandlerContextWithPath<ComponentNames extends keyof AppComponents, Path extends string> = IHttpServerComponent.PathAwareContext<
   IHttpServerComponent.DefaultContext<{
     components: Pick<AppComponents, ComponentNames>
   }> &
