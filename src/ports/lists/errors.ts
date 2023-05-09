@@ -1,6 +1,6 @@
 export class ListNotFoundError extends Error {
   constructor(public listId: string) {
-    super('The favorites list was not found.')
+    super('The list was not found.')
   }
 }
 
