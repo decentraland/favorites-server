@@ -402,7 +402,7 @@ describe('when getting lists', () => {
                 offset: 0,
                 limit: 10,
                 userAddress: '0xuseraddress',
-                sortBy: ListSortBy.DATE,
+                sortBy: ListSortBy.CREATED_AT,
                 sortDirection
               })
             ).resolves.toEqual(dbGetLists)

@@ -36,7 +36,7 @@ export type AddListRequestBody = {
 }
 
 export enum ListSortBy {
-  DATE = 'created_at',
+  CREATED_AT = 'createdAt',
   NAME = 'name'
 }
 

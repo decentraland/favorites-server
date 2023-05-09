@@ -227,12 +227,32 @@ export async function getListsHandler(
   const sortBy = url.searchParams.get('sortBy') as ListSortBy | undefined
   const sortDirection = url.searchParams.get('sortDirection') as ListSortDirection | undefined
 
+  if (sortBy && !Object.values(ListSortBy).includes(sortBy)) {
+    return {
+      status: StatusCode.BAD_REQUEST,
+      body: {
+        ok: false,
+        message: 'The sort by parameter is not defined as date or name.'
+      }
+    }
+  }
+
+  if (sortDirection && !Object.values(ListSortDirection).includes(sortDirection)) {
+    return {
+      status: StatusCode.BAD_REQUEST,
+      body: {
+        ok: false,
+        message: 'The sort direction parameter is not defined as asc or desc.'
+      }
+    }
+  }
+
   const listsResult = await listsComponent.getLists({
     userAddress,
     limit,
     offset,
-    sortBy: sortBy && Object.values(ListSortBy).includes(sortBy) ? sortBy : undefined,
-    sortDirection: sortDirection && Object.values(ListSortDirection).includes(sortDirection) ? sortDirection : undefined
+    sortBy,
+    sortDirection
   })
   const { lists, count } = fromDBGetListsToListsWithCount(listsResult)
 
