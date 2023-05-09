@@ -142,5 +142,16 @@ export function createListsComponent(
     }
   }
 
-  return { getPicksByListId, addPickToList, deletePickInList, getLists, addList }
+  async function deleteList(id: string, userAddress: string): Promise<void> {
+    const result = await pg.query(
+      SQL`DELETE FROM favorites.lists
+      WHERE favorites.lists.id = ${id}
+      AND favorites.lists.user_address = ${userAddress}`
+    )
+    if (result.rowCount === 0) {
+      throw new ListNotFoundError(id)
+    }
+  }
+
+  return { getPicksByListId, addPickToList, deletePickInList, getLists, addList, deleteList }
 }

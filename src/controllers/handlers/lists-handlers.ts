@@ -315,3 +315,51 @@ export async function createListHandler(
     throw error
   }
 }
+
+export async function deleteListHandler(
+  context: Pick<HandlerContextWithPath<'lists', '/v1/lists/:id'>, 'components' | 'params' | 'request' | 'verification'>
+): Promise<HTTPResponse<undefined>> {
+  const {
+    components: { lists },
+    verification,
+    params
+  } = context
+  const userAddress: string | undefined = verification?.auth.toLowerCase()
+  const { id } = params
+
+  if (!userAddress) {
+    return {
+      status: StatusCode.UNAUTHORIZED,
+      body: {
+        ok: false,
+        message: 'Unauthorized'
+      }
+    }
+  }
+
+  try {
+    await lists.deleteList(id, userAddress)
+    return {
+      status: StatusCode.OK,
+      body: {
+        ok: true,
+        data: undefined
+      }
+    }
+  } catch (error) {
+    if (error instanceof ListNotFoundError) {
+      return {
+        status: StatusCode.NOT_FOUND,
+        body: {
+          ok: false,
+          message: error.message,
+          data: {
+            listId: error.listId
+          }
+        }
+      }
+    }
+
+    throw error
+  }
+}
