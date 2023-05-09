@@ -7,7 +7,6 @@ import {
 } from '../../adapters/lists'
 import { TPick } from '../../adapters/picks'
 import { getPaginationParams } from '../../logic/http'
-import { DEFAULT_LIST_ID } from '../../migrations/1678303321034_default-list'
 import { AddListRequestBody } from '../../ports/lists'
 import {
   DuplicatedListError,
@@ -334,16 +333,6 @@ export async function deleteListHandler(
       body: {
         ok: false,
         message: 'Unauthorized'
-      }
-    }
-  }
-
-  if (id === DEFAULT_LIST_ID) {
-    return {
-      status: StatusCode.BAD_REQUEST,
-      body: {
-        ok: false,
-        message: 'This list cannot be deleted'
       }
     }
   }

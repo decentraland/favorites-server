@@ -9,7 +9,6 @@ import {
   getListsHandler,
   deleteListHandler
 } from '../../src/controllers/handlers/lists-handlers'
-import { DEFAULT_LIST_ID } from '../../src/migrations/1678303321034_default-list'
 import { DBGetListsWithCount, DBList } from '../../src/ports/lists'
 import {
   DuplicatedListError,
@@ -684,23 +683,6 @@ describe('when deleting a list', () => {
         body: {
           ok: false,
           message: 'Unauthorized'
-        }
-      })
-    })
-  })
-
-  describe('and the user is trying to delete the default global list', () => {
-    beforeEach(() => {
-      listId = DEFAULT_LIST_ID
-      params = { id: listId }
-    })
-
-    it('should return an bad request response', () => {
-      return expect(deleteListHandler({ components, verification, request, params })).resolves.toEqual({
-        status: StatusCode.BAD_REQUEST,
-        body: {
-          ok: false,
-          message: 'This list cannot be deleted'
         }
       })
     })
