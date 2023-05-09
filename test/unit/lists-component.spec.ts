@@ -454,12 +454,37 @@ describe('when deleting a list', () => {
   })
 
   describe('and the list was successfully deleted', () => {
-    beforeEach(() => {
+    let result: void
+
+    beforeEach(async () => {
       dbQueryMock.mockResolvedValueOnce({ rowCount: 1 })
+      result = await listsComponent.deleteList(listId, userAddress)
+    })
+
+    it('should have made the query to delete the list', async () => {
+      expect(dbQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('DELETE FROM favorites.lists')
+        })
+      )
+
+      expect(dbQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('WHERE favorites.lists.id = $1'),
+          values: expect.arrayContaining([listId])
+        })
+      )
+
+      expect(dbQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('AND favorites.lists.user_address = $2'),
+          values: expect.arrayContaining([userAddress])
+        })
+      )
     })
 
     it('should resolve', () => {
-      return expect(listsComponent.deleteList(listId, userAddress)).resolves.toEqual(undefined)
+      return expect(result).toEqual(undefined)
     })
   })
 })
