@@ -7,6 +7,7 @@ export interface IListsComponents {
   deletePickInList(listId: string, itemId: string, userAddress: string): Promise<void>
   getLists(options?: GetListsParameters): Promise<DBGetListsWithCount[]>
   addList(newList: AddListRequestBody): Promise<DBList>
+  deleteList(id: string, userAddress: string): Promise<void>
 }
 
 export type GetAuthenticatedAndPaginatedParameters = {

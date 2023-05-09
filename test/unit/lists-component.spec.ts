@@ -507,3 +507,53 @@ describe('when creating a new list', () => {
     })
   })
 })
+
+describe('when deleting a list', () => {
+  describe('and the list was not found or was not accessible by the user', () => {
+    let error: Error
+
+    beforeEach(() => {
+      error = new ListNotFoundError(listId)
+      dbQueryMock.mockResolvedValueOnce({ rowCount: 0 })
+    })
+
+    it('should throw a list not found error', () => {
+      return expect(listsComponent.deleteList(listId, userAddress)).rejects.toEqual(error)
+    })
+  })
+
+  describe('and the list was successfully deleted', () => {
+    let result: void
+
+    beforeEach(async () => {
+      dbQueryMock.mockResolvedValueOnce({ rowCount: 1 })
+      result = await listsComponent.deleteList(listId, userAddress)
+    })
+
+    it('should have made the query to delete the list', async () => {
+      expect(dbQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('DELETE FROM favorites.lists')
+        })
+      )
+
+      expect(dbQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('WHERE favorites.lists.id = $1'),
+          values: expect.arrayContaining([listId])
+        })
+      )
+
+      expect(dbQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('AND favorites.lists.user_address = $2'),
+          values: expect.arrayContaining([userAddress])
+        })
+      )
+    })
+
+    it('should resolve', () => {
+      return expect(result).toEqual(undefined)
+    })
+  })
+})
