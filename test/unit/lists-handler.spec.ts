@@ -591,6 +591,31 @@ describe('when deleting a list access', () => {
       return expect(deleteAccess({ components, verification, request, params })).rejects.toEqual(error)
     })
   })
+
+  describe('and the delete procedure is successful', () => {
+    let result: unknown
+
+    beforeEach(async () => {
+      grantee = '*'
+      permission = Permission.VIEW
+      jsonMock.mockResolvedValueOnce({ grantee, permission })
+      deleteAccessMock.mockResolvedValueOnce(undefined)
+      result = await deleteAccess({ components, verification, request, params })
+    })
+
+    it('should return a response without data and a 200 status code', () => {
+      expect(result).toEqual({
+        status: StatusCode.OK,
+        body: {
+          ok: true
+        }
+      })
+    })
+
+    it('should have called the delete access procedure with the given parameters', () => {
+      expect(deleteAccessMock).toHaveBeenCalledWith(listId, permission, grantee, verification?.auth)
+    })
+  })
 })
 
 describe('when getting the lists', () => {
