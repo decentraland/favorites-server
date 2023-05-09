@@ -378,12 +378,15 @@ describe('when getting lists', () => {
         )
 
         expect(dbQueryMock).toBeCalledWith(
-          expect.objectContaining({ text: expect.stringContaining('ORDER BY is_default_list DESC, created_at DESC') })
+          expect.objectContaining({
+            text: expect.stringContaining('ORDER BY is_default_list DESC, created_at $4'),
+            values: expect.arrayContaining([ListSortDirection.DESC])
+          })
         )
 
         expect(dbQueryMock).toBeCalledWith(
           expect.objectContaining({
-            text: expect.stringContaining('LIMIT $4 OFFSET $5'),
+            text: expect.stringContaining('LIMIT $5 OFFSET $6'),
             values: expect.arrayContaining([10, 0])
           })
         )
@@ -391,27 +394,33 @@ describe('when getting lists', () => {
     })
 
     describe('and the sorting parameters are set', () => {
-      describe('and the sort by is "newest"', () => {
-        it('should have made the query to get the lists matching those conditions', async () => {
-          await expect(
-            listsComponent.getLists({
-              offset: 0,
-              limit: 10,
-              userAddress: '0xuseraddress',
-              sortBy: ListSortBy.NEWEST
-            })
-          ).resolves.toEqual(dbGetLists)
+      describe('and the sort by is "date"', () => {
+        describe.each([ListSortDirection.ASC, ListSortDirection.DESC])('and the sort direction is "%s"', sortDirection => {
+          it('should have made the query to get the lists matching those conditions', async () => {
+            await expect(
+              listsComponent.getLists({
+                offset: 0,
+                limit: 10,
+                userAddress: '0xuseraddress',
+                sortBy: ListSortBy.DATE,
+                sortDirection
+              })
+            ).resolves.toEqual(dbGetLists)
 
-          expect(dbQueryMock).toBeCalledWith(
-            expect.objectContaining({ text: expect.stringContaining('ORDER BY is_default_list DESC, created_at DESC') })
-          )
+            expect(dbQueryMock).toBeCalledWith(
+              expect.objectContaining({
+                text: expect.stringContaining('ORDER BY is_default_list DESC, created_at $4'),
+                values: expect.arrayContaining([sortDirection])
+              })
+            )
 
-          expect(dbQueryMock).toBeCalledWith(
-            expect.objectContaining({
-              text: expect.stringContaining('LIMIT $4 OFFSET $5'),
-              values: expect.arrayContaining([10, 0])
-            })
-          )
+            expect(dbQueryMock).toBeCalledWith(
+              expect.objectContaining({
+                text: expect.stringContaining('LIMIT $5 OFFSET $6'),
+                values: expect.arrayContaining([10, 0])
+              })
+            )
+          })
         })
       })
 
@@ -442,30 +451,6 @@ describe('when getting lists', () => {
               })
             )
           })
-        })
-      })
-
-      describe('and the sort by is "oldest"', () => {
-        it('should have made the query to get the lists matching those conditions', async () => {
-          await expect(
-            listsComponent.getLists({
-              offset: 0,
-              limit: 10,
-              userAddress: '0xuseraddress',
-              sortBy: ListSortBy.OLDEST
-            })
-          ).resolves.toEqual(dbGetLists)
-
-          expect(dbQueryMock).toBeCalledWith(
-            expect.objectContaining({ text: expect.stringContaining('ORDER BY is_default_list DESC, created_at ASC') })
-          )
-
-          expect(dbQueryMock).toBeCalledWith(
-            expect.objectContaining({
-              text: expect.stringContaining('LIMIT $4 OFFSET $5'),
-              values: expect.arrayContaining([10, 0])
-            })
-          )
         })
       })
     })

@@ -231,7 +231,7 @@ export async function getListsHandler(
     userAddress,
     limit,
     offset,
-    sortBy,
+    sortBy: sortBy && Object.values(ListSortBy).includes(sortBy) ? sortBy : undefined,
     sortDirection: sortDirection && Object.values(ListSortDirection).includes(sortDirection) ? sortDirection : undefined
   })
   const { lists, count } = fromDBGetListsToListsWithCount(listsResult)
