@@ -361,7 +361,7 @@ describe('when getting lists', () => {
     })
 
     describe('and the sorting parameters are not set', () => {
-      it('should have made the query to get the lists matching those conditions', async () => {
+      it('should have made the query to get the lists using the default sorting parameters', async () => {
         await expect(
           listsComponent.getLists({
             offset: 0,
