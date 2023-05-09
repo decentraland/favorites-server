@@ -11,7 +11,16 @@ import {
   PickNotFoundError,
   QueryFailure
 } from './errors'
-import { GetAuthenticatedAndPaginatedParameters, IListsComponents, DBList, DBGetListsWithCount, AddListRequestBody } from './types'
+import {
+  GetAuthenticatedAndPaginatedParameters,
+  IListsComponents,
+  DBList,
+  DBGetListsWithCount,
+  AddListRequestBody,
+  GetListsParameters,
+  ListSortBy,
+  ListSortDirection
+} from './types'
 
 export function createListsComponent(
   components: Pick<AppComponents, 'pg' | 'collectionsSubgraph' | 'snapshot' | 'logs'>
@@ -113,16 +122,28 @@ export function createListsComponent(
     }
   }
 
-  async function getLists(params: GetAuthenticatedAndPaginatedParameters): Promise<DBGetListsWithCount[]> {
-    const { userAddress, limit, offset } = params
-    // TODO: do we want to sort the lists using another criteria?
-    const result = await pg.query<DBGetListsWithCount>(SQL`
+  async function getLists(params: GetListsParameters): Promise<DBGetListsWithCount[]> {
+    const { userAddress, limit, offset, sortBy = ListSortBy.CREATED_AT, sortDirection = ListSortDirection.DESC } = params
+    const query = SQL`
         SELECT l.*, COUNT(*) OVER() as lists_count, user_address = ${DEFAULT_LIST_USER_ADDRESS} as is_default_list
         FROM favorites.lists l
         WHERE user_address = ${userAddress} OR user_address = ${DEFAULT_LIST_USER_ADDRESS}
-        ORDER BY is_default_list DESC
-        LIMIT ${limit} OFFSET ${offset}
-    `)
+        `
+    const orderByQuery = SQL`ORDER BY is_default_list DESC`
+
+    switch (sortBy) {
+      case ListSortBy.CREATED_AT:
+        orderByQuery.append(SQL`, created_at ${sortDirection}`)
+        break
+      case ListSortBy.NAME:
+        orderByQuery.append(SQL`, name ${sortDirection}`)
+        break
+    }
+
+    query.append(orderByQuery)
+    query.append(SQL`\nLIMIT ${limit} OFFSET ${offset}`)
+
+    const result = await pg.query<DBGetListsWithCount>(query)
     return result.rows
   }
 

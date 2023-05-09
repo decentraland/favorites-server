@@ -10,7 +10,7 @@ import { isEthereumAddressValid } from '../../logic/ethereum/validations'
 import { getPaginationParams } from '../../logic/http'
 import { Permission } from '../../ports/access'
 import { AccessNotFoundError } from '../../ports/access/errors'
-import { AddListRequestBody } from '../../ports/lists'
+import { AddListRequestBody, ListSortBy, ListSortDirection } from '../../ports/lists'
 import {
   DuplicatedListError,
   ItemNotFoundError,
@@ -319,11 +319,35 @@ export async function getListsHandler(
   }
 
   const { limit, offset } = getPaginationParams(url.searchParams)
+  const sortBy = url.searchParams.get('sortBy') as ListSortBy | undefined
+  const sortDirection = url.searchParams.get('sortDirection') as ListSortDirection | undefined
+
+  if (sortBy && !Object.values(ListSortBy).includes(sortBy)) {
+    return {
+      status: StatusCode.BAD_REQUEST,
+      body: {
+        ok: false,
+        message: 'The sort by parameter is not defined as date or name.'
+      }
+    }
+  }
+
+  if (sortDirection && !Object.values(ListSortDirection).includes(sortDirection)) {
+    return {
+      status: StatusCode.BAD_REQUEST,
+      body: {
+        ok: false,
+        message: 'The sort direction parameter is not defined as asc or desc.'
+      }
+    }
+  }
 
   const listsResult = await listsComponent.getLists({
     userAddress,
     limit,
-    offset
+    offset,
+    sortBy,
+    sortDirection
   })
   const { lists, count } = fromDBGetListsToListsWithCount(listsResult)
 

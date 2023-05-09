@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import { MigrationBuilder, ColumnDefinitions } from 'node-pg-migrate'
 
-const PICKS_TABLE = 'picks'
+export const PICKS_TABLE = 'picks'
 export const LISTS_TABLE = 'lists'
 
 export const shorthands: ColumnDefinitions | undefined = undefined

@@ -657,6 +657,52 @@ describe('when getting the lists', () => {
     })
   })
 
+  describe('and the sort by parameter has an incorrect value', () => {
+    beforeEach(() => {
+      url = new URL('http://localhost/v1/lists?sortBy=incorrectValue')
+    })
+
+    it('should return a bad request response', () => {
+      return expect(
+        getListsHandler({
+          url,
+          components,
+          verification
+        })
+      ).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The sort by parameter is not defined as date or name.',
+          data: undefined
+        }
+      })
+    })
+  })
+
+  describe('and the sort direction parameter has an incorrect value', () => {
+    beforeEach(() => {
+      url = new URL('http://localhost/v1/lists?sortBy=name&sortDirection=incorrectValue')
+    })
+
+    it('should return a bad request response', () => {
+      return expect(
+        getListsHandler({
+          url,
+          components,
+          verification
+        })
+      ).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The sort direction parameter is not defined as asc or desc.',
+          data: undefined
+        }
+      })
+    })
+  })
+
   describe('and the process to get the lists fails', () => {
     let error: Error
 
