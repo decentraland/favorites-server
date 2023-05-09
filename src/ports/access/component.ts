@@ -10,12 +10,12 @@ export function createAccessComponent(components: Pick<AppComponents, 'pg' | 'lo
 
   async function deleteAccess(listId: string, permission: Permission, grantee: string, listOwner: string): Promise<void> {
     const result = await pg.query<void>(SQL`
-    DELETE FROM favorites.ACL USING favorites.lists
-    WHERE favorites.ACL.list_id = favorites.lists.id
-    AND favorites.ACL.list_id = ${listId}
+    DELETE FROM favorites.acl USING favorites.lists
+    WHERE favorites.acl.list_id = favorites.lists.id
+    AND favorites.acl.list_id = ${listId}
     AND favorites.lists.user_address = ${listOwner}
-    AND favorites.ACL.permission = ${permission}
-    AND favorites.ACL.grantee = ${grantee}`)
+    AND favorites.acl.permission = ${permission}
+    AND favorites.acl.grantee = ${grantee}`)
 
     if (!result.rowCount) {
       throw new AccessNotFoundError(listId, permission, grantee)

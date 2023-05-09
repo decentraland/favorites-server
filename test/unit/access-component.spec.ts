@@ -43,7 +43,7 @@ describe('when deleting an access', () => {
     it('should delete the access taking into consideration the list id, the permission, the grantee and the list owner', () => {
       expect(queryMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          text: expect.stringContaining('AND favorites.ACL.list_id = $1'),
+          text: expect.stringContaining('AND favorites.acl.list_id = $1'),
           values: expect.arrayContaining([listId])
         })
       )
@@ -57,14 +57,14 @@ describe('when deleting an access', () => {
 
       expect(queryMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          text: expect.stringContaining('AND favorites.ACL.permission = $3'),
+          text: expect.stringContaining('AND favorites.acl.permission = $3'),
           values: expect.arrayContaining([permission])
         })
       )
 
       expect(queryMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          text: expect.stringContaining('AND favorites.ACL.grantee = $4'),
+          text: expect.stringContaining('AND favorites.acl.grantee = $4'),
           values: expect.arrayContaining([grantee])
         })
       )
