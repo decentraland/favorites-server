@@ -39,10 +39,14 @@ export function createListsComponent(
     return result.rows
   }
 
-  async function getList(listId: string, userAddress: string): Promise<DBList> {
-    const result = await pg.query<DBList>(
-      SQL`SELECT * from favorites.lists WHERE id = ${listId} AND (user_address = ${userAddress} OR user_address = ${DEFAULT_LIST_USER_ADDRESS})`
-    )
+  async function getList(listId: string, userAddress: string, considerDefaultList = true): Promise<DBList> {
+    const getListQuery = SQL`SELECT * from favorites.lists WHERE id = ${listId} AND (user_address = ${userAddress}`
+    if (considerDefaultList) {
+      getListQuery.append(SQL` OR user_address = ${DEFAULT_LIST_USER_ADDRESS}`)
+    }
+    getListQuery.append(')')
+
+    const result = await pg.query<DBList>(getListQuery)
     if (result.rowCount === 0) {
       throw new ListNotFoundError(listId)
     }
@@ -174,5 +178,5 @@ export function createListsComponent(
     }
   }
 
-  return { getPicksByListId, addPickToList, deletePickInList, getLists, addList, deleteList }
+  return { getPicksByListId, addPickToList, deletePickInList, getLists, addList, deleteList, getList }
 }

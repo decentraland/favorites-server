@@ -6,10 +6,10 @@ import {
   List
 } from '../../adapters/lists'
 import { TPick } from '../../adapters/picks'
-import { isEthereumAddressValid } from '../../logic/ethereum/validations'
+import { isErrorWithMessage } from '../../logic/errors'
 import { getPaginationParams } from '../../logic/http'
 import { Permission } from '../../ports/access'
-import { AccessNotFoundError } from '../../ports/access/errors'
+import { AccessNotFoundError, DuplicatedAccessError } from '../../ports/access/errors'
 import { AddListRequestBody, ListSortBy, ListSortDirection } from '../../ports/lists'
 import {
   DuplicatedListError,
@@ -19,6 +19,7 @@ import {
   PickNotFoundError
 } from '../../ports/lists/errors'
 import { HandlerContextWithPath, HTTPResponse, StatusCode } from '../../types'
+import { validateAccessBody } from './utils'
 
 export async function getPicksByListIdHandler(
   context: Pick<HandlerContextWithPath<'lists', '/v1/lists/:id/picks'>, 'url' | 'components' | 'params' | 'request' | 'verification'>
@@ -206,7 +207,7 @@ export async function deletePickInListHandler(
   }
 }
 
-export async function deleteAccess(
+export async function deleteAccessHandler(
   context: Pick<HandlerContextWithPath<'access', '/v1/lists/:id/access'>, 'components' | 'params' | 'request' | 'verification'>
 ) {
   const {
@@ -232,39 +233,13 @@ export async function deleteAccess(
 
   try {
     body = await request.json()
-    if (!body.grantee || (body.grantee && typeof body.grantee !== 'string')) {
-      return {
-        status: StatusCode.BAD_REQUEST,
-        body: {
-          ok: false,
-          message: 'The property grantee is missing or is not of string type.'
-        }
-      }
-    } else if (body.grantee !== '*' && !isEthereumAddressValid(body.grantee)) {
-      return {
-        status: StatusCode.BAD_REQUEST,
-        body: {
-          ok: false,
-          message: 'The property grantee is not valued as "*" or as an ethereum address.'
-        }
-      }
-    }
-
-    if (!body.permission || !Object.values(Permission).includes(body.permission)) {
-      return {
-        status: StatusCode.BAD_REQUEST,
-        body: {
-          ok: false,
-          message: 'The property permission is missing or is not valued as view or edit.'
-        }
-      }
-    }
+    validateAccessBody(body)
   } catch (error) {
     return {
       status: StatusCode.BAD_REQUEST,
       body: {
         ok: false,
-        message: 'The body must contain a parsable JSON.'
+        message: isErrorWithMessage(error) ? error.message : 'Unknown error'
       }
     }
   }
@@ -289,6 +264,83 @@ export async function deleteAccess(
             listId: error.listId,
             permission: error.permission,
             grantee: error.grantee
+          }
+        }
+      }
+    }
+
+    throw error
+  }
+}
+
+export async function createAccessHandler(
+  context: Pick<HandlerContextWithPath<'access', '/v1/lists/:id/access'>, 'components' | 'params' | 'request' | 'verification'>
+) {
+  const {
+    components: { access },
+    verification,
+    params,
+    request
+  } = context
+  const userAddress: string | undefined = verification?.auth.toLowerCase()
+  const { id } = params
+
+  if (!userAddress) {
+    return {
+      status: StatusCode.UNAUTHORIZED,
+      body: {
+        ok: false,
+        message: 'Unauthorized'
+      }
+    }
+  }
+
+  let body: { permission: Permission; grantee: string }
+
+  try {
+    body = await request.json()
+    validateAccessBody(body)
+  } catch (error) {
+    return {
+      status: StatusCode.BAD_REQUEST,
+      body: {
+        ok: false,
+        message: isErrorWithMessage(error) ? error.message : 'Unknown error'
+      }
+    }
+  }
+
+  try {
+    await access.createAccess(id, body.permission, body.grantee, userAddress)
+    console.log('Create access?')
+    return {
+      status: StatusCode.CREATED,
+      body: {
+        ok: true
+      }
+    }
+  } catch (error) {
+    if (error instanceof DuplicatedAccessError) {
+      return {
+        status: StatusCode.CONFLICT,
+        body: {
+          ok: false,
+          message: error.message,
+          data: {
+            listId: error.listId,
+            permission: error.permission,
+            grantee: error.grantee
+          }
+        }
+      }
+    } else if (error instanceof ListNotFoundError) {
+      return {
+        status: StatusCode.NOT_FOUND,
+        body: {
+          ok: false,
+          message: error.message,
+          data: {
+            listId: error.listId
           }
         }
       }

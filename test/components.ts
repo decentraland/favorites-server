@@ -56,7 +56,6 @@ async function initComponents(): Promise<TestComponents> {
 
   const server = await createServerComponent<GlobalContext>({ config, logs }, {})
   const fetch = await createFetchComponent({ tracer })
-  const access = createAccessComponent({ pg, logs })
   instrumentHttpServerWithRequestLogger({ server, logger: logs }, { verbosity: Verbosity.INFO })
   const collectionsSubgraph = await createSubgraphComponent({ logs, config, fetch, metrics }, 'subgraph-url')
   const snapshot = await createSnapshotComponent({ fetch, config })
@@ -66,6 +65,7 @@ async function initComponents(): Promise<TestComponents> {
     snapshot,
     logs
   })
+  const access = createAccessComponent({ pg, logs, lists })
   const picks = createPicksComponent({ pg })
 
   return {
@@ -115,7 +115,8 @@ export function createTestListsComponent(
     deletePickInList = jest.fn(),
     getLists = jest.fn(),
     addList = jest.fn(),
-    deleteList = jest.fn()
+    deleteList = jest.fn(),
+    getList = jest.fn()
   } = {
     getPicksByListId: jest.fn(),
     addPickToList: jest.fn(),
@@ -131,12 +132,16 @@ export function createTestListsComponent(
     deletePickInList,
     getLists,
     addList,
-    deleteList
+    deleteList,
+    getList
   }
 }
 
-export function createTestAccessComponent({ deleteAccess = jest.fn() } = { deleteAccess: jest.fn() }): IAccessComponent {
+export function createTestAccessComponent(
+  { deleteAccess = jest.fn(), createAccess = jest.fn() } = { deleteAccess: jest.fn(), createAccess: jest.fn() }
+): IAccessComponent {
   return {
+    createAccess,
     deleteAccess
   }
 }

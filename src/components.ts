@@ -65,13 +65,13 @@ export async function initComponents(): Promise<AppComponents> {
   const fetch = await createFetchComponent({ tracer })
   const collectionsSubgraph = await createSubgraphComponent({ logs, config, fetch, metrics }, COLLECTIONS_SUBGRAPH_URL)
   const snapshot = await createSnapshotComponent({ fetch, config })
-  const access = createAccessComponent({ pg, logs })
   const lists = createListsComponent({
     pg,
     collectionsSubgraph,
     snapshot,
     logs
   })
+  const access = createAccessComponent({ pg, logs, lists })
   const picks = createPicksComponent({ pg })
 
   return {
