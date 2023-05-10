@@ -7,8 +7,11 @@ import {
   deletePickInListHandler,
   getPicksByListIdHandler,
   getListsHandler,
+  deleteAccess,
   deleteListHandler
 } from '../../src/controllers/handlers/lists-handlers'
+import { Permission } from '../../src/ports/access'
+import { AccessNotFoundError } from '../../src/ports/access/errors'
 import { DBGetListsWithCount, DBList } from '../../src/ports/lists'
 import {
   DuplicatedListError,
@@ -19,10 +22,9 @@ import {
 } from '../../src/ports/lists/errors'
 import { DBGetFilteredPicksWithCount, DBPick } from '../../src/ports/picks'
 import { AppComponents, HandlerContextWithPath, StatusCode } from '../../src/types'
-import { createTestListsComponent } from '../components'
+import { createTestListsComponent, createTestAccessComponent } from '../components'
 
 let verification: authorizationMiddleware.DecentralandSignatureData | undefined
-let components: Pick<AppComponents, 'lists'>
 let listId: string
 
 beforeEach(() => {
@@ -31,6 +33,7 @@ beforeEach(() => {
 
 describe('when getting the picks of a list', () => {
   let url: URL
+  let components: Pick<AppComponents, 'lists'>
   let getPicksByListIdMock: jest.Mock
   let request: HandlerContextWithPath<'lists', '/v1/lists/:id/picks'>['request']
   let params: HandlerContextWithPath<'lists', '/v1/lists/:id/picks'>['params']
@@ -140,6 +143,7 @@ describe('when getting the picks of a list', () => {
 
 describe('when creating a pick', () => {
   let itemId: string
+  let components: Pick<AppComponents, 'lists'>
   let request: HandlerContextWithPath<'lists', '/v1/lists/:id'>['request']
   let params: HandlerContextWithPath<'lists', '/v1/lists/:id'>['params']
   let jsonMock: jest.Mock
@@ -330,7 +334,7 @@ describe('when creating a pick', () => {
 
 describe('when deleting a pick', () => {
   let itemId: string
-  let request: HandlerContextWithPath<'lists', '/v1/lists/:id/picks/:itemId'>['request']
+  let components: Pick<AppComponents, 'lists'>
   let params: HandlerContextWithPath<'lists', '/v1/lists/:id/picks/:itemId'>['params']
   let deletePickInListMock: jest.Mock
 
@@ -343,7 +347,6 @@ describe('when deleting a pick', () => {
         deletePickInList: deletePickInListMock
       })
     }
-    request = {} as HandlerContextWithPath<'lists', '/v1/lists/:id/picks/:itemId'>['request']
     params = { id: listId, itemId }
   })
 
@@ -353,7 +356,7 @@ describe('when deleting a pick', () => {
     })
 
     it('should return an unauthorized response', () => {
-      return expect(deletePickInListHandler({ components, verification, request, params })).resolves.toEqual({
+      return expect(deletePickInListHandler({ components, verification, params })).resolves.toEqual({
         status: StatusCode.UNAUTHORIZED,
         body: {
           ok: false,
@@ -369,7 +372,7 @@ describe('when deleting a pick', () => {
     })
 
     it('should return a not found response', () => {
-      return expect(deletePickInListHandler({ components, verification, request, params })).resolves.toEqual({
+      return expect(deletePickInListHandler({ components, verification, params })).resolves.toEqual({
         status: StatusCode.NOT_FOUND,
         body: {
           ok: false,
@@ -389,7 +392,7 @@ describe('when deleting a pick', () => {
     })
 
     it('should return an ok response', () => {
-      return expect(deletePickInListHandler({ components, verification, request, params })).resolves.toEqual({
+      return expect(deletePickInListHandler({ components, verification, params })).resolves.toEqual({
         status: StatusCode.OK,
         body: {
           ok: true
@@ -406,13 +409,219 @@ describe('when deleting a pick', () => {
     })
 
     it('should propagate the error', () => {
-      return expect(deletePickInListHandler({ components, verification, request, params })).rejects.toEqual(error)
+      return expect(deletePickInListHandler({ components, verification, params })).rejects.toEqual(error)
+    })
+  })
+})
+
+describe('when deleting a list access', () => {
+  let components: Pick<AppComponents, 'access'>
+  let jsonMock: jest.Mock
+  let request: HandlerContextWithPath<'lists', '/v1/lists/:id/access'>['request']
+  let params: HandlerContextWithPath<'lists', '/v1/lists/:id/access'>['params']
+  let deleteAccessMock: jest.Mock
+  let grantee: string
+  let permission: Permission
+
+  beforeEach(() => {
+    deleteAccessMock = jest.fn()
+    jsonMock = jest.fn()
+    components = {
+      access: createTestAccessComponent({
+        deleteAccess: deleteAccessMock
+      })
+    }
+    listId = 'aListId'
+    params = { id: listId }
+    request = {
+      json: jsonMock
+    } as unknown as HandlerContextWithPath<'lists', '/v1/lists/:id/access'>['request']
+  })
+
+  describe('and the request is not authenticated', () => {
+    beforeEach(() => {
+      verification = undefined
+    })
+
+    it('should return an unauthorized response', () => {
+      return expect(deleteAccess({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.UNAUTHORIZED,
+        body: {
+          ok: false,
+          message: 'Unauthorized'
+        }
+      })
+    })
+  })
+
+  describe('and the request body does not contain a valid JSON', () => {
+    beforeEach(() => {
+      jsonMock.mockRejectedValueOnce(new Error('An error occurred'))
+    })
+
+    it('should return a response with a message saying that the body must be a parsable JSON and the 400 status code', () => {
+      return expect(deleteAccess({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The body must contain a parsable JSON.'
+        }
+      })
+    })
+  })
+
+  describe('and the body does not contain the permission', () => {
+    beforeEach(() => {
+      jsonMock.mockResolvedValueOnce({ grantee: '*' })
+    })
+
+    it('should return a response with a message saying that the permission is missing and the 400 status code', () => {
+      return expect(deleteAccess({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The property permission is missing or is not valued as view or edit.'
+        }
+      })
+    })
+  })
+
+  describe('and the body contains a permission that is not of value "view" or "edit"', () => {
+    beforeEach(() => {
+      jsonMock.mockResolvedValueOnce({ grantee: '*', permission: 'somethingElse' })
+    })
+
+    it('should return a response with a message saying that the permission must have the correct value and the 400 status code', () => {
+      return expect(deleteAccess({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The property permission is missing or is not valued as view or edit.'
+        }
+      })
+    })
+  })
+
+  describe('and the body does not contain the grantee', () => {
+    beforeEach(() => {
+      jsonMock.mockResolvedValueOnce({ permission: 'view' })
+    })
+
+    it('should return a response with a message saying that the grantee is missing and the 400 status code', () => {
+      return expect(deleteAccess({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The property grantee is missing or is not of string type.'
+        }
+      })
+    })
+  })
+
+  describe('and the body contains a grantee that is not of type string', () => {
+    beforeEach(() => {
+      jsonMock.mockResolvedValueOnce({ grantee: 1, permission: 'view' })
+    })
+
+    it('should return a response with a message saying that the grantee is not of type string and the 400 status code', () => {
+      return expect(deleteAccess({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The property grantee is missing or is not of string type.'
+        }
+      })
+    })
+  })
+
+  describe('and the body contains a grantee that is not a "*" nor an ethereum address', () => {
+    beforeEach(() => {
+      jsonMock.mockResolvedValueOnce({ grantee: 'x', permission: 'view' })
+    })
+
+    it('should return a response with a message saying that the grantee does not have a correct value and the 400 status code', () => {
+      return expect(deleteAccess({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The property grantee is not valued as "*" or as an ethereum address.'
+        }
+      })
+    })
+  })
+
+  describe('and the delete access procedure throws an access not found error', () => {
+    let error: Error
+
+    beforeEach(() => {
+      grantee = '*'
+      permission = Permission.VIEW
+      jsonMock.mockResolvedValueOnce({ grantee, permission })
+      error = new AccessNotFoundError(listId, permission, grantee)
+      deleteAccessMock.mockRejectedValueOnce(error)
+    })
+
+    it('should return a response with a message saying that the access was not found and the 404 status code', () => {
+      return expect(deleteAccess({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.NOT_FOUND,
+        body: {
+          ok: false,
+          message: error.message,
+          data: {
+            listId,
+            permission,
+            grantee
+          }
+        }
+      })
+    })
+  })
+
+  describe('and the delete procedure throws an unknown error', () => {
+    let error: Error
+
+    beforeEach(() => {
+      grantee = '*'
+      permission = Permission.VIEW
+      error = new Error('An error occurred')
+      jsonMock.mockResolvedValueOnce({ grantee, permission })
+      deleteAccessMock.mockRejectedValueOnce(error)
+    })
+
+    it('should propagate the error', () => {
+      return expect(deleteAccess({ components, verification, request, params })).rejects.toEqual(error)
+    })
+  })
+
+  describe('and the delete procedure is successful', () => {
+    let result: unknown
+
+    beforeEach(async () => {
+      grantee = '*'
+      permission = Permission.VIEW
+      jsonMock.mockResolvedValueOnce({ grantee, permission })
+      deleteAccessMock.mockResolvedValueOnce(undefined)
+      result = await deleteAccess({ components, verification, request, params })
+    })
+
+    it('should return a response without data and a 200 status code', () => {
+      expect(result).toEqual({
+        status: StatusCode.OK,
+        body: {
+          ok: true
+        }
+      })
+    })
+
+    it('should have called the delete access procedure with the given parameters', () => {
+      expect(deleteAccessMock).toHaveBeenCalledWith(listId, permission, grantee, verification?.auth)
     })
   })
 })
 
 describe('when getting the lists', () => {
   let url: URL
+  let components: Pick<AppComponents, 'lists'>
   let getListsMock: jest.Mock
 
   beforeEach(() => {
@@ -558,6 +767,7 @@ describe('when getting the lists', () => {
 describe('when creating a list', () => {
   let name: string
   let request: HandlerContextWithPath<'lists', '/v1/lists'>['request']
+  let components: Pick<AppComponents, 'lists'>
   let jsonMock: jest.Mock
   let addListMock: jest.Mock
 
@@ -704,6 +914,7 @@ describe('when creating a list', () => {
 describe('when deleting a list', () => {
   let request: HandlerContextWithPath<'lists', '/v1/lists/:id'>['request']
   let params: HandlerContextWithPath<'lists', '/v1/lists/:id'>['params']
+  let components: Pick<AppComponents, 'lists'>
   let deleteListMock: jest.Mock
 
   beforeEach(() => {

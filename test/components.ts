@@ -12,6 +12,7 @@ import { createRunner, createLocalFetchCompoment } from '@well-known-components/
 import { createSubgraphComponent, ISubgraphComponent } from '@well-known-components/thegraph-component'
 import { createTracerComponent } from '@well-known-components/tracer-component'
 import { metricDeclarations } from '../src/metrics'
+import { createAccessComponent, IAccessComponent } from '../src/ports/access'
 import { createFetchComponent } from '../src/ports/fetch'
 import { createListsComponent, IListsComponents } from '../src/ports/lists'
 import { createPicksComponent, IPicksComponent } from '../src/ports/picks'
@@ -55,6 +56,7 @@ async function initComponents(): Promise<TestComponents> {
 
   const server = await createServerComponent<GlobalContext>({ config, logs }, {})
   const fetch = await createFetchComponent({ tracer })
+  const access = createAccessComponent({ pg, logs })
   instrumentHttpServerWithRequestLogger({ server, logger: logs }, { verbosity: Verbosity.INFO })
   const collectionsSubgraph = await createSubgraphComponent({ logs, config, fetch, metrics }, 'subgraph-url')
   const snapshot = await createSnapshotComponent({ fetch, config })
@@ -77,7 +79,8 @@ async function initComponents(): Promise<TestComponents> {
     lists,
     picks,
     collectionsSubgraph,
-    localFetch: await createLocalFetchCompoment(config)
+    localFetch: await createLocalFetchCompoment(config),
+    access
   }
 }
 
@@ -129,6 +132,12 @@ export function createTestListsComponent(
     getLists,
     addList,
     deleteList
+  }
+}
+
+export function createTestAccessComponent({ deleteAccess = jest.fn() } = { deleteAccess: jest.fn() }): IAccessComponent {
+  return {
+    deleteAccess
   }
 }
 

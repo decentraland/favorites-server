@@ -5,6 +5,7 @@ import {
   createPickInListHandler,
   deletePickInListHandler,
   getPicksByListIdHandler,
+  deleteAccess,
   createListHandler,
   deleteListHandler,
   getListsHandler
@@ -14,10 +15,7 @@ import { pingHandler } from './handlers/ping-handler'
 
 const FIVE_MINUTES = 5 * 60 * 1000
 
-// We return the entire router because it will be easier to test than a whole server
-// TODO: handle the following eslint-disable statement
-// eslint-disable-next-line @typescript-eslint/require-await
-export async function setupRouter(_globalContext: GlobalContext): Promise<Router<GlobalContext>> {
+export function setupRouter(_globalContext: GlobalContext): Promise<Router<GlobalContext>> {
   const router = new Router<GlobalContext>()
 
   router.get('/ping', pingHandler)
@@ -88,6 +86,15 @@ export async function setupRouter(_globalContext: GlobalContext): Promise<Router
   )
 
   router.delete(
+    '/v1/lists/:id/access',
+    authorizationMiddleware.wellKnownComponents({
+      optional: false,
+      expiration: FIVE_MINUTES
+    }),
+    deleteAccess
+  )
+
+  router.delete(
     '/v1/lists/:id',
     authorizationMiddleware.wellKnownComponents({
       optional: false,
@@ -96,5 +103,5 @@ export async function setupRouter(_globalContext: GlobalContext): Promise<Router
     deleteListHandler
   )
 
-  return router
+  return Promise.resolve(router)
 }
