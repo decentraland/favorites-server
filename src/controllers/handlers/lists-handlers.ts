@@ -8,7 +8,6 @@ import {
 import { TPick } from '../../adapters/picks'
 import { isErrorWithMessage } from '../../logic/errors'
 import { getPaginationParams } from '../../logic/http'
-import { Permission } from '../../ports/access'
 import { AccessNotFoundError, DuplicatedAccessError } from '../../ports/access/errors'
 import { AddListRequestBody, ListSortBy, ListSortDirection } from '../../ports/lists'
 import {
@@ -19,6 +18,7 @@ import {
   PickNotFoundError
 } from '../../ports/lists/errors'
 import { HandlerContextWithPath, HTTPResponse, StatusCode } from '../../types'
+import { AccessBody } from './types'
 import { validateAccessBody } from './utils'
 
 export async function getPicksByListIdHandler(
@@ -229,7 +229,7 @@ export async function deleteAccessHandler(
     }
   }
 
-  let body: { permission: Permission; grantee: string }
+  let body: AccessBody
 
   try {
     body = await request.json()
@@ -295,7 +295,7 @@ export async function createAccessHandler(
     }
   }
 
-  let body: { permission: Permission; grantee: string }
+  let body: AccessBody
 
   try {
     body = await request.json()
