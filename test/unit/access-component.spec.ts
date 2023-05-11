@@ -114,12 +114,18 @@ describe('when creating an access', () => {
     })
 
     describe('and the access does not exist', () => {
-      beforeEach(() => {
+      let result: unknown
+
+      beforeEach(async () => {
         queryMock.mockResolvedValueOnce(undefined)
+        result = await accessComponent.createAccess(listId, permission, grantee, listOwner)
+      })
+
+      it('should resolve to be undefined', () => {
+        expect(result).toBeUndefined()
       })
 
       it('should insert the new access using the given parameters', async () => {
-        await expect(accessComponent.createAccess(listId, permission, grantee, listOwner)).resolves.toEqual(undefined)
         expect(queryMock).toHaveBeenCalledWith(
           expect.objectContaining({
             text: expect.stringContaining('INSERT INTO favorites.acl (list_id, permission, grantee) VALUES'),

@@ -799,7 +799,7 @@ describe('when creating an access', () => {
         status: StatusCode.CONFLICT,
         body: {
           ok: false,
-          message: 'The access already exists.',
+          message: 'The access already exists for the given list.',
           data: {
             listId,
             grantee,
