@@ -312,7 +312,6 @@ export async function createAccessHandler(
 
   try {
     await access.createAccess(id, body.permission, body.grantee, userAddress)
-    console.log('Create access?')
     return {
       status: StatusCode.CREATED,
       body: {
