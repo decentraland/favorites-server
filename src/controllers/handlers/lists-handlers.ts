@@ -8,7 +8,6 @@ import {
 import { TPick } from '../../adapters/picks'
 import { isErrorWithMessage } from '../../logic/errors'
 import { getPaginationParams } from '../../logic/http'
-import { Permission } from '../../ports/access'
 import { AccessNotFoundError, DuplicatedAccessError } from '../../ports/access/errors'
 import { AddListRequestBody, ListSortBy, ListSortDirection } from '../../ports/lists'
 import {
