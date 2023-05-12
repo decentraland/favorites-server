@@ -101,18 +101,18 @@ describe('when getting picks from a list by list id', () => {
       expect(dbQueryMock).toBeCalledWith(
         expect.objectContaining({
           strings: expect.arrayContaining([
-            expect.stringContaining('WHERE p.list_id = '),
-            expect.stringContaining(' AND (p.user_address = '),
-            expect.stringContaining(' OR favorites.acl.grantee = '),
-            expect.stringContaining(" OR favorites.acl.grantee = '*'")
+            expect.stringContaining('WHERE p.list_id ='),
+            expect.stringContaining('AND (p.user_address ='),
+            expect.stringContaining('OR favorites.acl.grantee ='),
+            expect.stringContaining('OR favorites.acl.grantee =')
           ]),
-          values: expect.arrayContaining(['list-id', '0xuseraddress', '0xuseraddress'])
+          values: expect.arrayContaining(['list-id', '0xuseraddress', '0xuseraddress', '*'])
         })
       )
 
       expect(dbQueryMock).toBeCalledWith(
         expect.objectContaining({
-          strings: expect.arrayContaining([expect.stringContaining('LIMIT '), expect.stringContaining(' OFFSET ')]),
+          strings: expect.arrayContaining([expect.stringContaining('LIMIT'), expect.stringContaining('OFFSET')]),
           values: expect.arrayContaining([10, 0])
         })
       )
