@@ -9,7 +9,8 @@ import {
   getListsHandler,
   deleteAccessHandler,
   deleteListHandler,
-  createAccessHandler
+  createAccessHandler,
+  getListHandler
 } from '../../src/controllers/handlers/lists-handlers'
 import { Permission } from '../../src/ports/access'
 import { AccessNotFoundError, DuplicatedAccessError } from '../../src/ports/access/errors'
@@ -966,6 +967,7 @@ describe('when getting the lists', () => {
           name: 'List #1',
           description: 'Description of List #1',
           user_address: '0x45abb534BD927284F84b03d43f33dF0E5C91C21f',
+          created_at: new Date(),
           lists_count: '1'
         }
       ]
@@ -1115,12 +1117,14 @@ describe('when creating a list', () => {
 
   describe('and the list gets added correctly', () => {
     let list: DBList
+    const date = new Date()
 
     beforeEach(() => {
       list = {
         id: listId,
         name,
         user_address: verification?.auth ?? '',
+        created_at: date,
         description: null
       }
       jsonMock.mockResolvedValueOnce({ name })
@@ -1136,10 +1140,99 @@ describe('when creating a list', () => {
             id: listId,
             name,
             userAddress: verification?.auth,
-            description: null
+            createdAt: date,
+            description: null,
+            permission: undefined
           }
         }
       })
+    })
+  })
+})
+
+describe('when getting a list', () => {
+  let params: HandlerContextWithPath<'lists', '/v1/lists/:id'>['params']
+  let components: Pick<AppComponents, 'lists'>
+  let getListMock: jest.Mock
+  let dbList: DBList
+  let list: List
+
+  const date = new Date()
+
+  beforeEach(() => {
+    listId = 'list-id'
+    getListMock = jest.fn()
+    components = {
+      lists: createTestListsComponent({
+        getList: getListMock
+      })
+    }
+    params = { id: listId }
+
+    dbList = {
+      id: listId,
+      name: 'Test List',
+      description: 'Description of List #1',
+      user_address: '0x45abb534BD927284F84b03d43f33dF0E5C91C21f',
+      created_at: date
+    }
+
+    list = {
+      id: listId,
+      name: 'Test List',
+      userAddress: '0x45abb534BD927284F84b03d43f33dF0E5C91C21f',
+      createdAt: date,
+      description: 'Description of List #1',
+      permission: undefined
+    }
+  })
+
+  describe('and the request fails due to the user not being allowed to access it', () => {
+    beforeEach(() => {
+      getListMock.mockResolvedValueOnce(dbList)
+    })
+
+    it('should return a forbidden response', () => {
+      return expect(getListHandler({ components, verification, params })).resolves.toEqual({
+        status: StatusCode.FORBIDDEN,
+        body: {
+          ok: false,
+          message: 'Forbidden'
+        }
+      })
+    })
+  })
+
+  describe.each([Permission.EDIT, Permission.VIEW])(
+    'and the request is successful because the user has %s permission to access the list',
+    permission => {
+      beforeEach(() => {
+        dbList = { ...dbList, permission }
+        list = { ...list, permission }
+        getListMock.mockResolvedValueOnce(dbList)
+      })
+
+      it('should return an ok response', () => {
+        return expect(getListHandler({ components, verification, params })).resolves.toEqual({
+          status: StatusCode.OK,
+          body: {
+            ok: true,
+            data: list
+          }
+        })
+      })
+    }
+  )
+
+  describe('and the process to get a list fails with an unknown error', () => {
+    const error = new Error('anError')
+
+    beforeEach(() => {
+      getListMock.mockRejectedValueOnce(error)
+    })
+
+    it('should propagate the error', () => {
+      return expect(getListHandler({ components, verification, params })).rejects.toEqual(error)
     })
   })
 })

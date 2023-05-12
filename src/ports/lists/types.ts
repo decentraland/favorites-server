@@ -8,7 +8,7 @@ export interface IListsComponents {
   getLists(options?: GetListsParameters): Promise<DBGetListsWithCount[]>
   addList(newList: AddListRequestBody): Promise<DBList>
   deleteList(id: string, userAddress: string): Promise<void>
-  getList(listId: string, userAddress: string, considerDefaultList?: boolean): Promise<DBList>
+  getList(listId: string, options?: GetListOptions): Promise<DBList>
 }
 
 export type GetAuthenticatedAndPaginatedParameters = {
@@ -20,11 +20,19 @@ export type GetListsParameters = GetAuthenticatedAndPaginatedParameters & {
   sortDirection?: ListSortDirection
 }
 
+export type GetListOptions = {
+  userAddress?: string
+  considerDefaultList?: boolean
+  checkPermission?: boolean
+}
+
 export type DBList = {
   id: string
   name: string
   description: string | null
   user_address: string
+  created_at: Date
+  permission?: string | null
 }
 
 export type DBGetListsWithCount = DBList & {

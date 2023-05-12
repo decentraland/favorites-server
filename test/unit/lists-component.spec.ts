@@ -490,7 +490,8 @@ describe('when creating a new list', () => {
         id: listId,
         name,
         user_address: userAddress,
-        description: null
+        description: null,
+        created_at: new Date()
       }
       dbQueryMock.mockResolvedValueOnce({
         rowCount: 1,

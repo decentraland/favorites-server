@@ -349,6 +349,38 @@ export async function createAccessHandler(
   }
 }
 
+export async function getListHandler(
+  context: Pick<HandlerContextWithPath<'lists', '/v1/lists/:id'>, 'components' | 'verification' | 'params'>
+): Promise<HTTPResponse<List>> {
+  const {
+    components: { lists: listsComponent },
+    params,
+    verification
+  } = context
+  const userAddress: string | undefined = verification?.auth.toLowerCase()
+
+  const listResult = await listsComponent.getList(params.id, { userAddress })
+  const list = fromDBListToList(listResult)
+
+  if (!list.permission) {
+    return {
+      status: StatusCode.FORBIDDEN,
+      body: {
+        ok: false,
+        message: 'Forbidden'
+      }
+    }
+  }
+
+  return {
+    status: StatusCode.OK,
+    body: {
+      ok: true,
+      data: list
+    }
+  }
+}
+
 export async function getListsHandler(
   context: Pick<HandlerContextWithPath<'lists', '/v1/lists'>, 'components' | 'url' | 'verification'>
 ): Promise<HTTPResponse<Pick<List, 'id' | 'name'>>> {

@@ -63,6 +63,7 @@ export enum StatusCode {
   CREATED = 201,
   BAD_REQUEST = 400,
   UNAUTHORIZED = 401,
+  FORBIDDEN = 403,
   NOT_FOUND = 404,
   LOCKED = 423,
   CONFLICT = 409,

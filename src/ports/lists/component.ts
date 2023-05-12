@@ -19,7 +19,8 @@ import {
   AddListRequestBody,
   GetListsParameters,
   ListSortBy,
-  ListSortDirection
+  ListSortDirection,
+  GetListOptions
 } from './types'
 
 const GRANTED_TO_ALL = '*'
@@ -42,12 +43,29 @@ export function createListsComponent(
     return result.rows
   }
 
-  async function getList(listId: string, userAddress: string, considerDefaultList = true): Promise<DBList> {
-    const getListQuery = SQL`SELECT * from favorites.lists WHERE id = ${listId} AND (user_address = ${userAddress}`
+  async function getList(
+    listId: string,
+    { checkPermission = true, considerDefaultList = true, userAddress }: GetListOptions
+  ): Promise<DBList> {
+    const getListQuery = SQL`SELECT *`
+
+    if (checkPermission) {
+      getListQuery.append(', favorites.acl.permission as permission')
+    }
+
+    getListQuery.append(SQL` FROM favorites.lists WHERE id = ${listId} AND (user_address = ${userAddress}`)
+
     if (considerDefaultList) {
       getListQuery.append(SQL` OR user_address = ${DEFAULT_LIST_USER_ADDRESS}`)
     }
     getListQuery.append(')')
+
+    if (checkPermission) {
+      getListQuery.append(SQL`
+        LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id
+          AND (favorites.acl.grantee = ${userAddress} OR favorites.acl.grantee = ${GRANTED_TO_ALL})
+      `)
+    }
 
     const result = await pg.query<DBList>(getListQuery)
     if (result.rowCount === 0) {
@@ -58,7 +76,7 @@ export function createListsComponent(
   }
 
   async function addPickToList(listId: string, itemId: string, userAddress: string): Promise<DBPick> {
-    const list = await getList(listId, userAddress)
+    const list = await getList(listId, { userAddress })
     const [queryResult, power] = await Promise.allSettled([
       collectionsSubgraph.query<{ items: { id: string }[] }>(
         `query items($itemId: String) {
