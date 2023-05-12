@@ -11,4 +11,5 @@ export type DBAccess = {
 
 export type IAccessComponent = {
   deleteAccess(listId: string, permission: Permission, grantee: string, listOwner: string): Promise<void>
+  createAccess(listId: string, permission: Permission, grantee: string, listOwner: string): Promise<void>
 }

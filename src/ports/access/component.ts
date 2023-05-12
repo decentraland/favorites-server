@@ -1,10 +1,10 @@
 import SQL from 'sql-template-strings'
 import { AppComponents } from '../../types'
-import { AccessNotFoundError } from './errors'
+import { AccessNotFoundError, DuplicatedAccessError } from './errors'
 import { IAccessComponent, Permission } from './types'
 
-export function createAccessComponent(components: Pick<AppComponents, 'pg' | 'logs'>): IAccessComponent {
-  const { pg, logs } = components
+export function createAccessComponent(components: Pick<AppComponents, 'pg' | 'logs' | 'lists'>): IAccessComponent {
+  const { pg, logs, lists } = components
 
   const logger = logs.getLogger('Access component')
 
@@ -24,7 +24,21 @@ export function createAccessComponent(components: Pick<AppComponents, 'pg' | 'lo
     logger.info(`Deleted access ${permission} for ${grantee} of the list ${listId}`)
   }
 
+  async function createAccess(listId: string, permission: Permission, grantee: string, listOwner: string): Promise<void> {
+    try {
+      await lists.getList(listId, listOwner, false)
+      await pg.query<void>(SQL`INSERT INTO favorites.acl (list_id, permission, grantee) VALUES (${listId}, ${permission}, ${grantee})`)
+    } catch (error) {
+      if (error && typeof error === 'object' && 'constraint' in error && error.constraint === 'list_id_permissions_grantee_primary_key') {
+        throw new DuplicatedAccessError(listId, permission, grantee)
+      }
+
+      throw error
+    }
+  }
+
   return {
+    createAccess,
     deleteAccess
   }
 }

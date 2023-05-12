@@ -7,11 +7,12 @@ import {
   deletePickInListHandler,
   getPicksByListIdHandler,
   getListsHandler,
-  deleteAccess,
-  deleteListHandler
+  deleteAccessHandler,
+  deleteListHandler,
+  createAccessHandler
 } from '../../src/controllers/handlers/lists-handlers'
 import { Permission } from '../../src/ports/access'
-import { AccessNotFoundError } from '../../src/ports/access/errors'
+import { AccessNotFoundError, DuplicatedAccessError } from '../../src/ports/access/errors'
 import { DBGetListsWithCount, DBList } from '../../src/ports/lists'
 import {
   DuplicatedListError,
@@ -444,7 +445,7 @@ describe('when deleting a list access', () => {
     })
 
     it('should return an unauthorized response', () => {
-      return expect(deleteAccess({ components, verification, request, params })).resolves.toEqual({
+      return expect(deleteAccessHandler({ components, verification, request, params })).resolves.toEqual({
         status: StatusCode.UNAUTHORIZED,
         body: {
           ok: false,
@@ -456,11 +457,11 @@ describe('when deleting a list access', () => {
 
   describe('and the request body does not contain a valid JSON', () => {
     beforeEach(() => {
-      jsonMock.mockRejectedValueOnce(new Error('An error occurred'))
+      jsonMock.mockRejectedValueOnce(new Error('The body must contain a parsable JSON.'))
     })
 
     it('should return a response with a message saying that the body must be a parsable JSON and the 400 status code', () => {
-      return expect(deleteAccess({ components, verification, request, params })).resolves.toEqual({
+      return expect(deleteAccessHandler({ components, verification, request, params })).resolves.toEqual({
         status: StatusCode.BAD_REQUEST,
         body: {
           ok: false,
@@ -476,7 +477,7 @@ describe('when deleting a list access', () => {
     })
 
     it('should return a response with a message saying that the permission is missing and the 400 status code', () => {
-      return expect(deleteAccess({ components, verification, request, params })).resolves.toEqual({
+      return expect(deleteAccessHandler({ components, verification, request, params })).resolves.toEqual({
         status: StatusCode.BAD_REQUEST,
         body: {
           ok: false,
@@ -492,7 +493,7 @@ describe('when deleting a list access', () => {
     })
 
     it('should return a response with a message saying that the permission must have the correct value and the 400 status code', () => {
-      return expect(deleteAccess({ components, verification, request, params })).resolves.toEqual({
+      return expect(deleteAccessHandler({ components, verification, request, params })).resolves.toEqual({
         status: StatusCode.BAD_REQUEST,
         body: {
           ok: false,
@@ -508,7 +509,7 @@ describe('when deleting a list access', () => {
     })
 
     it('should return a response with a message saying that the grantee is missing and the 400 status code', () => {
-      return expect(deleteAccess({ components, verification, request, params })).resolves.toEqual({
+      return expect(deleteAccessHandler({ components, verification, request, params })).resolves.toEqual({
         status: StatusCode.BAD_REQUEST,
         body: {
           ok: false,
@@ -524,7 +525,7 @@ describe('when deleting a list access', () => {
     })
 
     it('should return a response with a message saying that the grantee is not of type string and the 400 status code', () => {
-      return expect(deleteAccess({ components, verification, request, params })).resolves.toEqual({
+      return expect(deleteAccessHandler({ components, verification, request, params })).resolves.toEqual({
         status: StatusCode.BAD_REQUEST,
         body: {
           ok: false,
@@ -540,7 +541,7 @@ describe('when deleting a list access', () => {
     })
 
     it('should return a response with a message saying that the grantee does not have a correct value and the 400 status code', () => {
-      return expect(deleteAccess({ components, verification, request, params })).resolves.toEqual({
+      return expect(deleteAccessHandler({ components, verification, request, params })).resolves.toEqual({
         status: StatusCode.BAD_REQUEST,
         body: {
           ok: false,
@@ -562,7 +563,7 @@ describe('when deleting a list access', () => {
     })
 
     it('should return a response with a message saying that the access was not found and the 404 status code', () => {
-      return expect(deleteAccess({ components, verification, request, params })).resolves.toEqual({
+      return expect(deleteAccessHandler({ components, verification, request, params })).resolves.toEqual({
         status: StatusCode.NOT_FOUND,
         body: {
           ok: false,
@@ -589,7 +590,7 @@ describe('when deleting a list access', () => {
     })
 
     it('should propagate the error', () => {
-      return expect(deleteAccess({ components, verification, request, params })).rejects.toEqual(error)
+      return expect(deleteAccessHandler({ components, verification, request, params })).rejects.toEqual(error)
     })
   })
 
@@ -601,7 +602,7 @@ describe('when deleting a list access', () => {
       permission = Permission.VIEW
       jsonMock.mockResolvedValueOnce({ grantee, permission })
       deleteAccessMock.mockResolvedValueOnce(undefined)
-      result = await deleteAccess({ components, verification, request, params })
+      result = await deleteAccessHandler({ components, verification, request, params })
     })
 
     it('should return a response without data and a 200 status code', () => {
@@ -615,6 +616,238 @@ describe('when deleting a list access', () => {
 
     it('should have called the delete access procedure with the given parameters', () => {
       expect(deleteAccessMock).toHaveBeenCalledWith(listId, permission, grantee, verification?.auth)
+    })
+  })
+})
+
+describe('when creating an access', () => {
+  let components: Pick<AppComponents, 'access'>
+  let jsonMock: jest.Mock
+  let request: HandlerContextWithPath<'lists', '/v1/lists/:id/access'>['request']
+  let params: HandlerContextWithPath<'lists', '/v1/lists/:id/access'>['params']
+  let createAccessMock: jest.Mock
+  let grantee: string
+  let permission: Permission
+
+  beforeEach(() => {
+    createAccessMock = jest.fn()
+    jsonMock = jest.fn()
+    components = {
+      access: createTestAccessComponent({
+        createAccess: createAccessMock
+      })
+    }
+    listId = 'aListId'
+    params = { id: listId }
+    request = {
+      json: jsonMock
+    } as unknown as HandlerContextWithPath<'lists', '/v1/lists/:id/access'>['request']
+  })
+
+  describe('and the request is not authenticated', () => {
+    beforeEach(() => {
+      verification = undefined
+    })
+
+    it('should return an unauthorized response', () => {
+      return expect(createAccessHandler({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.UNAUTHORIZED,
+        body: {
+          ok: false,
+          message: 'Unauthorized'
+        }
+      })
+    })
+  })
+
+  describe('and the request body does not contain a valid JSON', () => {
+    beforeEach(() => {
+      jsonMock.mockRejectedValueOnce(new Error('The body must contain a parsable JSON.'))
+    })
+
+    it('should return a response with a message saying that the body must be a parsable JSON and the 400 status code', () => {
+      return expect(createAccessHandler({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The body must contain a parsable JSON.'
+        }
+      })
+    })
+  })
+
+  describe('and the body does not contain the permission', () => {
+    beforeEach(() => {
+      grantee = '*'
+      jsonMock.mockResolvedValueOnce({ grantee })
+    })
+
+    it('should return a response with a message saying that the permission is missing and the 400 status code', () => {
+      return expect(createAccessHandler({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The property permission is missing or is not valued as view or edit.'
+        }
+      })
+    })
+  })
+
+  describe('and the body contains a permission that is not of value "view" or "edit"', () => {
+    beforeEach(() => {
+      grantee = '*'
+      permission = 'somethingElse' as Permission
+      jsonMock.mockResolvedValueOnce({ grantee, permission })
+    })
+
+    it('should return a response with a message saying that the permission must have the correct value and the 400 status code', () => {
+      return expect(createAccessHandler({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The property permission is missing or is not valued as view or edit.'
+        }
+      })
+    })
+  })
+
+  describe('and the body does not contain the grantee', () => {
+    beforeEach(() => {
+      permission = Permission.VIEW
+      jsonMock.mockResolvedValueOnce({ permission })
+    })
+
+    it('should return a response with a message saying that the grantee is missing and the 400 status code', () => {
+      return expect(createAccessHandler({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The property grantee is missing or is not of string type.'
+        }
+      })
+    })
+  })
+
+  describe('and the body contains a grantee that is not of type string', () => {
+    beforeEach(() => {
+      permission = Permission.VIEW
+      grantee = 1 as unknown as string
+      jsonMock.mockResolvedValueOnce({ grantee: 1, permission })
+    })
+
+    it('should return a response with a message saying that the grantee is not of type string and the 400 status code', () => {
+      return expect(createAccessHandler({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The property grantee is missing or is not of string type.'
+        }
+      })
+    })
+  })
+
+  describe('and the body contains a grantee that is not a "*" nor an ethereum address', () => {
+    beforeEach(() => {
+      grantee = 'x'
+      permission = Permission.VIEW
+      jsonMock.mockResolvedValueOnce({ grantee, permission })
+    })
+
+    it('should return a response with a message saying that the grantee does not have a correct value and the 400 status code', () => {
+      return expect(createAccessHandler({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The property grantee is not valued as "*" or as an ethereum address.'
+        }
+      })
+    })
+  })
+
+  describe('and the create access procedure throws a list not found error', () => {
+    beforeEach(() => {
+      grantee = '*'
+      permission = Permission.VIEW
+      jsonMock.mockResolvedValueOnce({ grantee, permission })
+      createAccessMock.mockRejectedValueOnce(new ListNotFoundError(listId))
+    })
+
+    it('should return a response with a message saying that the list was not found and the 404 status code', () => {
+      return expect(createAccessHandler({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.NOT_FOUND,
+        body: {
+          ok: false,
+          message: 'The list was not found.',
+          data: {
+            listId
+          }
+        }
+      })
+    })
+  })
+
+  describe('and the create access procedure throws a duplicated access error', () => {
+    beforeEach(() => {
+      grantee = '*'
+      permission = Permission.VIEW
+      jsonMock.mockResolvedValueOnce({ grantee, permission })
+      createAccessMock.mockRejectedValueOnce(new DuplicatedAccessError(listId, permission, grantee))
+    })
+
+    it('should return a response with a message saying that the access already exists and the 409 status code', () => {
+      return expect(createAccessHandler({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.CONFLICT,
+        body: {
+          ok: false,
+          message: 'The access already exists for the given list.',
+          data: {
+            listId,
+            grantee,
+            permission
+          }
+        }
+      })
+    })
+  })
+
+  describe('and the create procedure throws an unknown error', () => {
+    let error: Error
+
+    beforeEach(() => {
+      grantee = '*'
+      permission = Permission.VIEW
+      error = new Error('An error occurred')
+      jsonMock.mockResolvedValueOnce({ grantee, permission })
+      createAccessMock.mockRejectedValueOnce(error)
+    })
+
+    it('should propagate the error', () => {
+      return expect(createAccessHandler({ components, verification, request, params })).rejects.toEqual(error)
+    })
+  })
+
+  describe('and the create procedure is successful', () => {
+    let result: unknown
+
+    beforeEach(async () => {
+      grantee = '*'
+      permission = Permission.VIEW
+      jsonMock.mockResolvedValueOnce({ grantee, permission })
+      createAccessMock.mockResolvedValueOnce(undefined)
+      result = await createAccessHandler({ components, verification, request, params })
+    })
+
+    it('should return a response without data and a 201 status code', () => {
+      expect(result).toEqual({
+        status: StatusCode.CREATED,
+        body: {
+          ok: true
+        }
+      })
+    })
+
+    it('should have called the create access procedure with the given parameters', () => {
+      expect(createAccessMock).toHaveBeenCalledWith(listId, permission, grantee, verification?.auth)
     })
   })
 })
