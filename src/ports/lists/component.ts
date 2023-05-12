@@ -22,6 +22,8 @@ import {
   ListSortDirection
 } from './types'
 
+const GRANTED_TO_ALL = '*'
+
 export function createListsComponent(
   components: Pick<AppComponents, 'pg' | 'collectionsSubgraph' | 'snapshot' | 'logs'>
 ): IListsComponents {
@@ -31,8 +33,9 @@ export function createListsComponent(
   async function getPicksByListId(listId: string, params: GetAuthenticatedAndPaginatedParameters): Promise<DBGetFilteredPicksWithCount[]> {
     const { userAddress, limit, offset } = params
     const result = await pg.query<DBGetFilteredPicksWithCount>(SQL`
-        SELECT p.*, COUNT(*) OVER() as picks_count FROM favorites.picks p
-        WHERE list_id = ${listId} AND user_address = ${userAddress}
+        SELECT DISTINCT(p.item_id), p.*, COUNT(*) OVER() as picks_count FROM favorites.picks p
+        LEFT JOIN favorites.acl ON p.list_id = favorites.acl.list_id
+        WHERE p.list_id = ${listId} AND (p.user_address = ${userAddress} OR favorites.acl.grantee = ${userAddress} OR favorites.acl.grantee = ${GRANTED_TO_ALL})
         ORDER BY created_at DESC
         LIMIT ${limit} OFFSET ${offset}
     `)

@@ -97,16 +97,22 @@ describe('when getting picks from a list by list id', () => {
           userAddress: '0xuseraddress'
         })
       ).resolves.toEqual(dbGetPicksByListId)
+
       expect(dbQueryMock).toBeCalledWith(
         expect.objectContaining({
-          text: expect.stringContaining('WHERE list_id = $1 AND user_address = $2'),
-          values: expect.arrayContaining(['list-id', '0xuseraddress'])
+          strings: expect.arrayContaining([
+            expect.stringContaining('WHERE p.list_id ='),
+            expect.stringContaining('AND (p.user_address ='),
+            expect.stringContaining('OR favorites.acl.grantee ='),
+            expect.stringContaining('OR favorites.acl.grantee =')
+          ]),
+          values: expect.arrayContaining(['list-id', '0xuseraddress', '0xuseraddress', '*'])
         })
       )
 
       expect(dbQueryMock).toBeCalledWith(
         expect.objectContaining({
-          text: expect.stringContaining('LIMIT $3 OFFSET $4'),
+          strings: expect.arrayContaining([expect.stringContaining('LIMIT'), expect.stringContaining('OFFSET')]),
           values: expect.arrayContaining([10, 0])
         })
       )
