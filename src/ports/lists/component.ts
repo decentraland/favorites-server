@@ -2,6 +2,7 @@ import SQL from 'sql-template-strings'
 import { isErrorWithMessage } from '../../logic/errors'
 import { DEFAULT_LIST_USER_ADDRESS } from '../../migrations/1678303321034_default-list'
 import { AppComponents } from '../../types'
+import { Permission } from '../access'
 import { DBGetFilteredPicksWithCount, DBPick } from '../picks'
 import {
   DuplicatedListError,
@@ -43,15 +44,10 @@ export function createListsComponent(
     return result.rows
   }
 
-  async function getList(
-    listId: string,
-    { checkPermission = true, considerDefaultList = true, userAddress }: GetListOptions
-  ): Promise<DBList> {
+  async function getList(listId: string, { requiredPermission, considerDefaultList = true, userAddress }: GetListOptions): Promise<DBList> {
     const getListQuery = SQL`SELECT *`
 
-    if (checkPermission) {
-      getListQuery.append(', favorites.acl.permission as permission')
-    }
+    if (requiredPermission) getListQuery.append(SQL`, favorites.acl.permission as permission`)
 
     getListQuery.append(SQL` FROM favorites.lists WHERE id = ${listId} AND (user_address = ${userAddress}`)
 
@@ -60,10 +56,10 @@ export function createListsComponent(
     }
     getListQuery.append(')')
 
-    if (checkPermission) {
+    if (requiredPermission) {
       getListQuery.append(SQL`
         LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id
-          AND (favorites.acl.grantee = ${userAddress} OR favorites.acl.grantee = ${GRANTED_TO_ALL})
+        WHERE (favorites.acl.grantee = ${userAddress} OR favorites.acl.grantee = ${GRANTED_TO_ALL}) AND favorites.acl.permission = ${requiredPermission}
       `)
     }
 
@@ -76,7 +72,7 @@ export function createListsComponent(
   }
 
   async function addPickToList(listId: string, itemId: string, userAddress: string): Promise<DBPick> {
-    const list = await getList(listId, { userAddress })
+    const list = await getList(listId, { userAddress, requiredPermission: Permission.EDIT })
     const [queryResult, power] = await Promise.allSettled([
       collectionsSubgraph.query<{ items: { id: string }[] }>(
         `query items($itemId: String) {

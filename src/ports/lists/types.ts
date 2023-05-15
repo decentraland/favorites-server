@@ -1,5 +1,6 @@
 import { PaginationParameters } from '../../logic/http'
 import { DBGetFilteredPicksWithCount, DBPick } from '../../ports/picks'
+import { Permission } from '../access'
 
 export interface IListsComponents {
   getPicksByListId(listId: string, options?: GetAuthenticatedAndPaginatedParameters): Promise<DBGetFilteredPicksWithCount[]>
@@ -23,7 +24,7 @@ export type GetListsParameters = GetAuthenticatedAndPaginatedParameters & {
 export type GetListOptions = {
   userAddress?: string
   considerDefaultList?: boolean
-  checkPermission?: boolean
+  requiredPermission?: Permission
 }
 
 export type DBList = {
