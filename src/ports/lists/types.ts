@@ -24,7 +24,7 @@ export type GetListsParameters = GetAuthenticatedAndPaginatedParameters & {
 export type GetListOptions = {
   userAddress?: string
   considerDefaultList?: boolean
-  requiredPermission?: Permission
+  requiredPermissions?: Permission[]
 }
 
 export type DBList = {

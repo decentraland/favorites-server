@@ -45,10 +45,14 @@ export function createListsComponent(
     return result.rows
   }
 
-  async function getList(listId: string, { requiredPermission, considerDefaultList = true, userAddress }: GetListOptions): Promise<DBList> {
+  async function getList(
+    listId: string,
+    { requiredPermissions, considerDefaultList = true, userAddress }: GetListOptions
+  ): Promise<DBList> {
+    const isPermissionRequired = requiredPermissions && requiredPermissions.length > 0
     const getListQuery = SQL`SELECT *`
 
-    if (requiredPermission) getListQuery.append(SQL`, favorites.acl.permission as permission`)
+    if (isPermissionRequired) getListQuery.append(SQL`, favorites.acl.permission as permission`)
 
     getListQuery.append(SQL` FROM favorites.lists WHERE id = ${listId} AND (user_address = ${userAddress}`)
 
@@ -57,10 +61,10 @@ export function createListsComponent(
     }
     getListQuery.append(')')
 
-    if (requiredPermission) {
+    if (isPermissionRequired) {
       getListQuery.append(SQL`
         LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id
-        WHERE (favorites.acl.grantee = ${userAddress} OR favorites.acl.grantee = ${GRANTED_TO_ALL}) AND favorites.acl.permission = ${requiredPermission}
+        WHERE (favorites.acl.grantee = ${userAddress} OR favorites.acl.grantee = ${GRANTED_TO_ALL}) AND favorites.acl.permission = ANY(${requiredPermissions}::text[])
       `)
     }
 
@@ -70,7 +74,7 @@ export function createListsComponent(
       throw new ListNotFoundError(listId)
     }
 
-    if (requiredPermission && !result.rows[0].permission) {
+    if (isPermissionRequired && !result.rows[0].permission) {
       throw new ForbiddenAccessToList(listId)
     }
 
@@ -78,7 +82,7 @@ export function createListsComponent(
   }
 
   async function addPickToList(listId: string, itemId: string, userAddress: string): Promise<DBPick> {
-    const list = await getList(listId, { userAddress, requiredPermission: Permission.EDIT })
+    const list = await getList(listId, { userAddress, requiredPermissions: [Permission.EDIT] })
     const [queryResult, power] = await Promise.allSettled([
       collectionsSubgraph.query<{ items: { id: string }[] }>(
         `query items($itemId: String) {

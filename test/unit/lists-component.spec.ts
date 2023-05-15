@@ -593,7 +593,7 @@ describe('when getting a list', () => {
     })
 
     it('should throw a list not found error', () => {
-      return expect(listsComponent.getList(listId, { userAddress, requiredPermission: Permission.VIEW })).rejects.toEqual(error)
+      return expect(listsComponent.getList(listId, { userAddress, requiredPermissions: [Permission.VIEW] })).rejects.toEqual(error)
     })
   })
 
@@ -687,7 +687,7 @@ describe('when getting a list', () => {
         }
 
         dbQueryMock.mockResolvedValueOnce({ rowCount: 1, rows: [dbList] })
-        result = await listsComponent.getList(listId, { userAddress, considerDefaultList: true, requiredPermission: permission })
+        result = await listsComponent.getList(listId, { userAddress, considerDefaultList: true, requiredPermissions: [permission] })
       })
 
       it('should have made the query to get the list matching those conditions', async () => {
@@ -713,9 +713,9 @@ describe('when getting a list', () => {
         expect(dbQueryMock).toHaveBeenCalledWith(
           expect.objectContaining({
             text: expect.stringContaining(
-              'WHERE (favorites.acl.grantee = $4 OR favorites.acl.grantee = $5) AND favorites.acl.permission = $6'
+              'WHERE (favorites.acl.grantee = $4 OR favorites.acl.grantee = $5) AND favorites.acl.permission = ANY($6::text[])'
             ),
-            values: expect.arrayContaining([userAddress, '*', permission])
+            values: expect.arrayContaining([userAddress, '*', [permission]])
           })
         )
       })
