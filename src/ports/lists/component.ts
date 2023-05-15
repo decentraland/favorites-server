@@ -6,6 +6,7 @@ import { Permission } from '../access'
 import { DBGetFilteredPicksWithCount, DBPick } from '../picks'
 import {
   DuplicatedListError,
+  ForbiddenAccessToList,
   ItemNotFoundError,
   ListNotFoundError,
   PickAlreadyExistsError,
@@ -64,8 +65,13 @@ export function createListsComponent(
     }
 
     const result = await pg.query<DBList>(getListQuery)
+
     if (result.rowCount === 0) {
       throw new ListNotFoundError(listId)
+    }
+
+    if (requiredPermission && !result.rows[0].permission) {
+      throw new ForbiddenAccessToList(listId)
     }
 
     return result.rows[0]

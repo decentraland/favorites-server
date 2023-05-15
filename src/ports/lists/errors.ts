@@ -4,6 +4,12 @@ export class ListNotFoundError extends Error {
   }
 }
 
+export class ForbiddenAccessToList extends Error {
+  constructor(public listId: string) {
+    super('The access to the list is forbidden.')
+  }
+}
+
 export class PickAlreadyExistsError extends Error {
   constructor(public listId: string, public itemId: string) {
     super('The item was already favorited.')

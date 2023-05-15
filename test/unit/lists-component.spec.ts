@@ -6,6 +6,7 @@ import { Permission } from '../../src/ports/access'
 import { createListsComponent, DBGetListsWithCount, DBList, IListsComponents, ListSortBy, ListSortDirection } from '../../src/ports/lists'
 import {
   DuplicatedListError,
+  ForbiddenAccessToList,
   ItemNotFoundError,
   ListNotFoundError,
   PickAlreadyExistsError,
@@ -144,7 +145,8 @@ describe('when creating a new pick', () => {
             id: 'aListId',
             name: 'aListName',
             description: null,
-            user_address: 'aUserAddress'
+            user_address: 'aUserAddress',
+            permission: Permission.EDIT
           }
         ]
       })
@@ -165,7 +167,8 @@ describe('when creating a new pick', () => {
             id: 'aListId',
             name: 'aListName',
             description: null,
-            user_address: 'aUserAddress'
+            user_address: 'aUserAddress',
+            permission: Permission.EDIT
           }
         ]
       })
@@ -190,7 +193,8 @@ describe('when creating a new pick', () => {
             id: listId,
             name: 'aListName',
             description: null,
-            user_address: userAddress
+            user_address: userAddress,
+            permission: Permission.EDIT
           }
         ]
       })
@@ -577,6 +581,19 @@ describe('when getting a list', () => {
 
     it('should throw a list not found error', () => {
       return expect(listsComponent.getList(listId, { userAddress })).rejects.toEqual(error)
+    })
+  })
+
+  describe('and the user has no access to the list', () => {
+    let error: Error
+
+    beforeEach(() => {
+      error = new ForbiddenAccessToList(listId)
+      dbQueryMock.mockResolvedValueOnce({ rowCount: 1, rows: [{ id: listId, user_address: 'anotherUserAddress' }] })
+    })
+
+    it('should throw a list not found error', () => {
+      return expect(listsComponent.getList(listId, { userAddress, requiredPermission: Permission.VIEW })).rejects.toEqual(error)
     })
   })
 

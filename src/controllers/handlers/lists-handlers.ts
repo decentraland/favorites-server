@@ -360,23 +360,12 @@ export async function getListHandler(
   const userAddress: string | undefined = verification?.auth.toLowerCase()
 
   const listResult = await listsComponent.getList(params.id, { userAddress })
-  const list = fromDBListToList(listResult)
-
-  if (!list.permission) {
-    return {
-      status: StatusCode.FORBIDDEN,
-      body: {
-        ok: false,
-        message: 'Forbidden'
-      }
-    }
-  }
 
   return {
     status: StatusCode.OK,
     body: {
       ok: true,
-      data: list
+      data: fromDBListToList(listResult)
     }
   }
 }

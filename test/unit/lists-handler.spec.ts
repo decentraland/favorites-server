@@ -1187,22 +1187,6 @@ describe('when getting a list', () => {
     }
   })
 
-  describe('and the request fails due to the user not being allowed to access it', () => {
-    beforeEach(() => {
-      getListMock.mockResolvedValueOnce(dbList)
-    })
-
-    it('should return a forbidden response', () => {
-      return expect(getListHandler({ components, verification, params })).resolves.toEqual({
-        status: StatusCode.FORBIDDEN,
-        body: {
-          ok: false,
-          message: 'Forbidden'
-        }
-      })
-    })
-  })
-
   describe.each([Permission.EDIT, Permission.VIEW])(
     'and the request is successful because the user has %s permission to access the list',
     permission => {
