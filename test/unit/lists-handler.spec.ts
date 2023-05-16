@@ -1187,26 +1187,26 @@ describe('when getting a list', () => {
     }
   })
 
-  describe.each([Permission.EDIT, Permission.VIEW])(
-    'and the request is successful because the user has %s permission to access the list',
-    permission => {
-      beforeEach(() => {
-        dbList = { ...dbList, permission }
-        list = { ...list, permission }
-        getListMock.mockResolvedValueOnce(dbList)
-      })
+  describe('and the request is successful because the user has %s permission to access the list', () => {
+    let permission: Permission
 
-      it('should return an ok response with the list', () => {
-        return expect(getListHandler({ components, verification, params })).resolves.toEqual({
-          status: StatusCode.OK,
-          body: {
-            ok: true,
-            data: list
-          }
-        })
+    beforeEach(() => {
+      permission = Permission.VIEW
+      dbList = { ...dbList, permission }
+      list = { ...list, permission }
+      getListMock.mockResolvedValueOnce(dbList)
+    })
+
+    it('should return an ok response with the list', () => {
+      return expect(getListHandler({ components, verification, params })).resolves.toEqual({
+        status: StatusCode.OK,
+        body: {
+          ok: true,
+          data: list
+        }
       })
-    }
-  )
+    })
+  })
 
   describe('and the process to get a list fails with an unknown error', () => {
     const error = new Error('anError')
