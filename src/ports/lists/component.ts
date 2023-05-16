@@ -50,20 +50,20 @@ export function createListsComponent(
 
     if (requiredPermission) getListQuery.append(SQL`, favorites.acl.permission as permission`)
 
-    getListQuery.append(SQL` FROM favorites.lists WHERE id = ${listId} AND (user_address = ${userAddress}`)
+    getListQuery.append(SQL` FROM favorites.lists`)
 
+    if (requiredPermission) {
+      const requiredPermissions = requiredPermission === Permission.VIEW ? [Permission.VIEW, Permission.EDIT] : [requiredPermission]
+      getListQuery.append(
+        SQL` LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id AND (favorites.acl.grantee = ${userAddress} OR favorites.acl.grantee = ${GRANTED_TO_ALL}) AND favorites.acl.permission = ANY(${requiredPermissions}::text[])`
+      )
+    }
+
+    getListQuery.append(SQL` WHERE id = ${listId} AND (user_address = ${userAddress}`)
     if (considerDefaultList) {
       getListQuery.append(SQL` OR user_address = ${DEFAULT_LIST_USER_ADDRESS}`)
     }
     getListQuery.append(')')
-
-    if (requiredPermission) {
-      const requiredPermissions = requiredPermission === Permission.VIEW ? [Permission.VIEW, Permission.EDIT] : [requiredPermission]
-      getListQuery.append(SQL`
-        LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id
-        WHERE (favorites.acl.grantee = ${userAddress} OR favorites.acl.grantee = ${GRANTED_TO_ALL}) AND favorites.acl.permission = ANY(${requiredPermissions}::text[])
-      `)
-    }
 
     const result = await pg.query<DBList>(getListQuery)
 

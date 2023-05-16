@@ -709,23 +709,23 @@ describe('when getting a list', () => {
 
         expect(dbQueryMock).toHaveBeenCalledWith(
           expect.objectContaining({
-            text: expect.stringContaining('FROM favorites.lists WHERE id = $1 AND (user_address = $2 OR user_address = $3)'),
-            values: expect.arrayContaining([listId, userAddress, DEFAULT_LIST_USER_ADDRESS])
-          })
-        )
-
-        expect(dbQueryMock).toHaveBeenCalledWith(
-          expect.objectContaining({
-            text: expect.stringContaining('LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id')
+            text: expect.stringContaining('FROM favorites.lists')
           })
         )
 
         expect(dbQueryMock).toHaveBeenCalledWith(
           expect.objectContaining({
             text: expect.stringContaining(
-              'WHERE (favorites.acl.grantee = $4 OR favorites.acl.grantee = $5) AND favorites.acl.permission = ANY($6::text[])'
+              'LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id AND (favorites.acl.grantee = $1 OR favorites.acl.grantee = $2) AND favorites.acl.permission = ANY($3::text[])'
             ),
             values: expect.arrayContaining([userAddress, '*', [permission]])
+          })
+        )
+
+        expect(dbQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining('WHERE id = $4 AND (user_address = $5 OR user_address = $6)'),
+            values: expect.arrayContaining([listId, userAddress, DEFAULT_LIST_USER_ADDRESS])
           })
         )
       })
@@ -759,23 +759,23 @@ describe('when getting a list', () => {
 
         expect(dbQueryMock).toHaveBeenCalledWith(
           expect.objectContaining({
-            text: expect.stringContaining('FROM favorites.lists WHERE id = $1 AND (user_address = $2 OR user_address = $3)'),
-            values: expect.arrayContaining([listId, userAddress, DEFAULT_LIST_USER_ADDRESS])
-          })
-        )
-
-        expect(dbQueryMock).toHaveBeenCalledWith(
-          expect.objectContaining({
-            text: expect.stringContaining('LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id')
+            text: expect.stringContaining('FROM favorites.lists')
           })
         )
 
         expect(dbQueryMock).toHaveBeenCalledWith(
           expect.objectContaining({
             text: expect.stringContaining(
-              'WHERE (favorites.acl.grantee = $4 OR favorites.acl.grantee = $5) AND favorites.acl.permission = ANY($6::text[])'
+              'LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id AND (favorites.acl.grantee = $1 OR favorites.acl.grantee = $2) AND favorites.acl.permission = ANY($3::text[])'
             ),
             values: expect.arrayContaining([userAddress, '*', [permission, Permission.EDIT]])
+          })
+        )
+
+        expect(dbQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining('WHERE id = $4 AND (user_address = $5 OR user_address = $6)'),
+            values: expect.arrayContaining([listId, userAddress, DEFAULT_LIST_USER_ADDRESS])
           })
         )
       })
