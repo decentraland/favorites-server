@@ -12,6 +12,7 @@ import { AccessNotFoundError, DuplicatedAccessError } from '../../ports/access/e
 import { AddListRequestBody, ListSortBy, ListSortDirection } from '../../ports/lists'
 import {
   DuplicatedListError,
+  ForbiddenAccessToList,
   ItemNotFoundError,
   ListNotFoundError,
   PickAlreadyExistsError,
@@ -359,14 +360,42 @@ export async function getListHandler(
   } = context
   const userAddress: string | undefined = verification?.auth.toLowerCase()
 
-  const listResult = await listsComponent.getList(params.id, { userAddress })
+  try {
+    const listResult = await listsComponent.getList(params.id, { userAddress })
 
-  return {
-    status: StatusCode.OK,
-    body: {
-      ok: true,
-      data: fromDBListToList(listResult)
+    return {
+      status: StatusCode.OK,
+      body: {
+        ok: true,
+        data: fromDBListToList(listResult)
+      }
     }
+  } catch (error) {
+    if (error instanceof ListNotFoundError) {
+      return {
+        status: StatusCode.NOT_FOUND,
+        body: {
+          ok: false,
+          message: error.message,
+          data: {
+            listId: error.listId
+          }
+        }
+      }
+    } else if (error instanceof ForbiddenAccessToList) {
+      return {
+        status: StatusCode.FORBIDDEN,
+        body: {
+          ok: false,
+          message: error.message,
+          data: {
+            listId: error.listId
+          }
+        }
+      }
+    }
+
+    throw error
   }
 }
 

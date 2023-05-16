@@ -17,6 +17,7 @@ import { AccessNotFoundError, DuplicatedAccessError } from '../../src/ports/acce
 import { DBGetListsWithCount, DBList } from '../../src/ports/lists'
 import {
   DuplicatedListError,
+  ForbiddenAccessToList,
   ItemNotFoundError,
   ListNotFoundError,
   PickAlreadyExistsError,
@@ -1185,6 +1186,50 @@ describe('when getting a list', () => {
       description: 'Description of List #1',
       permission: undefined
     }
+  })
+
+  describe('and the request failed due to the list not existing or not being accessible', () => {
+    let error: Error
+
+    beforeEach(() => {
+      error = new ListNotFoundError(listId)
+      getListMock.mockRejectedValueOnce(error)
+    })
+
+    it('should return a not found response', () => {
+      return expect(getListHandler({ components, verification, params })).resolves.toEqual({
+        status: StatusCode.NOT_FOUND,
+        body: {
+          ok: false,
+          message: error.message,
+          data: {
+            listId
+          }
+        }
+      })
+    })
+  })
+
+  describe('and the request failed due to the list is forbidden for the user', () => {
+    let error: Error
+
+    beforeEach(() => {
+      error = new ForbiddenAccessToList(listId)
+      getListMock.mockRejectedValueOnce(error)
+    })
+
+    it('should return a forbidden response', () => {
+      return expect(getListHandler({ components, verification, params })).resolves.toEqual({
+        status: StatusCode.FORBIDDEN,
+        body: {
+          ok: false,
+          message: error.message,
+          data: {
+            listId
+          }
+        }
+      })
+    })
   })
 
   describe('and the request is successful because the user has %s permission to access the list', () => {
