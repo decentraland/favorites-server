@@ -666,7 +666,7 @@ describe('when getting a list', () => {
       )
     })
 
-    it('should resolve', () => {
+    it('should resolve with the list', () => {
       return expect(result).toEqual(dbList)
     })
   })
