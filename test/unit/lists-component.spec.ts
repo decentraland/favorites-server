@@ -651,7 +651,7 @@ describe('when getting a list', () => {
       result = await listsComponent.getList(listId, { userAddress, considerDefaultList: true })
     })
 
-    it('should have made the query to get the list checking if the list belongs to the default user without taking into account the permissions', async () => {
+    it('should have made the query to get the list checking if the list belongs to the default user without taking into account the permissions', () => {
       expect(dbQueryMock).toHaveBeenCalledWith(
         expect.objectContaining({
           text: expect.stringContaining('SELECT *')
