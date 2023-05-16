@@ -48,7 +48,7 @@ export function createListsComponent(
     const getListQuery = SQL`
       SELECT *, favorites.acl.permission as permission
       FROM favorites.lists
-      JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id`
+      LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id`
 
     getListQuery.append(SQL` WHERE id = ${listId} AND (user_address = ${userAddress}`)
     if (considerDefaultList) {
@@ -59,7 +59,7 @@ export function createListsComponent(
     if (requiredPermission) {
       const requiredPermissions = requiredPermission === Permission.VIEW ? [Permission.VIEW, Permission.EDIT] : [requiredPermission]
       getListQuery.append(
-        SQL` AND (favorites.acl.grantee = ${userAddress} OR favorites.acl.grantee = ${GRANTED_TO_ALL}) AND favorites.acl.permission = ANY(${requiredPermissions}::text[])`
+        SQL` OR ((favorites.acl.grantee = ${userAddress} OR favorites.acl.grantee = ${GRANTED_TO_ALL}) AND favorites.acl.permission = ANY(${requiredPermissions}::text[]))`
       )
     }
 
