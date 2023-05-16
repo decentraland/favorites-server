@@ -542,7 +542,7 @@ describe('when deleting a list', () => {
       result = await listsComponent.deleteList(listId, userAddress)
     })
 
-    it('should have made the query to delete the list', async () => {
+    it('should have made the query to delete the list', () => {
       expect(dbQueryMock).toHaveBeenCalledWith(
         expect.objectContaining({
           text: expect.stringContaining('DELETE FROM favorites.lists')
@@ -593,7 +593,7 @@ describe('when getting a list', () => {
     })
 
     it('should throw a list not found error', () => {
-      return expect(listsComponent.getList(listId, { userAddress, requiredPermissions: [Permission.VIEW] })).rejects.toEqual(error)
+      return expect(listsComponent.getList(listId, { userAddress, requiredPermission: Permission.VIEW })).rejects.toEqual(error)
     })
   })
 
@@ -675,22 +675,32 @@ describe('when getting a list', () => {
     let dbList: DBList
     let result: DBList
 
-    describe.each([Permission.EDIT, Permission.VIEW])('and the required permission is %s', permission => {
+    beforeEach(() => {
+      dbList = {
+        id: 'aListId',
+        name: 'aListName',
+        description: null,
+        user_address: 'aUserAddress',
+        created_at: new Date()
+      }
+    })
+
+    describe('and the required permission is EDIT', () => {
+      let permission: Permission
+
       beforeEach(async () => {
+        permission = Permission.EDIT
+
         dbList = {
-          id: 'aListId',
-          name: 'aListName',
-          description: null,
-          user_address: 'aUserAddress',
-          created_at: new Date(),
+          ...dbList,
           permission
         }
 
         dbQueryMock.mockResolvedValueOnce({ rowCount: 1, rows: [dbList] })
-        result = await listsComponent.getList(listId, { userAddress, considerDefaultList: true, requiredPermissions: [permission] })
+        result = await listsComponent.getList(listId, { userAddress, considerDefaultList: true, requiredPermission: permission })
       })
 
-      it('should have made the query to get the list matching those conditions', () => {
+      it('should have made the query to get the list matching the permission conditions', () => {
         expect(dbQueryMock).toHaveBeenCalledWith(
           expect.objectContaining({
             text: expect.stringContaining('SELECT *, favorites.acl.permission as permission')
@@ -716,6 +726,56 @@ describe('when getting a list', () => {
               'WHERE (favorites.acl.grantee = $4 OR favorites.acl.grantee = $5) AND favorites.acl.permission = ANY($6::text[])'
             ),
             values: expect.arrayContaining([userAddress, '*', [permission]])
+          })
+        )
+      })
+
+      it('should resolve with the list', () => {
+        return expect(result).toEqual(dbList)
+      })
+    })
+
+    describe('and the required permission is VIEW', () => {
+      let permission: Permission
+
+      beforeEach(async () => {
+        permission = Permission.VIEW
+
+        dbList = {
+          ...dbList,
+          permission
+        }
+
+        dbQueryMock.mockResolvedValueOnce({ rowCount: 1, rows: [dbList] })
+        result = await listsComponent.getList(listId, { userAddress, considerDefaultList: true, requiredPermission: permission })
+      })
+
+      it('should have made the query to get the list matching the permission conditions', () => {
+        expect(dbQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining('SELECT *, favorites.acl.permission as permission')
+          })
+        )
+
+        expect(dbQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining('FROM favorites.lists WHERE id = $1 AND (user_address = $2 OR user_address = $3)'),
+            values: expect.arrayContaining([listId, userAddress, DEFAULT_LIST_USER_ADDRESS])
+          })
+        )
+
+        expect(dbQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining('LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id')
+          })
+        )
+
+        expect(dbQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining(
+              'WHERE (favorites.acl.grantee = $4 OR favorites.acl.grantee = $5) AND favorites.acl.permission = ANY($6::text[])'
+            ),
+            values: expect.arrayContaining([userAddress, '*', [permission, Permission.EDIT]])
           })
         )
       })
