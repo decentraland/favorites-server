@@ -2,6 +2,7 @@ import { IDatabase, ILoggerComponent } from '@well-known-components/interfaces'
 import { IPgComponent } from '@well-known-components/pg-component'
 import { ISubgraphComponent } from '@well-known-components/thegraph-component'
 import { DEFAULT_LIST_USER_ADDRESS } from '../../src/migrations/1678303321034_default-list'
+import { Permission } from '../../src/ports/access'
 import { createListsComponent, DBGetListsWithCount, DBList, IListsComponents, ListSortBy, ListSortDirection } from '../../src/ports/lists'
 import {
   DuplicatedListError,
@@ -143,7 +144,8 @@ describe('when creating a new pick', () => {
             id: 'aListId',
             name: 'aListName',
             description: null,
-            user_address: 'aUserAddress'
+            user_address: 'aUserAddress',
+            permission: Permission.EDIT
           }
         ]
       })
@@ -164,7 +166,8 @@ describe('when creating a new pick', () => {
             id: 'aListId',
             name: 'aListName',
             description: null,
-            user_address: 'aUserAddress'
+            user_address: 'aUserAddress',
+            permission: Permission.EDIT
           }
         ]
       })
@@ -189,7 +192,8 @@ describe('when creating a new pick', () => {
             id: listId,
             name: 'aListName',
             description: null,
-            user_address: userAddress
+            user_address: userAddress,
+            permission: Permission.EDIT
           }
         ]
       })
@@ -490,7 +494,8 @@ describe('when creating a new list', () => {
         id: listId,
         name,
         user_address: userAddress,
-        description: null
+        description: null,
+        created_at: new Date()
       }
       dbQueryMock.mockResolvedValueOnce({
         rowCount: 1,
@@ -536,7 +541,7 @@ describe('when deleting a list', () => {
       result = await listsComponent.deleteList(listId, userAddress)
     })
 
-    it('should have made the query to delete the list', async () => {
+    it('should have made the query to delete the list', () => {
       expect(dbQueryMock).toHaveBeenCalledWith(
         expect.objectContaining({
           text: expect.stringContaining('DELETE FROM favorites.lists')
@@ -560,6 +565,239 @@ describe('when deleting a list', () => {
 
     it('should resolve', () => {
       return expect(result).toEqual(undefined)
+    })
+  })
+})
+
+describe('when getting a list', () => {
+  describe('and the list was not found or was not accessible by the user', () => {
+    let error: Error
+
+    beforeEach(() => {
+      error = new ListNotFoundError(listId)
+      dbQueryMock.mockResolvedValueOnce({ rowCount: 0 })
+    })
+
+    it('should throw a list not found error', () => {
+      return expect(listsComponent.getList(listId, { userAddress })).rejects.toEqual(error)
+    })
+  })
+
+  describe('and neither the default list nor the permissions should be considered', () => {
+    let dbList: DBList
+    let result: DBList
+
+    beforeEach(async () => {
+      dbList = {
+        id: 'aListId',
+        name: 'aListName',
+        description: null,
+        user_address: 'aUserAddress',
+        created_at: new Date()
+      }
+
+      dbQueryMock.mockResolvedValueOnce({ rowCount: 1, rows: [dbList] })
+      result = await listsComponent.getList(listId, { userAddress, considerDefaultList: false })
+    })
+
+    it('should have made the query to get without checking if the list belongs to the default user or if has the required permissions', () => {
+      expect(dbQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('SELECT *, favorites.acl.permission as permission')
+        })
+      )
+
+      expect(dbQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('FROM favorites.lists')
+        })
+      )
+
+      expect(dbQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id')
+        })
+      )
+
+      expect(dbQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('WHERE id = $1 AND (user_address = $2)'),
+          values: expect.arrayContaining([listId, userAddress])
+        })
+      )
+    })
+
+    it('should resolve with the list', () => {
+      return expect(result).toEqual(dbList)
+    })
+  })
+
+  describe('and the default list should be considered but not the permissions', () => {
+    let dbList: DBList
+    let result: DBList
+
+    beforeEach(async () => {
+      dbList = {
+        id: 'aListId',
+        name: 'aListName',
+        description: null,
+        user_address: 'aUserAddress',
+        created_at: new Date()
+      }
+
+      dbQueryMock.mockResolvedValueOnce({ rowCount: 1, rows: [dbList] })
+      result = await listsComponent.getList(listId, { userAddress, considerDefaultList: true })
+    })
+
+    it('should have made the query to get the list checking if the list belongs to the default user without taking into account the permissions', () => {
+      expect(dbQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('SELECT *, favorites.acl.permission as permission')
+        })
+      )
+
+      expect(dbQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('FROM favorites.lists')
+        })
+      )
+
+      expect(dbQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id')
+        })
+      )
+
+      expect(dbQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('WHERE id = $1 AND (user_address = $2 OR user_address = $3)'),
+          values: expect.arrayContaining([listId, userAddress, DEFAULT_LIST_USER_ADDRESS])
+        })
+      )
+    })
+
+    it('should resolve with the list', () => {
+      return expect(result).toEqual(dbList)
+    })
+  })
+
+  describe('and both the default list and the permissions should be considered', () => {
+    let dbList: DBList
+    let result: DBList
+
+    beforeEach(() => {
+      dbList = {
+        id: 'aListId',
+        name: 'aListName',
+        description: null,
+        user_address: 'aUserAddress',
+        created_at: new Date()
+      }
+    })
+
+    describe('and the required permission is EDIT', () => {
+      let permission: Permission
+
+      beforeEach(async () => {
+        permission = Permission.EDIT
+
+        dbList = {
+          ...dbList,
+          permission
+        }
+
+        dbQueryMock.mockResolvedValueOnce({ rowCount: 1, rows: [dbList] })
+        result = await listsComponent.getList(listId, { userAddress, considerDefaultList: true, requiredPermission: permission })
+      })
+
+      it('should have made the query to get the list matching the permission conditions', () => {
+        expect(dbQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining('SELECT *, favorites.acl.permission as permission')
+          })
+        )
+
+        expect(dbQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining('FROM favorites.lists')
+          })
+        )
+
+        expect(dbQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining('LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id')
+          })
+        )
+
+        expect(dbQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining(
+              'WHERE id = $1 AND (user_address = $2 OR user_address = $3) OR ((favorites.acl.grantee = $4 OR favorites.acl.grantee = $5) AND favorites.acl.permission = ANY($6::text[]))'
+            ),
+            values: expect.arrayContaining([listId, userAddress, DEFAULT_LIST_USER_ADDRESS, userAddress, '*', [permission]])
+          })
+        )
+      })
+
+      it('should resolve with the list', () => {
+        return expect(result).toEqual(dbList)
+      })
+    })
+
+    describe('and the required permission is VIEW', () => {
+      let permission: Permission
+
+      beforeEach(async () => {
+        permission = Permission.VIEW
+
+        dbList = {
+          ...dbList,
+          permission
+        }
+
+        dbQueryMock.mockResolvedValueOnce({ rowCount: 1, rows: [dbList] })
+        result = await listsComponent.getList(listId, { userAddress, considerDefaultList: true, requiredPermission: permission })
+      })
+
+      it('should have made the query to get the list matching the permission conditions', () => {
+        expect(dbQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining('SELECT *, favorites.acl.permission as permission')
+          })
+        )
+
+        expect(dbQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining('FROM favorites.lists')
+          })
+        )
+
+        expect(dbQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining('LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id')
+          })
+        )
+
+        expect(dbQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining(
+              'WHERE id = $1 AND (user_address = $2 OR user_address = $3) OR ((favorites.acl.grantee = $4 OR favorites.acl.grantee = $5) AND favorites.acl.permission = ANY($6::text[]))'
+            ),
+            values: expect.arrayContaining([
+              listId,
+              userAddress,
+              DEFAULT_LIST_USER_ADDRESS,
+              userAddress,
+              '*',
+              [permission, Permission.EDIT]
+            ])
+          })
+        )
+      })
+
+      it('should resolve with the list', () => {
+        return expect(result).toEqual(dbList)
+      })
     })
   })
 })

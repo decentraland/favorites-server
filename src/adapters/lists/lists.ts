@@ -1,3 +1,4 @@
+import { Permission } from '../../ports/access'
 import { DBGetListsWithCount, DBList } from '../../ports/lists'
 import { DBPick, DBGetFilteredPicksWithCount } from '../../ports/picks'
 import { TPick } from '../picks'
@@ -37,6 +38,8 @@ export function fromDBListToList(dbList: DBList): List {
     id: dbList.id,
     name: dbList.name,
     description: dbList.description,
-    userAddress: dbList.user_address
+    userAddress: dbList.user_address,
+    createdAt: dbList.created_at,
+    permission: dbList.permission as Permission
   }
 }

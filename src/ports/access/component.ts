@@ -26,7 +26,7 @@ export function createAccessComponent(components: Pick<AppComponents, 'pg' | 'lo
 
   async function createAccess(listId: string, permission: Permission, grantee: string, listOwner: string): Promise<void> {
     try {
-      await lists.getList(listId, listOwner, false)
+      await lists.getList(listId, { userAddress: listOwner, considerDefaultList: false })
       await pg.query<void>(SQL`INSERT INTO favorites.acl (list_id, permission, grantee) VALUES (${listId}, ${permission}, ${grantee})`)
     } catch (error) {
       if (error && typeof error === 'object' && 'constraint' in error && error.constraint === 'list_id_permissions_grantee_primary_key') {

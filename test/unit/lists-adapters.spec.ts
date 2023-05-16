@@ -118,6 +118,7 @@ describe('when transforming DB retrieved lists to lists with count', () => {
           name: 'List #1',
           description: 'Super description of list #1',
           user_address: '0x45abb534BD927284F84b03d43f33dF0E5C91C21f',
+          created_at: new Date(),
           lists_count: '3'
         },
         {
@@ -125,6 +126,7 @@ describe('when transforming DB retrieved lists to lists with count', () => {
           name: 'List #2',
           description: 'Super description of list #2',
           user_address: '0x45abb534BD927284F84b03d43f33dF0E5C91C21f',
+          created_at: new Date(),
           lists_count: '3'
         },
         {
@@ -132,6 +134,7 @@ describe('when transforming DB retrieved lists to lists with count', () => {
           name: 'List #3',
           description: 'Super description of list #3',
           user_address: '0x45abb534BD927284F84b03d43f33dF0E5C91C21f',
+          created_at: new Date(),
           lists_count: '3'
         }
       ]
@@ -153,13 +156,15 @@ describe('when transforming DB retrieved lists to lists with count', () => {
 
 describe('when transforming a DB retrieved list to a list', () => {
   let dbList: DBList
+  const date = new Date()
 
   beforeEach(() => {
     dbList = {
       id: 'e96df126-f5bf-4311-94d8-6e261f368bb2',
       name: 'List #1',
       user_address: '0x45abb534BD927284F84b03d43f33dF0E5C91C21f',
-      description: 'This is a list'
+      description: 'This is a list',
+      created_at: date
     }
   })
 
@@ -168,7 +173,9 @@ describe('when transforming a DB retrieved list to a list', () => {
       id: dbList.id,
       name: dbList.name,
       userAddress: dbList.user_address,
-      description: dbList.description
+      description: dbList.description,
+      createdAt: date,
+      permission: undefined
     })
   })
 })

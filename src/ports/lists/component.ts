@@ -2,6 +2,7 @@ import SQL from 'sql-template-strings'
 import { isErrorWithMessage } from '../../logic/errors'
 import { DEFAULT_LIST_USER_ADDRESS } from '../../migrations/1678303321034_default-list'
 import { AppComponents } from '../../types'
+import { Permission } from '../access'
 import { DBGetFilteredPicksWithCount, DBPick } from '../picks'
 import {
   DuplicatedListError,
@@ -19,7 +20,8 @@ import {
   AddListRequestBody,
   GetListsParameters,
   ListSortBy,
-  ListSortDirection
+  ListSortDirection,
+  GetListOptions
 } from './types'
 
 const GRANTED_TO_ALL = '*'
@@ -42,14 +44,27 @@ export function createListsComponent(
     return result.rows
   }
 
-  async function getList(listId: string, userAddress: string, considerDefaultList = true): Promise<DBList> {
-    const getListQuery = SQL`SELECT * from favorites.lists WHERE id = ${listId} AND (user_address = ${userAddress}`
+  async function getList(listId: string, { requiredPermission, considerDefaultList = true, userAddress }: GetListOptions): Promise<DBList> {
+    const getListQuery = SQL`
+      SELECT *, favorites.acl.permission as permission
+      FROM favorites.lists
+      LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id`
+
+    getListQuery.append(SQL` WHERE id = ${listId} AND (user_address = ${userAddress}`)
     if (considerDefaultList) {
       getListQuery.append(SQL` OR user_address = ${DEFAULT_LIST_USER_ADDRESS}`)
     }
     getListQuery.append(')')
 
+    if (requiredPermission) {
+      const requiredPermissions = requiredPermission === Permission.VIEW ? [Permission.VIEW, Permission.EDIT] : [requiredPermission]
+      getListQuery.append(
+        SQL` OR ((favorites.acl.grantee = ${userAddress} OR favorites.acl.grantee = ${GRANTED_TO_ALL}) AND favorites.acl.permission = ANY(${requiredPermissions}::text[]))`
+      )
+    }
+
     const result = await pg.query<DBList>(getListQuery)
+
     if (result.rowCount === 0) {
       throw new ListNotFoundError(listId)
     }
@@ -58,7 +73,7 @@ export function createListsComponent(
   }
 
   async function addPickToList(listId: string, itemId: string, userAddress: string): Promise<DBPick> {
-    const list = await getList(listId, userAddress)
+    const list = await getList(listId, { userAddress, requiredPermission: Permission.EDIT })
     const [queryResult, power] = await Promise.allSettled([
       collectionsSubgraph.query<{ items: { id: string }[] }>(
         `query items($itemId: String) {

@@ -8,6 +8,7 @@ import {
 import { TPick } from '../../adapters/picks'
 import { isErrorWithMessage } from '../../logic/errors'
 import { getPaginationParams } from '../../logic/http'
+import { Permission } from '../../ports/access'
 import { AccessNotFoundError, DuplicatedAccessError } from '../../ports/access/errors'
 import { AddListRequestBody, ListSortBy, ListSortDirection } from '../../ports/lists'
 import {
@@ -333,6 +334,44 @@ export async function createAccessHandler(
         }
       }
     } else if (error instanceof ListNotFoundError) {
+      return {
+        status: StatusCode.NOT_FOUND,
+        body: {
+          ok: false,
+          message: error.message,
+          data: {
+            listId: error.listId
+          }
+        }
+      }
+    }
+
+    throw error
+  }
+}
+
+export async function getListHandler(
+  context: Pick<HandlerContextWithPath<'lists', '/v1/lists/:id'>, 'components' | 'verification' | 'params'>
+): Promise<HTTPResponse<List>> {
+  const {
+    components: { lists: listsComponent },
+    params,
+    verification
+  } = context
+  const userAddress: string | undefined = verification?.auth.toLowerCase()
+
+  try {
+    const listResult = await listsComponent.getList(params.id, { userAddress, requiredPermission: Permission.VIEW })
+
+    return {
+      status: StatusCode.OK,
+      body: {
+        ok: true,
+        data: fromDBListToList(listResult)
+      }
+    }
+  } catch (error) {
+    if (error instanceof ListNotFoundError) {
       return {
         status: StatusCode.NOT_FOUND,
         body: {

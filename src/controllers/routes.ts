@@ -9,7 +9,8 @@ import {
   createListHandler,
   deleteListHandler,
   getListsHandler,
-  createAccessHandler
+  createAccessHandler,
+  getListHandler
 } from './handlers/lists-handlers'
 import { getPickStatsHandler, getPicksByItemIdHandler, getPickStatsOfItemHandler } from './handlers/picks-handlers'
 import { pingHandler } from './handlers/ping-handler'
@@ -66,6 +67,15 @@ export function setupRouter(_globalContext: GlobalContext): Promise<Router<Globa
       expiration: FIVE_MINUTES
     }),
     getPicksByItemIdHandler
+  )
+
+  router.get(
+    '/v1/lists/:id',
+    authorizationMiddleware.wellKnownComponents({
+      optional: true,
+      expiration: FIVE_MINUTES
+    }),
+    getListHandler
   )
 
   router.get(
