@@ -6,7 +6,6 @@ import { Permission } from '../../src/ports/access'
 import { createListsComponent, DBGetListsWithCount, DBList, IListsComponents, ListSortBy, ListSortDirection } from '../../src/ports/lists'
 import {
   DuplicatedListError,
-  ForbiddenAccessToList,
   ItemNotFoundError,
   ListNotFoundError,
   PickAlreadyExistsError,
@@ -584,19 +583,6 @@ describe('when getting a list', () => {
     })
   })
 
-  describe('and the user has no access to the list', () => {
-    let error: Error
-
-    beforeEach(() => {
-      error = new ForbiddenAccessToList(listId)
-      dbQueryMock.mockResolvedValueOnce({ rowCount: 1, rows: [{ id: listId, user_address: 'anotherUserAddress' }] })
-    })
-
-    it('should throw a list not found error', () => {
-      return expect(listsComponent.getList(listId, { userAddress, requiredPermission: Permission.VIEW })).rejects.toEqual(error)
-    })
-  })
-
   describe('and neither the default list nor the permissions should be considered', () => {
     let dbList: DBList
     let result: DBList
@@ -617,13 +603,25 @@ describe('when getting a list', () => {
     it('should have made the query to get without checking if the list belongs to the default user or if has the required permissions', () => {
       expect(dbQueryMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          text: expect.stringContaining('SELECT *')
+          text: expect.stringContaining('SELECT *, favorites.acl.permission as permission')
         })
       )
 
       expect(dbQueryMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          text: expect.stringContaining('FROM favorites.lists WHERE id = $1 AND (user_address = $2)'),
+          text: expect.stringContaining('FROM favorites.lists')
+        })
+      )
+
+      expect(dbQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id')
+        })
+      )
+
+      expect(dbQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('WHERE id = $1 AND (user_address = $2)'),
           values: expect.arrayContaining([listId, userAddress])
         })
       )
@@ -654,13 +652,25 @@ describe('when getting a list', () => {
     it('should have made the query to get the list checking if the list belongs to the default user without taking into account the permissions', () => {
       expect(dbQueryMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          text: expect.stringContaining('SELECT *')
+          text: expect.stringContaining('SELECT *, favorites.acl.permission as permission')
         })
       )
 
       expect(dbQueryMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          text: expect.stringContaining('FROM favorites.lists WHERE id = $1 AND (user_address = $2 OR user_address = $3)'),
+          text: expect.stringContaining('FROM favorites.lists')
+        })
+      )
+
+      expect(dbQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id')
+        })
+      )
+
+      expect(dbQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('WHERE id = $1 AND (user_address = $2 OR user_address = $3)'),
           values: expect.arrayContaining([listId, userAddress, DEFAULT_LIST_USER_ADDRESS])
         })
       )
@@ -715,17 +725,16 @@ describe('when getting a list', () => {
 
         expect(dbQueryMock).toHaveBeenCalledWith(
           expect.objectContaining({
-            text: expect.stringContaining(
-              'LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id AND (favorites.acl.grantee = $1 OR favorites.acl.grantee = $2) AND favorites.acl.permission = ANY($3::text[])'
-            ),
-            values: expect.arrayContaining([userAddress, '*', [permission]])
+            text: expect.stringContaining('JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id')
           })
         )
 
         expect(dbQueryMock).toHaveBeenCalledWith(
           expect.objectContaining({
-            text: expect.stringContaining('WHERE id = $4 AND (user_address = $5 OR user_address = $6)'),
-            values: expect.arrayContaining([listId, userAddress, DEFAULT_LIST_USER_ADDRESS])
+            text: expect.stringContaining(
+              'WHERE id = $1 AND (user_address = $2 OR user_address = $3) AND (favorites.acl.grantee = $4 OR favorites.acl.grantee = $5) AND favorites.acl.permission = ANY($6::text[])'
+            ),
+            values: expect.arrayContaining([listId, userAddress, DEFAULT_LIST_USER_ADDRESS, userAddress, '*', [permission]])
           })
         )
       })
@@ -765,17 +774,23 @@ describe('when getting a list', () => {
 
         expect(dbQueryMock).toHaveBeenCalledWith(
           expect.objectContaining({
-            text: expect.stringContaining(
-              'LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id AND (favorites.acl.grantee = $1 OR favorites.acl.grantee = $2) AND favorites.acl.permission = ANY($3::text[])'
-            ),
-            values: expect.arrayContaining([userAddress, '*', [permission, Permission.EDIT]])
+            text: expect.stringContaining('JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id')
           })
         )
 
         expect(dbQueryMock).toHaveBeenCalledWith(
           expect.objectContaining({
-            text: expect.stringContaining('WHERE id = $4 AND (user_address = $5 OR user_address = $6)'),
-            values: expect.arrayContaining([listId, userAddress, DEFAULT_LIST_USER_ADDRESS])
+            text: expect.stringContaining(
+              'WHERE id = $1 AND (user_address = $2 OR user_address = $3) AND (favorites.acl.grantee = $4 OR favorites.acl.grantee = $5) AND favorites.acl.permission = ANY($6::text[])'
+            ),
+            values: expect.arrayContaining([
+              listId,
+              userAddress,
+              DEFAULT_LIST_USER_ADDRESS,
+              userAddress,
+              '*',
+              [permission, Permission.EDIT]
+            ])
           })
         )
       })

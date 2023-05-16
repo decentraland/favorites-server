@@ -13,7 +13,6 @@ import { AccessNotFoundError, DuplicatedAccessError } from '../../ports/access/e
 import { AddListRequestBody, ListSortBy, ListSortDirection } from '../../ports/lists'
 import {
   DuplicatedListError,
-  ForbiddenAccessToList,
   ItemNotFoundError,
   ListNotFoundError,
   PickAlreadyExistsError,
@@ -375,17 +374,6 @@ export async function getListHandler(
     if (error instanceof ListNotFoundError) {
       return {
         status: StatusCode.NOT_FOUND,
-        body: {
-          ok: false,
-          message: error.message,
-          data: {
-            listId: error.listId
-          }
-        }
-      }
-    } else if (error instanceof ForbiddenAccessToList) {
-      return {
-        status: StatusCode.FORBIDDEN,
         body: {
           ok: false,
           message: error.message,

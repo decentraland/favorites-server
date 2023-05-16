@@ -6,7 +6,6 @@ import { Permission } from '../access'
 import { DBGetFilteredPicksWithCount, DBPick } from '../picks'
 import {
   DuplicatedListError,
-  ForbiddenAccessToList,
   ItemNotFoundError,
   ListNotFoundError,
   PickAlreadyExistsError,
@@ -46,18 +45,10 @@ export function createListsComponent(
   }
 
   async function getList(listId: string, { requiredPermission, considerDefaultList = true, userAddress }: GetListOptions): Promise<DBList> {
-    const getListQuery = SQL`SELECT *`
-
-    if (requiredPermission) getListQuery.append(SQL`, favorites.acl.permission as permission`)
-
-    getListQuery.append(SQL` FROM favorites.lists`)
-
-    if (requiredPermission) {
-      const requiredPermissions = requiredPermission === Permission.VIEW ? [Permission.VIEW, Permission.EDIT] : [requiredPermission]
-      getListQuery.append(
-        SQL` LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id AND (favorites.acl.grantee = ${userAddress} OR favorites.acl.grantee = ${GRANTED_TO_ALL}) AND favorites.acl.permission = ANY(${requiredPermissions}::text[])`
-      )
-    }
+    const getListQuery = SQL`
+      SELECT *, favorites.acl.permission as permission
+      FROM favorites.lists
+      JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id`
 
     getListQuery.append(SQL` WHERE id = ${listId} AND (user_address = ${userAddress}`)
     if (considerDefaultList) {
@@ -65,14 +56,17 @@ export function createListsComponent(
     }
     getListQuery.append(')')
 
+    if (requiredPermission) {
+      const requiredPermissions = requiredPermission === Permission.VIEW ? [Permission.VIEW, Permission.EDIT] : [requiredPermission]
+      getListQuery.append(
+        SQL` AND (favorites.acl.grantee = ${userAddress} OR favorites.acl.grantee = ${GRANTED_TO_ALL}) AND favorites.acl.permission = ANY(${requiredPermissions}::text[])`
+      )
+    }
+
     const result = await pg.query<DBList>(getListQuery)
 
     if (result.rowCount === 0) {
       throw new ListNotFoundError(listId)
-    }
-
-    if (requiredPermission && !result.rows[0].permission) {
-      throw new ForbiddenAccessToList(listId)
     }
 
     return result.rows[0]
