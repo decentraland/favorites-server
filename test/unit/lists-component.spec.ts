@@ -690,7 +690,7 @@ describe('when getting a list', () => {
         result = await listsComponent.getList(listId, { userAddress, considerDefaultList: true, requiredPermissions: [permission] })
       })
 
-      it('should have made the query to get the list matching those conditions', async () => {
+      it('should have made the query to get the list matching those conditions', () => {
         expect(dbQueryMock).toHaveBeenCalledWith(
           expect.objectContaining({
             text: expect.stringContaining('SELECT *, favorites.acl.permission as permission')
