@@ -1196,7 +1196,7 @@ describe('when getting a list', () => {
         getListMock.mockResolvedValueOnce(dbList)
       })
 
-      it('should return an ok response', () => {
+      it('should return an ok response with the list', () => {
         return expect(getListHandler({ components, verification, params })).resolves.toEqual({
           status: StatusCode.OK,
           body: {
