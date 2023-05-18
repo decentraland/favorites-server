@@ -3,7 +3,16 @@ import { IPgComponent } from '@well-known-components/pg-component'
 import { ISubgraphComponent } from '@well-known-components/thegraph-component'
 import { DEFAULT_LIST_USER_ADDRESS } from '../../src/migrations/1678303321034_default-list'
 import { Permission } from '../../src/ports/access'
-import { createListsComponent, DBGetListsWithCount, DBList, IListsComponents, ListSortBy, ListSortDirection } from '../../src/ports/lists'
+import { AccessNotFoundError, DuplicatedAccessError } from '../../src/ports/access/errors'
+import {
+  createListsComponent,
+  DBGetListsWithCount,
+  DBList,
+  IListsComponents,
+  ListSortBy,
+  ListSortDirection,
+  UpdateListRequestBody
+} from '../../src/ports/lists'
 import {
   DuplicatedListError,
   ItemNotFoundError,
@@ -950,6 +959,237 @@ describe('when getting a list', () => {
 
       it('should resolve with the list', () => {
         return expect(result).toEqual(dbList)
+      })
+    })
+  })
+})
+
+describe('when updating a list', () => {
+  let updatedList: UpdateListRequestBody
+
+  beforeEach(() => {
+    updatedList = {
+      name: 'Updated List Name',
+      description: 'Updated List Description'
+    }
+
+    // Begin Query
+    dbClientQueryMock.mockResolvedValueOnce(undefined)
+  })
+
+  describe('and the list does not exist', () => {
+    beforeEach(() => {
+      // Update List Mock Query
+      dbClientQueryMock.mockResolvedValueOnce({ rowCount: 0 })
+
+      // Access Mock Query
+      dbClientQueryMock.mockResolvedValueOnce(undefined)
+    })
+
+    it('should rollback the changes, release the client and throw a list not found error', async () => {
+      await expect(listsComponent.updateList(listId, userAddress, updatedList)).rejects.toEqual(new ListNotFoundError(listId))
+      expect(dbClientQueryMock).toHaveBeenCalledWith('ROLLBACK')
+      expect(dbClientReleaseMock).toHaveBeenCalled()
+    })
+  })
+
+  describe('and the list name is being duplicated', () => {
+    beforeEach(() => {
+      // Update List Mock Query
+      dbClientQueryMock.mockRejectedValueOnce({ constraint: 'name_user_address_unique' })
+
+      // Access Mock Query
+      dbClientQueryMock.mockResolvedValueOnce(undefined)
+    })
+
+    it('should rollback the changes, release the client and throw a duplicated list error', async () => {
+      await expect(listsComponent.updateList(listId, userAddress, updatedList)).rejects.toEqual(new DuplicatedListError(updatedList.name))
+      expect(dbClientQueryMock).toHaveBeenCalledWith('ROLLBACK')
+      expect(dbClientReleaseMock).toHaveBeenCalled()
+    })
+  })
+
+  describe('and the access is being duplicated', () => {
+    beforeEach(() => {
+      // Update List Mock Query
+      dbClientQueryMock.mockResolvedValueOnce({ rowCount: 1 })
+
+      // Access Mock Query
+      dbClientQueryMock.mockRejectedValueOnce({ constraint: 'list_id_permissions_grantee_primary_key' })
+    })
+
+    it('should rollback the changes, release the client and throw a duplicated access error', async () => {
+      await expect(listsComponent.updateList(listId, userAddress, updatedList)).rejects.toEqual(
+        new DuplicatedAccessError(listId, Permission.VIEW, '*')
+      )
+      expect(dbClientQueryMock).toHaveBeenCalledWith('ROLLBACK')
+      expect(dbClientReleaseMock).toHaveBeenCalled()
+    })
+  })
+
+  describe('and setting the list as private', () => {
+    beforeEach(() => {
+      updatedList = {
+        ...updatedList,
+        private: true
+      }
+    })
+
+    describe('and the lists exists but the access to be removed does not', () => {
+      beforeEach(() => {
+        // Update List Mock Query
+        dbClientQueryMock.mockResolvedValueOnce({ rowCount: 1 })
+
+        // Delete Access Mock Query
+        dbClientQueryMock.mockResolvedValueOnce({ rowCount: 0 })
+      })
+
+      it('should rollback the changes, release the client and throw a access not found error', async () => {
+        await expect(listsComponent.updateList(listId, userAddress, updatedList)).rejects.toEqual(
+          new AccessNotFoundError(listId, Permission.VIEW, '*')
+        )
+        expect(dbClientQueryMock).toHaveBeenCalledWith('ROLLBACK')
+        expect(dbClientReleaseMock).toHaveBeenCalled()
+      })
+    })
+
+    describe('and the list and access exist, and the name is not being duplicated', () => {
+      let dbList: DBList
+      let result: DBList
+
+      beforeEach(async () => {
+        dbList = {
+          id: listId,
+          name: 'aListName',
+          description: null,
+          user_address: userAddress,
+          created_at: new Date()
+        }
+
+        // Update List Mock Query
+        dbClientQueryMock.mockResolvedValueOnce({
+          rowCount: 1,
+          rows: [dbList]
+        })
+
+        // Delete Access Mock Query
+        dbClientQueryMock.mockResolvedValueOnce({ rowCount: 1 })
+
+        result = await listsComponent.updateList(listId, userAddress, updatedList)
+      })
+
+      it('should begin the transaction', () => {
+        expect(dbClientQueryMock).toHaveBeenCalledWith('BEGIN')
+      })
+
+      it('should update the list', () => {
+        expect(dbClientQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            strings: expect.arrayContaining([
+              expect.stringContaining('UPDATE favorites.lists SET (name, description) VALUES'),
+              expect.stringContaining('WHERE id ='),
+              expect.stringContaining('AND user_address ='),
+              expect.stringContaining('RETURNING *')
+            ]),
+            values: [updatedList.name, updatedList.description, listId, userAddress]
+          })
+        )
+      })
+
+      it('should delete the previous access to make the list private', () => {
+        expect(dbClientQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            strings: expect.arrayContaining([
+              expect.stringContaining('DELETE FROM favorites.acl USING favorites.lists'),
+              expect.stringContaining('WHERE favorites.acl.list_id = favorites.lists.id'),
+              expect.stringContaining('AND favorites.acl.list_id ='),
+              expect.stringContaining('AND favorites.lists.user_address ='),
+              expect.stringContaining('AND favorites.acl.permission ='),
+              expect.stringContaining('AND favorites.acl.grantee =')
+            ]),
+            values: [listId, userAddress, Permission.VIEW, '*']
+          })
+        )
+      })
+
+      it('should resolve with the updated list', () => {
+        expect(result).toEqual(dbList)
+      })
+
+      it('should commit the changes and release the client', () => {
+        expect(dbClientQueryMock).toHaveBeenCalledWith('COMMIT')
+        expect(dbClientReleaseMock).toHaveBeenCalled()
+      })
+    })
+  })
+
+  describe('and setting the list as public', () => {
+    beforeEach(() => {
+      updatedList = {
+        ...updatedList,
+        private: false
+      }
+    })
+
+    describe('and the list and access exist, and the name is not being duplicated', () => {
+      let dbList: DBList
+      let result: DBList
+
+      beforeEach(async () => {
+        dbList = {
+          id: listId,
+          name: 'aListName',
+          description: null,
+          user_address: userAddress,
+          created_at: new Date()
+        }
+
+        // Update List Mock Query
+        dbClientQueryMock.mockResolvedValueOnce({
+          rowCount: 1,
+          rows: [dbList]
+        })
+
+        // Delete Access Mock Query
+        dbClientQueryMock.mockResolvedValueOnce({ rowCount: 1 })
+
+        result = await listsComponent.updateList(listId, userAddress, updatedList)
+      })
+
+      it('should begin the transaction', () => {
+        expect(dbClientQueryMock).toHaveBeenCalledWith('BEGIN')
+      })
+
+      it('should update the list', () => {
+        expect(dbClientQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            strings: expect.arrayContaining([
+              expect.stringContaining('UPDATE favorites.lists SET (name, description) VALUES'),
+              expect.stringContaining('WHERE id ='),
+              expect.stringContaining('AND user_address ='),
+              expect.stringContaining('RETURNING *')
+            ]),
+            values: [updatedList.name, updatedList.description, listId, userAddress]
+          })
+        )
+      })
+
+      it('should insert a new access to make the list public', () => {
+        expect(dbClientQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            strings: expect.arrayContaining([expect.stringContaining('INSERT INTO favorites.acl (list_id, permission, grantee) VALUES')]),
+            values: [listId, Permission.VIEW, '*']
+          })
+        )
+      })
+
+      it('should resolve with the updated list', () => {
+        expect(result).toEqual(dbList)
+      })
+
+      it('should commit the changes and release the client', () => {
+        expect(dbClientQueryMock).toHaveBeenCalledWith('COMMIT')
+        expect(dbClientReleaseMock).toHaveBeenCalled()
       })
     })
   })

@@ -10,7 +10,8 @@ import {
   deleteListHandler,
   getListsHandler,
   createAccessHandler,
-  getListHandler
+  getListHandler,
+  updateListHandler
 } from './handlers/lists-handlers'
 import { getPickStatsHandler, getPicksByItemIdHandler, getPickStatsOfItemHandler } from './handlers/picks-handlers'
 import { pingHandler } from './handlers/ping-handler'
@@ -94,6 +95,15 @@ export function setupRouter(_globalContext: GlobalContext): Promise<Router<Globa
       expiration: FIVE_MINUTES
     }),
     createListHandler
+  )
+
+  router.put(
+    '/v1/lists/:id',
+    authorizationMiddleware.wellKnownComponents({
+      optional: false,
+      expiration: FIVE_MINUTES
+    }),
+    updateListHandler
   )
 
   router.post(

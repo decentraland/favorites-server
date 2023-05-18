@@ -3,6 +3,8 @@ import { isErrorWithMessage } from '../../logic/errors'
 import { DEFAULT_LIST_USER_ADDRESS } from '../../migrations/1678303321034_default-list'
 import { AppComponents } from '../../types'
 import { Permission } from '../access'
+import { AccessNotFoundError } from '../access/errors'
+import { deleteAccessQuery, insertAccessQuery, validateAccessExists, validateDuplicatedAccess } from '../access/utils'
 import { DBGetFilteredPicksWithCount, DBPick } from '../picks'
 import {
   DuplicatedListError,
@@ -22,8 +24,10 @@ import {
   ListSortBy,
   ListSortDirection,
   GetListOptions,
-  DBListsWithItemsCount
+  DBListsWithItemsCount,
+  UpdateListRequestBody
 } from './types'
+import { validateListExists } from './utils'
 
 const GRANTED_TO_ALL = '*'
 
@@ -204,16 +208,60 @@ export function createListsComponent(
     }
   }
 
+  async function updateList(id: string, userAddress: string, updatedList: UpdateListRequestBody): Promise<DBList> {
+    const { name, description, private: isPrivate } = updatedList
+
+    const client = await pg.getPool().connect()
+    const accessQuery = isPrivate
+      ? deleteAccessQuery(id, Permission.VIEW, GRANTED_TO_ALL, userAddress)
+      : insertAccessQuery(id, Permission.VIEW, GRANTED_TO_ALL)
+
+    try {
+      await client.query('BEGIN')
+
+      const [updatedListResult, accessResult] = await Promise.all([
+        client.query<DBList>(
+          SQL`UPDATE favorites.lists SET (name, description) VALUES (${name}, ${description})
+          WHERE id = ${id} AND user_address = ${userAddress}
+          RETURNING *`
+        ),
+        client.query(accessQuery)
+      ])
+      await client.query('COMMIT')
+
+      validateListExists(id, updatedListResult)
+
+      if (isPrivate) validateAccessExists(id, Permission.VIEW, GRANTED_TO_ALL, accessResult)
+
+      return updatedListResult.rows[0]
+    } catch (error) {
+      await client.query('ROLLBACK')
+
+      if (error instanceof ListNotFoundError || error instanceof AccessNotFoundError) throw error
+
+      if (error && typeof error === 'object' && 'constraint' in error && error.constraint === 'name_user_address_unique') {
+        throw new DuplicatedListError(name)
+      }
+
+      validateDuplicatedAccess(id, Permission.VIEW, GRANTED_TO_ALL, error)
+
+      throw new Error("The list couldn't be updated")
+    } finally {
+      // TODO: handle the following eslint-disable statement
+      // eslint-disable-next-line @typescript-eslint/await-thenable
+      await client.release()
+    }
+  }
+
   async function deleteList(id: string, userAddress: string): Promise<void> {
     const result = await pg.query(
       SQL`DELETE FROM favorites.lists
       WHERE favorites.lists.id = ${id}
       AND favorites.lists.user_address = ${userAddress}`
     )
-    if (result.rowCount === 0) {
-      throw new ListNotFoundError(id)
-    }
+
+    validateListExists(id, result)
   }
 
-  return { getPicksByListId, addPickToList, deletePickInList, getLists, addList, deleteList, getList }
+  return { getPicksByListId, addPickToList, deletePickInList, getLists, addList, deleteList, getList, updateList }
 }

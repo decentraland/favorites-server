@@ -61,6 +61,7 @@ export type Context<Path extends string = never> = IHttpServerComponent.PathAwar
 export enum StatusCode {
   OK = 200,
   CREATED = 201,
+  UPDATED = 204,
   BAD_REQUEST = 400,
   UNAUTHORIZED = 401,
   FORBIDDEN = 403,
