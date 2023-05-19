@@ -172,6 +172,7 @@ export function createListsComponent(
         break
     }
 
+    query.append(SQL`GROUP BY l.id`)
     query.append(orderByQuery)
     query.append(SQL`\nLIMIT ${limit} OFFSET ${offset}`)
 
