@@ -389,14 +389,14 @@ describe('when getting lists', () => {
 
         expect(dbQueryMock).toBeCalledWith(
           expect.objectContaining({
-            text: expect.stringContaining('WHERE user_address = $3 OR user_address = $4'),
+            text: expect.stringContaining('WHERE l.user_address = $3 OR l.user_address = $4'),
             values: expect.arrayContaining(['0xuseraddress', DEFAULT_LIST_USER_ADDRESS])
           })
         )
 
         expect(dbQueryMock).toBeCalledWith(
           expect.objectContaining({
-            text: expect.stringContaining('ORDER BY is_default_list DESC, created_at $5'),
+            text: expect.stringContaining('ORDER BY is_default_list DESC, l.created_at $5'),
             values: expect.arrayContaining([ListSortDirection.DESC])
           })
         )
@@ -426,7 +426,7 @@ describe('when getting lists', () => {
 
             expect(dbQueryMock).toBeCalledWith(
               expect.objectContaining({
-                text: expect.stringContaining('ORDER BY is_default_list DESC, created_at $5'),
+                text: expect.stringContaining('ORDER BY is_default_list DESC, l.created_at $5'),
                 values: expect.arrayContaining([sortDirection])
               })
             )
@@ -456,7 +456,7 @@ describe('when getting lists', () => {
 
             expect(dbQueryMock).toBeCalledWith(
               expect.objectContaining({
-                text: expect.stringContaining('ORDER BY is_default_list DESC, name $5'),
+                text: expect.stringContaining('ORDER BY is_default_list DESC, l.name $5'),
                 values: expect.arrayContaining([sortDirection])
               })
             )

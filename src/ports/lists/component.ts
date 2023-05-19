@@ -156,19 +156,19 @@ export function createListsComponent(
   async function getLists(params: GetListsParameters): Promise<DBGetListsWithCount[]> {
     const { userAddress, limit, offset, sortBy = ListSortBy.CREATED_AT, sortDirection = ListSortDirection.DESC } = params
     const query = SQL`
-        SELECT l.*, COUNT(*) OVER() as lists_count, user_address = ${DEFAULT_LIST_USER_ADDRESS} as is_default_list, COUNT(DISTINCT p.item_id) AS items_count
+        SELECT l.*, COUNT(*) OVER() as lists_count, l.user_address = ${DEFAULT_LIST_USER_ADDRESS} as is_default_list, COUNT(DISTINCT p.item_id) AS items_count
         FROM favorites.lists l
         LEFT JOIN favorites.picks p ON l.id = p.list_id AND p.user_address = ${userAddress}
-        WHERE user_address = ${userAddress} OR user_address = ${DEFAULT_LIST_USER_ADDRESS}
+        WHERE l.user_address = ${userAddress} OR l.user_address = ${DEFAULT_LIST_USER_ADDRESS}
         `
     const orderByQuery = SQL`ORDER BY is_default_list DESC`
 
     switch (sortBy) {
       case ListSortBy.CREATED_AT:
-        orderByQuery.append(SQL`, created_at ${sortDirection}`)
+        orderByQuery.append(SQL`, l.created_at ${sortDirection}`)
         break
       case ListSortBy.NAME:
-        orderByQuery.append(SQL`, name ${sortDirection}`)
+        orderByQuery.append(SQL`, l.name ${sortDirection}`)
         break
     }
 
