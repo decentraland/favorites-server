@@ -12,4 +12,8 @@ export type List = {
   permission?: Permission | null
 }
 
-export type ListsWithCount = { lists: Pick<List, 'id' | 'name'>[]; count: number }
+export type ListWithItemsCount = List & {
+  itemsCount: number
+}
+
+export type ListsWithCount = { lists: Pick<ListWithItemsCount, 'id' | 'name' | 'itemsCount'>[]; count: number }

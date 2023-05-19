@@ -3,7 +3,8 @@ import {
   fromDBGetPickByListIdToPickIdsWithCount,
   fromDBPickToPick,
   fromDBListToList,
-  List
+  List,
+  fromDBListWithItemsCountToListWithItemsCount
 } from '../../adapters/lists'
 import { TPick } from '../../adapters/picks'
 import { isErrorWithMessage } from '../../logic/errors'
@@ -367,7 +368,7 @@ export async function getListHandler(
       status: StatusCode.OK,
       body: {
         ok: true,
-        data: fromDBListToList(listResult)
+        data: fromDBListWithItemsCountToListWithItemsCount(listResult)
       }
     }
   } catch (error) {

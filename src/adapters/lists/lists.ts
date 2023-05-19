@@ -1,8 +1,8 @@
 import { Permission } from '../../ports/access'
-import { DBGetListsWithCount, DBList } from '../../ports/lists'
+import { DBGetListsWithCount, DBList, DBListsWithItemsCount } from '../../ports/lists'
 import { DBPick, DBGetFilteredPicksWithCount } from '../../ports/picks'
 import { TPick } from '../picks'
-import { ListsWithCount, List, PickIdsWithCount } from './types'
+import { ListsWithCount, List, PickIdsWithCount, ListWithItemsCount } from './types'
 
 export function fromDBGetPickByListIdToPickIdsWithCount(dBGetPicksByListId: DBGetFilteredPicksWithCount[]): PickIdsWithCount {
   return {
@@ -25,10 +25,14 @@ export function fromDBPickToPick(dbPick: DBPick): TPick {
 
 export function fromDBGetListsToListsWithCount(dbLists: DBGetListsWithCount[]): ListsWithCount {
   return {
-    lists: dbLists.map(list => ({
-      id: list.id,
-      name: list.name
-    })),
+    lists: dbLists.map(list => {
+      const { id, name, itemsCount } = fromDBListWithItemsCountToListWithItemsCount(list)
+      return {
+        id,
+        name,
+        itemsCount
+      }
+    }),
     count: Number(dbLists[0]?.lists_count ?? 0)
   }
 }
@@ -41,5 +45,12 @@ export function fromDBListToList(dbList: DBList): List {
     userAddress: dbList.user_address,
     createdAt: dbList.created_at,
     permission: dbList.permission as Permission
+  }
+}
+
+export function fromDBListWithItemsCountToListWithItemsCount(dbList: DBListsWithItemsCount): ListWithItemsCount {
+  return {
+    ...fromDBListToList(dbList),
+    itemsCount: Number(dbList.items_count ?? 0)
   }
 }

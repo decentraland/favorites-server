@@ -2,11 +2,12 @@ import {
   fromDBGetListsToListsWithCount,
   fromDBGetPickByListIdToPickIdsWithCount,
   fromDBListToList,
+  fromDBListWithItemsCountToListWithItemsCount,
   fromDBPickToPick,
   ListsWithCount,
   PickIdsWithCount
 } from '../../src/adapters/lists'
-import { DBGetListsWithCount, DBList } from '../../src/ports/lists'
+import { DBGetListsWithCount, DBList, DBListsWithItemsCount } from '../../src/ports/lists'
 import { DBGetFilteredPicksWithCount, DBPick } from '../../src/ports/picks'
 
 describe('when transforming DB retrieved picks to pick ids with count', () => {
@@ -119,7 +120,8 @@ describe('when transforming DB retrieved lists to lists with count', () => {
           description: 'Super description of list #1',
           user_address: '0x45abb534BD927284F84b03d43f33dF0E5C91C21f',
           created_at: new Date(),
-          lists_count: '3'
+          lists_count: '3',
+          items_count: '5'
         },
         {
           id: 'e96df126-f5bf-4311-94d8-6e261f368bb2',
@@ -127,7 +129,8 @@ describe('when transforming DB retrieved lists to lists with count', () => {
           description: 'Super description of list #2',
           user_address: '0x45abb534BD927284F84b03d43f33dF0E5C91C21f',
           created_at: new Date(),
-          lists_count: '3'
+          lists_count: '3',
+          items_count: '4'
         },
         {
           id: 'e96df126-f5bf-4311-94d8-6e261f368bb3',
@@ -135,14 +138,15 @@ describe('when transforming DB retrieved lists to lists with count', () => {
           description: 'Super description of list #3',
           user_address: '0x45abb534BD927284F84b03d43f33dF0E5C91C21f',
           created_at: new Date(),
-          lists_count: '3'
+          lists_count: '3',
+          items_count: '2'
         }
       ]
       listsWithCount = {
         lists: [
-          { id: 'e96df126-f5bf-4311-94d8-6e261f368bb1', name: 'List #1' },
-          { id: 'e96df126-f5bf-4311-94d8-6e261f368bb2', name: 'List #2' },
-          { id: 'e96df126-f5bf-4311-94d8-6e261f368bb3', name: 'List #3' }
+          { id: 'e96df126-f5bf-4311-94d8-6e261f368bb1', name: 'List #1', itemsCount: 5 },
+          { id: 'e96df126-f5bf-4311-94d8-6e261f368bb2', name: 'List #2', itemsCount: 4 },
+          { id: 'e96df126-f5bf-4311-94d8-6e261f368bb3', name: 'List #3', itemsCount: 2 }
         ],
         count: 3
       }
@@ -176,6 +180,34 @@ describe('when transforming a DB retrieved list to a list', () => {
       description: dbList.description,
       createdAt: date,
       permission: undefined
+    })
+  })
+})
+
+describe('when transforming a DB retrieved list with items count to a list with items count', () => {
+  let dbListWithItemsCount: DBListsWithItemsCount
+  const date = new Date()
+
+  beforeEach(() => {
+    dbListWithItemsCount = {
+      id: 'e96df126-f5bf-4311-94d8-6e261f368bb2',
+      name: 'List #1',
+      user_address: '0x45abb534BD927284F84b03d43f33dF0E5C91C21f',
+      description: 'This is a list',
+      created_at: date,
+      items_count: '5'
+    }
+  })
+
+  it('should return the transformed list', () => {
+    expect(fromDBListWithItemsCountToListWithItemsCount(dbListWithItemsCount)).toEqual({
+      id: dbListWithItemsCount.id,
+      name: dbListWithItemsCount.name,
+      userAddress: dbListWithItemsCount.user_address,
+      description: dbListWithItemsCount.description,
+      createdAt: date,
+      permission: undefined,
+      itemsCount: 5
     })
   })
 })
