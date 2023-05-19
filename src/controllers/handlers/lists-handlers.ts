@@ -397,6 +397,7 @@ export async function getListsHandler(
     url,
     verification
   } = context
+
   const userAddress: string | undefined = verification?.auth.toLowerCase()
 
   if (!userAddress) {
@@ -412,6 +413,7 @@ export async function getListsHandler(
   const { limit, offset } = getPaginationParams(url.searchParams)
   const sortBy = url.searchParams.get('sortBy') as ListSortBy | undefined
   const sortDirection = url.searchParams.get('sortDirection') as ListSortDirection | undefined
+  const itemId: string | null = url.searchParams.get('itemId')
 
   if (sortBy && !Object.values(ListSortBy).includes(sortBy)) {
     return {
@@ -438,7 +440,8 @@ export async function getListsHandler(
     limit,
     offset,
     sortBy,
-    sortDirection
+    sortDirection,
+    itemId
   })
   const { lists, count } = fromDBGetListsToListsWithCount(listsResult)
 

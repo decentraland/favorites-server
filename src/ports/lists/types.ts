@@ -19,6 +19,7 @@ export type GetAuthenticatedAndPaginatedParameters = {
 export type GetListsParameters = GetAuthenticatedAndPaginatedParameters & {
   sortBy?: ListSortBy
   sortDirection?: ListSortDirection
+  itemId?: string | null
 }
 
 export type GetListOptions = {
@@ -42,6 +43,7 @@ export type DBListsWithItemsCount = DBList & {
 
 export type DBGetListsWithCount = DBListsWithItemsCount & {
   lists_count: string
+  is_item_in_list?: boolean
 }
 
 export type AddListRequestBody = {

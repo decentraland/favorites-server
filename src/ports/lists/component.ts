@@ -154,14 +154,17 @@ export function createListsComponent(
   }
 
   async function getLists(params: GetListsParameters): Promise<DBGetListsWithCount[]> {
-    const { userAddress, limit, offset, sortBy = ListSortBy.CREATED_AT, sortDirection = ListSortDirection.DESC } = params
-    const query = SQL`
-        SELECT l.*, COUNT(*) OVER() as lists_count, l.user_address = ${DEFAULT_LIST_USER_ADDRESS} as is_default_list, COUNT(DISTINCT p.item_id) AS items_count
-        FROM favorites.lists l
-        LEFT JOIN favorites.picks p ON l.id = p.list_id AND p.user_address = ${userAddress}
-        WHERE l.user_address = ${userAddress} OR l.user_address = ${DEFAULT_LIST_USER_ADDRESS}
-        `
-    const orderByQuery = SQL`ORDER BY is_default_list DESC`
+    const { userAddress, limit, offset, sortBy = ListSortBy.CREATED_AT, sortDirection = ListSortDirection.DESC, itemId } = params
+    const query = SQL`SELECT l.*, COUNT(*) OVER() as lists_count, l.user_address = ${DEFAULT_LIST_USER_ADDRESS} as is_default_list, COUNT(DISTINCT p.item_id) AS items_count`
+
+    if (itemId) query.append(SQL`, MAX(CASE WHEN p.item_id = ${itemId} THEN 1 ELSE 0 END)::BOOLEAN AS is_item_in_list`)
+
+    query.append(SQL`
+      FROM favorites.lists l
+      LEFT JOIN favorites.picks p ON l.id = p.list_id AND p.user_address = ${userAddress}
+      WHERE l.user_address = ${userAddress} OR l.user_address = ${DEFAULT_LIST_USER_ADDRESS}`)
+
+    const orderByQuery = SQL`\nORDER BY is_default_list DESC`
 
     switch (sortBy) {
       case ListSortBy.CREATED_AT:
@@ -172,7 +175,7 @@ export function createListsComponent(
         break
     }
 
-    query.append(SQL`GROUP BY l.id`)
+    query.append(SQL`\nGROUP BY l.id`)
     query.append(orderByQuery)
     query.append(SQL`\nLIMIT ${limit} OFFSET ${offset}`)
 
