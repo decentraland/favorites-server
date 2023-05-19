@@ -436,6 +436,32 @@ describe('when getting lists', () => {
       })
     })
 
+    describe('and the q parameter is set', () => {
+      let q: string
+
+      beforeEach(() => {
+        q = 'aName'
+      })
+
+      it('should have made the query to get the lists searching by the list names', async () => {
+        await expect(
+          listsComponent.getLists({
+            offset: 0,
+            limit: 10,
+            userAddress: '0xuseraddress',
+            q
+          })
+        ).resolves.toEqual(dbGetLists)
+
+        expect(dbQueryMock).toBeCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining("AND l.name ILIKE '%$5%'"),
+            values: expect.arrayContaining([q])
+          })
+        )
+      })
+    })
+
     describe('and the sorting parameters are set', () => {
       describe('and the sort by is "date"', () => {
         describe.each([ListSortDirection.ASC, ListSortDirection.DESC])('and the sort direction is "%s"', sortDirection => {

@@ -414,6 +414,7 @@ export async function getListsHandler(
   const sortBy = url.searchParams.get('sortBy') as ListSortBy | undefined
   const sortDirection = url.searchParams.get('sortDirection') as ListSortDirection | undefined
   const itemId: string | null = url.searchParams.get('itemId')
+  const q: string | null = url.searchParams.get('q')
 
   if (sortBy && !Object.values(ListSortBy).includes(sortBy)) {
     return {
@@ -441,7 +442,8 @@ export async function getListsHandler(
     offset,
     sortBy,
     sortDirection,
-    itemId
+    itemId,
+    q
   })
   const { lists, count } = fromDBGetListsToListsWithCount(listsResult)
 
