@@ -412,8 +412,8 @@ export async function getListsHandler(
 
   const { limit, offset } = getPaginationParams(url.searchParams)
   const sortBy = getParameter('sortBy', url.searchParams) as ListSortBy | undefined
-  const sortDirection = url.searchParams.get('sortDirection') as ListSortDirection | undefined
-  const itemId = url.searchParams.get('itemId')
+  const sortDirection = getParameter('sortDirection', url.searchParams) as ListSortDirection | undefined
+  const itemId = getParameter('itemId', url.searchParams)
 
   if (sortBy && !Object.values(ListSortBy).includes(sortBy)) {
     return {
