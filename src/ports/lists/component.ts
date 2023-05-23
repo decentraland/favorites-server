@@ -50,7 +50,7 @@ export function createListsComponent(
     { requiredPermission, considerDefaultList = true, userAddress }: GetListOptions
   ): Promise<DBListsWithItemsCount> {
     const getListQuery = SQL`
-      SELECT DISTINCT favorites.lists.*, favorites.acl.permission AS permission, COUNT(DISTINCT favorites.picks.item_id) AS count_items
+      SELECT favorites.lists.*, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS count_items
       FROM favorites.lists
       LEFT JOIN favorites.picks ON favorites.lists.id = favorites.picks.list_id AND favorites.picks.user_address = ${userAddress}
       LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id`
@@ -156,7 +156,7 @@ export function createListsComponent(
   async function getLists(params: GetListsParameters): Promise<DBGetListsWithCount[]> {
     const { userAddress, limit, offset, sortBy = ListSortBy.CREATED_AT, sortDirection = ListSortDirection.DESC } = params
     const query = SQL`
-        SELECT l.*, COUNT(*) OVER() as lists_count, l.user_address = ${DEFAULT_LIST_USER_ADDRESS} as is_default_list, COUNT(DISTINCT p.item_id) AS items_count
+        SELECT l.*, COUNT(*) OVER() as lists_count, l.user_address = ${DEFAULT_LIST_USER_ADDRESS} as is_default_list, COUNT(p.item_id) AS items_count
         FROM favorites.lists l
         LEFT JOIN favorites.picks p ON l.id = p.list_id AND p.user_address = ${userAddress}
         WHERE l.user_address = ${userAddress} OR l.user_address = ${DEFAULT_LIST_USER_ADDRESS}
