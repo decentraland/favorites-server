@@ -8,7 +8,7 @@ import {
 } from '../../adapters/lists'
 import { TPick } from '../../adapters/picks'
 import { isErrorWithMessage } from '../../logic/errors'
-import { getPaginationParams } from '../../logic/http'
+import { getPaginationParams, getParameter } from '../../logic/http'
 import { Permission } from '../../ports/access'
 import { AccessNotFoundError, DuplicatedAccessError } from '../../ports/access/errors'
 import { AddListRequestBody, ListSortBy, ListSortDirection } from '../../ports/lists'
@@ -411,9 +411,9 @@ export async function getListsHandler(
   }
 
   const { limit, offset } = getPaginationParams(url.searchParams)
-  const sortBy = url.searchParams.get('sortBy') as ListSortBy | undefined
+  const sortBy = getParameter('sortBy', url.searchParams) as ListSortBy | undefined
   const sortDirection = url.searchParams.get('sortDirection') as ListSortDirection | undefined
-  const itemId: string | null = url.searchParams.get('itemId')
+  const itemId = url.searchParams.get('itemId')
 
   if (sortBy && !Object.values(ListSortBy).includes(sortBy)) {
     return {

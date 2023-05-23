@@ -22,12 +22,15 @@ export const getPaginationParams = (params: URLSearchParams): { limit: number; o
   }
 }
 
-export function getNumberParameter(parameterName: string, params: URLSearchParams): number | undefined {
+export function getParameter(parameterName: string, params: URLSearchParams) {
   const parameter = params.get(parameterName)
+  return parameter === null ? undefined : parameter
+}
 
-  if (parameter === null) {
-    return undefined
-  }
+export function getNumberParameter(parameterName: string, params: URLSearchParams): number | undefined {
+  const parameter = getParameter(parameterName, params)
+
+  if (!parameter) return undefined
 
   const valueAsNumber = Number.parseInt(parameter)
   if (Number.isNaN(valueAsNumber)) {
