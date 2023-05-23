@@ -1,3 +1,4 @@
+import util from 'util'
 import * as authorizationMiddleware from 'decentraland-crypto-middleware'
 import { List, ListWithItemsCount, ListsWithCount } from '../../src/adapters/lists'
 import { TPick } from '../../src/adapters/picks'
@@ -27,6 +28,8 @@ import {
 import { DBGetFilteredPicksWithCount, DBPick } from '../../src/ports/picks'
 import { AppComponents, HTTPResponse, HandlerContextWithPath, StatusCode } from '../../src/types'
 import { createTestListsComponent, createTestAccessComponent } from '../components'
+
+util.inspect.defaultOptions.depth = null
 
 let verification: authorizationMiddleware.DecentralandSignatureData | undefined
 let listId: string
@@ -1572,6 +1575,8 @@ describe('when updating a list', () => {
 
   describe('and the list gets updated correctly', () => {
     let list: DBList
+    let result: Promise<HTTPResponse<List>>
+
     const date = new Date()
 
     beforeEach(() => {
@@ -1584,10 +1589,12 @@ describe('when updating a list', () => {
       }
       jsonMock.mockResolvedValueOnce({ name })
       updateListMock.mockResolvedValueOnce(list)
+
+      result = updateListHandler({ components, verification, request, params })
     })
 
-    it('should convert the updated database list into a list and return it with the status 201', () => {
-      return expect(updateListHandler({ components, verification, request, params })).resolves.toEqual({
+    it('should convert the updated database list into a list and return it with the status 204', () => {
+      return expect(result).resolves.toEqual({
         status: StatusCode.UPDATED,
         body: {
           ok: true,
@@ -1601,6 +1608,10 @@ describe('when updating a list', () => {
           }
         }
       })
+    })
+
+    it('should have called the update list procedure with the given parameters', () => {
+      expect(updateListMock).toHaveBeenCalledWith(listId, verification?.auth, { name, description: undefined, private: undefined })
     })
   })
 })
