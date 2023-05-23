@@ -81,7 +81,7 @@ export function setupRouter(_globalContext: GlobalContext): Promise<Router<Globa
   router.get(
     '/v1/lists',
     authorizationMiddleware.wellKnownComponents({
-      optional: true,
+      optional: false,
       expiration: FIVE_MINUTES
     }),
     getListsHandler
