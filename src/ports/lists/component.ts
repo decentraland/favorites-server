@@ -1,3 +1,4 @@
+import compact from 'lodash/compact'
 import SQL from 'sql-template-strings'
 import { isErrorWithMessage } from '../../logic/errors'
 import { DEFAULT_LIST_USER_ADDRESS } from '../../migrations/1678303321034_default-list'
@@ -27,9 +28,7 @@ import {
   DBListsWithItemsCount,
   UpdateListRequestBody
 } from './types'
-import { validateListExists } from './utils'
-
-const GRANTED_TO_ALL = '*'
+import { GRANTED_TO_ALL, getListQuery, validateListExists } from './utils'
 
 export function createListsComponent(
   components: Pick<AppComponents, 'pg' | 'collectionsSubgraph' | 'snapshot' | 'logs'>
@@ -49,35 +48,10 @@ export function createListsComponent(
     return result.rows
   }
 
-  async function getList(
-    listId: string,
-    { requiredPermission, considerDefaultList = true, userAddress }: GetListOptions
-  ): Promise<DBListsWithItemsCount> {
-    const getListQuery = SQL`
-      SELECT favorites.lists.*, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS count_items
-      FROM favorites.lists
-      LEFT JOIN favorites.picks ON favorites.lists.id = favorites.picks.list_id AND favorites.picks.user_address = ${userAddress}
-      LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id`
+  async function getList(listId: string, options: GetListOptions): Promise<DBListsWithItemsCount> {
+    const query = getListQuery(listId, options)
 
-    getListQuery.append(SQL` WHERE favorites.lists.id = ${listId} AND (favorites.lists.user_address = ${userAddress}`)
-    if (considerDefaultList) {
-      getListQuery.append(SQL` OR favorites.lists.user_address = ${DEFAULT_LIST_USER_ADDRESS}`)
-    }
-    getListQuery.append(')')
-
-    if (requiredPermission) {
-      const requiredPermissions = (requiredPermission === Permission.VIEW ? [Permission.VIEW, Permission.EDIT] : [requiredPermission]).join(
-        ','
-      )
-      getListQuery.append(
-        SQL` OR ((favorites.acl.grantee = ${userAddress} OR favorites.acl.grantee = ${GRANTED_TO_ALL}) AND favorites.acl.permission IN (${requiredPermissions}))`
-      )
-    }
-
-    getListQuery.append(SQL` GROUP BY favorites.lists.id, favorites.acl.permission`)
-    getListQuery.append(SQL` ORDER BY favorites.acl.permission ASC LIMIT 1`)
-
-    const result = await pg.query<DBListsWithItemsCount>(getListQuery)
+    const result = await pg.query<DBListsWithItemsCount>(query)
 
     if (result.rowCount === 0) {
       throw new ListNotFoundError(listId)
@@ -210,6 +184,8 @@ export function createListsComponent(
 
   async function updateList(id: string, userAddress: string, updatedList: UpdateListRequestBody): Promise<DBList> {
     const { name, description, private: isPrivate } = updatedList
+    const updatableColumns: (keyof UpdateListRequestBody)[] = compact([name && 'name', description && 'description'])
+    const shouldUpdate = updatableColumns.length > 0
 
     const client = await pg.getPool().connect()
     const accessQuery = isPrivate
@@ -218,13 +194,19 @@ export function createListsComponent(
 
     try {
       await client.query('BEGIN')
+      const updateQuery = SQL`UPDATE favorites.lists SET `
+
+      updatableColumns.forEach((column, i) => {
+        updateQuery.append(SQL`${column} = ${updatedList[column]}`)
+        if (i < updatableColumns.length - 1) {
+          updateQuery.append(SQL`, `)
+        }
+      })
+
+      updateQuery.append(SQL` WHERE id = ${id} AND user_address = ${userAddress} RETURNING *`)
 
       const [updatedListResult, accessResult] = await Promise.all([
-        client.query<DBList>(
-          SQL`UPDATE favorites.lists SET (name, description) VALUES (${name}, ${description})
-          WHERE id = ${id} AND user_address = ${userAddress}
-          RETURNING *`
-        ),
+        client.query<DBList>(shouldUpdate ? updateQuery : getListQuery(id, { userAddress })),
         client.query(accessQuery)
       ])
       await client.query('COMMIT')
@@ -239,7 +221,7 @@ export function createListsComponent(
 
       if (error instanceof ListNotFoundError || error instanceof AccessNotFoundError) throw error
 
-      if (error && typeof error === 'object' && 'constraint' in error && error.constraint === 'name_user_address_unique') {
+      if (name && error && typeof error === 'object' && 'constraint' in error && error.constraint === 'name_user_address_unique') {
         throw new DuplicatedListError(name)
       }
 

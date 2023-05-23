@@ -966,10 +966,12 @@ describe('when getting a list', () => {
 
 describe('when updating a list', () => {
   let updatedList: UpdateListRequestBody
+  let name: string
 
   beforeEach(() => {
+    name = 'Updated List Name'
     updatedList = {
-      name: 'Updated List Name',
+      name,
       description: 'Updated List Description'
     }
 
@@ -1003,7 +1005,7 @@ describe('when updating a list', () => {
     })
 
     it('should rollback the changes, release the client and throw a duplicated list error', async () => {
-      await expect(listsComponent.updateList(listId, userAddress, updatedList)).rejects.toEqual(new DuplicatedListError(updatedList.name))
+      await expect(listsComponent.updateList(listId, userAddress, updatedList)).rejects.toEqual(new DuplicatedListError(name))
       expect(dbClientQueryMock).toHaveBeenCalledWith('ROLLBACK')
       expect(dbClientReleaseMock).toHaveBeenCalled()
     })
@@ -1074,51 +1076,153 @@ describe('when updating a list', () => {
 
         // Delete Access Mock Query
         dbClientQueryMock.mockResolvedValueOnce({ rowCount: 1 })
-
-        result = await listsComponent.updateList(listId, userAddress, updatedList)
       })
 
-      it('should begin the transaction', () => {
-        expect(dbClientQueryMock).toHaveBeenCalledWith('BEGIN')
+      describe('and the updated list has only an updated name without a new description', () => {
+        beforeEach(async () => {
+          result = await listsComponent.updateList(listId, userAddress, { ...updatedList, description: undefined })
+        })
+
+        it('should begin the transaction', () => {
+          expect(dbClientQueryMock).toHaveBeenCalledWith('BEGIN')
+        })
+
+        it('should update the list', () => {
+          expect(dbClientQueryMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+              strings: expect.arrayContaining([
+                expect.stringContaining('UPDATE favorites.lists SET'),
+                expect.stringContaining('WHERE id ='),
+                expect.stringContaining('AND user_address ='),
+                expect.stringContaining('RETURNING *')
+              ]),
+              values: ['name', updatedList.name, listId, userAddress]
+            })
+          )
+        })
+
+        it('should delete the previous access to make the list private', () => {
+          expect(dbClientQueryMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+              strings: expect.arrayContaining([
+                expect.stringContaining('DELETE FROM favorites.acl USING favorites.lists'),
+                expect.stringContaining('WHERE favorites.acl.list_id = favorites.lists.id'),
+                expect.stringContaining('AND favorites.acl.list_id ='),
+                expect.stringContaining('AND favorites.lists.user_address ='),
+                expect.stringContaining('AND favorites.acl.permission ='),
+                expect.stringContaining('AND favorites.acl.grantee =')
+              ]),
+              values: [listId, userAddress, Permission.VIEW, '*']
+            })
+          )
+        })
+
+        it('should resolve with the updated list', () => {
+          expect(result).toEqual(dbList)
+        })
+
+        it('should commit the changes and release the client', () => {
+          expect(dbClientQueryMock).toHaveBeenCalledWith('COMMIT')
+          expect(dbClientReleaseMock).toHaveBeenCalled()
+        })
       })
 
-      it('should update the list', () => {
-        expect(dbClientQueryMock).toHaveBeenCalledWith(
-          expect.objectContaining({
-            strings: expect.arrayContaining([
-              expect.stringContaining('UPDATE favorites.lists SET (name, description) VALUES'),
-              expect.stringContaining('WHERE id ='),
-              expect.stringContaining('AND user_address ='),
-              expect.stringContaining('RETURNING *')
-            ]),
-            values: [updatedList.name, updatedList.description, listId, userAddress]
-          })
-        )
+      describe('and the updated list has only an updated description without a new name', () => {
+        beforeEach(async () => {
+          result = await listsComponent.updateList(listId, userAddress, { ...updatedList, name: undefined })
+        })
+
+        it('should begin the transaction', () => {
+          expect(dbClientQueryMock).toHaveBeenCalledWith('BEGIN')
+        })
+
+        it('should update the list', () => {
+          expect(dbClientQueryMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+              strings: expect.arrayContaining([
+                expect.stringContaining('UPDATE favorites.lists SET'),
+                expect.stringContaining('WHERE id ='),
+                expect.stringContaining('AND user_address ='),
+                expect.stringContaining('RETURNING *')
+              ]),
+              values: ['description', updatedList.description, listId, userAddress]
+            })
+          )
+        })
+
+        it('should delete the previous access to make the list private', () => {
+          expect(dbClientQueryMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+              strings: expect.arrayContaining([
+                expect.stringContaining('DELETE FROM favorites.acl USING favorites.lists'),
+                expect.stringContaining('WHERE favorites.acl.list_id = favorites.lists.id'),
+                expect.stringContaining('AND favorites.acl.list_id ='),
+                expect.stringContaining('AND favorites.lists.user_address ='),
+                expect.stringContaining('AND favorites.acl.permission ='),
+                expect.stringContaining('AND favorites.acl.grantee =')
+              ]),
+              values: [listId, userAddress, Permission.VIEW, '*']
+            })
+          )
+        })
+
+        it('should resolve with the updated list', () => {
+          expect(result).toEqual(dbList)
+        })
+
+        it('should commit the changes and release the client', () => {
+          expect(dbClientQueryMock).toHaveBeenCalledWith('COMMIT')
+          expect(dbClientReleaseMock).toHaveBeenCalled()
+        })
       })
 
-      it('should delete the previous access to make the list private', () => {
-        expect(dbClientQueryMock).toHaveBeenCalledWith(
-          expect.objectContaining({
-            strings: expect.arrayContaining([
-              expect.stringContaining('DELETE FROM favorites.acl USING favorites.lists'),
-              expect.stringContaining('WHERE favorites.acl.list_id = favorites.lists.id'),
-              expect.stringContaining('AND favorites.acl.list_id ='),
-              expect.stringContaining('AND favorites.lists.user_address ='),
-              expect.stringContaining('AND favorites.acl.permission ='),
-              expect.stringContaining('AND favorites.acl.grantee =')
-            ]),
-            values: [listId, userAddress, Permission.VIEW, '*']
-          })
-        )
-      })
+      describe('and the updated list has both an updated name and description', () => {
+        beforeEach(async () => {
+          result = await listsComponent.updateList(listId, userAddress, updatedList)
+        })
 
-      it('should resolve with the updated list', () => {
-        expect(result).toEqual(dbList)
-      })
+        it('should begin the transaction', () => {
+          expect(dbClientQueryMock).toHaveBeenCalledWith('BEGIN')
+        })
 
-      it('should commit the changes and release the client', () => {
-        expect(dbClientQueryMock).toHaveBeenCalledWith('COMMIT')
-        expect(dbClientReleaseMock).toHaveBeenCalled()
+        it('should update the list', () => {
+          expect(dbClientQueryMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+              strings: expect.arrayContaining([
+                expect.stringContaining('UPDATE favorites.lists SET'),
+                expect.stringContaining('WHERE id ='),
+                expect.stringContaining('AND user_address ='),
+                expect.stringContaining('RETURNING *')
+              ]),
+              values: ['name', updatedList.name, 'description', updatedList.description, listId, userAddress]
+            })
+          )
+        })
+
+        it('should delete the previous access to make the list private', () => {
+          expect(dbClientQueryMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+              strings: expect.arrayContaining([
+                expect.stringContaining('DELETE FROM favorites.acl USING favorites.lists'),
+                expect.stringContaining('WHERE favorites.acl.list_id = favorites.lists.id'),
+                expect.stringContaining('AND favorites.acl.list_id ='),
+                expect.stringContaining('AND favorites.lists.user_address ='),
+                expect.stringContaining('AND favorites.acl.permission ='),
+                expect.stringContaining('AND favorites.acl.grantee =')
+              ]),
+              values: [listId, userAddress, Permission.VIEW, '*']
+            })
+          )
+        })
+
+        it('should resolve with the updated list', () => {
+          expect(result).toEqual(dbList)
+        })
+
+        it('should commit the changes and release the client', () => {
+          expect(dbClientQueryMock).toHaveBeenCalledWith('COMMIT')
+          expect(dbClientReleaseMock).toHaveBeenCalled()
+        })
       })
     })
   })
@@ -1135,7 +1239,7 @@ describe('when updating a list', () => {
       let dbList: DBList
       let result: DBList
 
-      beforeEach(async () => {
+      beforeEach(() => {
         dbList = {
           id: listId,
           name: 'aListName',
@@ -1152,45 +1256,195 @@ describe('when updating a list', () => {
 
         // Delete Access Mock Query
         dbClientQueryMock.mockResolvedValueOnce({ rowCount: 1 })
-
-        result = await listsComponent.updateList(listId, userAddress, updatedList)
       })
 
-      it('should begin the transaction', () => {
-        expect(dbClientQueryMock).toHaveBeenCalledWith('BEGIN')
+      describe('and the updated list has only an updated name without a new description', () => {
+        beforeEach(async () => {
+          result = await listsComponent.updateList(listId, userAddress, { ...updatedList, description: undefined })
+        })
+
+        it('should begin the transaction', () => {
+          expect(dbClientQueryMock).toHaveBeenCalledWith('BEGIN')
+        })
+
+        it('should update the list', () => {
+          expect(dbClientQueryMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+              strings: expect.arrayContaining([
+                expect.stringContaining('UPDATE favorites.lists SET'),
+                expect.stringContaining('WHERE id ='),
+                expect.stringContaining('AND user_address ='),
+                expect.stringContaining('RETURNING *')
+              ]),
+              values: ['name', updatedList.name, listId, userAddress]
+            })
+          )
+        })
+
+        it('should insert a new access to make the list public', () => {
+          expect(dbClientQueryMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+              strings: expect.arrayContaining([expect.stringContaining('INSERT INTO favorites.acl (list_id, permission, grantee) VALUES')]),
+              values: [listId, Permission.VIEW, '*']
+            })
+          )
+        })
+
+        it('should resolve with the updated list', () => {
+          expect(result).toEqual(dbList)
+        })
+
+        it('should commit the changes and release the client', () => {
+          expect(dbClientQueryMock).toHaveBeenCalledWith('COMMIT')
+          expect(dbClientReleaseMock).toHaveBeenCalled()
+        })
       })
 
-      it('should update the list', () => {
-        expect(dbClientQueryMock).toHaveBeenCalledWith(
-          expect.objectContaining({
-            strings: expect.arrayContaining([
-              expect.stringContaining('UPDATE favorites.lists SET (name, description) VALUES'),
-              expect.stringContaining('WHERE id ='),
-              expect.stringContaining('AND user_address ='),
-              expect.stringContaining('RETURNING *')
-            ]),
-            values: [updatedList.name, updatedList.description, listId, userAddress]
-          })
-        )
+      describe('and the updated list has only an updated description without a new name', () => {
+        beforeEach(async () => {
+          result = await listsComponent.updateList(listId, userAddress, { ...updatedList, name: undefined })
+        })
+
+        it('should begin the transaction', () => {
+          expect(dbClientQueryMock).toHaveBeenCalledWith('BEGIN')
+        })
+
+        it('should update the list', () => {
+          expect(dbClientQueryMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+              strings: expect.arrayContaining([
+                expect.stringContaining('UPDATE favorites.lists SET'),
+                expect.stringContaining('WHERE id ='),
+                expect.stringContaining('AND user_address ='),
+                expect.stringContaining('RETURNING *')
+              ]),
+              values: ['description', updatedList.description, listId, userAddress]
+            })
+          )
+        })
+
+        it('should insert a new access to make the list public', () => {
+          expect(dbClientQueryMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+              strings: expect.arrayContaining([expect.stringContaining('INSERT INTO favorites.acl (list_id, permission, grantee) VALUES')]),
+              values: [listId, Permission.VIEW, '*']
+            })
+          )
+        })
+
+        it('should resolve with the updated list', () => {
+          expect(result).toEqual(dbList)
+        })
+
+        it('should commit the changes and release the client', () => {
+          expect(dbClientQueryMock).toHaveBeenCalledWith('COMMIT')
+          expect(dbClientReleaseMock).toHaveBeenCalled()
+        })
       })
 
-      it('should insert a new access to make the list public', () => {
-        expect(dbClientQueryMock).toHaveBeenCalledWith(
-          expect.objectContaining({
-            strings: expect.arrayContaining([expect.stringContaining('INSERT INTO favorites.acl (list_id, permission, grantee) VALUES')]),
-            values: [listId, Permission.VIEW, '*']
-          })
-        )
+      describe('and the updated list has both an updated name and description', () => {
+        beforeEach(async () => {
+          result = await listsComponent.updateList(listId, userAddress, updatedList)
+        })
+
+        it('should begin the transaction', () => {
+          expect(dbClientQueryMock).toHaveBeenCalledWith('BEGIN')
+        })
+
+        it('should update the list', () => {
+          expect(dbClientQueryMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+              strings: expect.arrayContaining([
+                expect.stringContaining('UPDATE favorites.lists SET'),
+                expect.stringContaining('WHERE id ='),
+                expect.stringContaining('AND user_address ='),
+                expect.stringContaining('RETURNING *')
+              ]),
+              values: ['name', updatedList.name, 'description', updatedList.description, listId, userAddress]
+            })
+          )
+        })
+
+        it('should insert a new access to make the list public', () => {
+          expect(dbClientQueryMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+              strings: expect.arrayContaining([expect.stringContaining('INSERT INTO favorites.acl (list_id, permission, grantee) VALUES')]),
+              values: [listId, Permission.VIEW, '*']
+            })
+          )
+        })
+
+        it('should resolve with the updated list', () => {
+          expect(result).toEqual(dbList)
+        })
+
+        it('should commit the changes and release the client', () => {
+          expect(dbClientQueryMock).toHaveBeenCalledWith('COMMIT')
+          expect(dbClientReleaseMock).toHaveBeenCalled()
+        })
+      })
+    })
+  })
+
+  describe('and nothing is being updated besides the access', () => {
+    let dbList: DBList
+    let result: DBList
+
+    beforeEach(async () => {
+      updatedList = {
+        ...updatedList,
+        name: undefined,
+        description: undefined
+      }
+
+      dbList = {
+        id: listId,
+        name: 'aListName',
+        description: null,
+        user_address: userAddress,
+        created_at: new Date()
+      }
+
+      // Update List Mock Query
+      dbClientQueryMock.mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [dbList]
       })
 
-      it('should resolve with the updated list', () => {
-        expect(result).toEqual(dbList)
-      })
+      // Delete Access Mock Query
+      dbClientQueryMock.mockResolvedValueOnce({ rowCount: 1 })
 
-      it('should commit the changes and release the client', () => {
-        expect(dbClientQueryMock).toHaveBeenCalledWith('COMMIT')
-        expect(dbClientReleaseMock).toHaveBeenCalled()
-      })
+      result = await listsComponent.updateList(listId, userAddress, updatedList)
+    })
+
+    it('should begin the transaction', () => {
+      expect(dbClientQueryMock).toHaveBeenCalledWith('BEGIN')
+    })
+
+    it('should update the list', () => {
+      expect(dbClientQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          strings: expect.arrayContaining([
+            expect.stringContaining('SELECT *, favorites.acl.permission as permission'),
+            expect.stringContaining('FROM favorites.lists'),
+            expect.stringContaining('LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id'),
+            expect.stringContaining('WHERE id ='),
+            expect.stringContaining('AND (user_address ='),
+            expect.stringContaining('OR user_address ='),
+            expect.stringContaining(')')
+          ]),
+          values: [listId, userAddress, DEFAULT_LIST_USER_ADDRESS]
+        })
+      )
+    })
+
+    it('should resolve with the updated list', () => {
+      expect(result).toEqual(dbList)
+    })
+
+    it('should commit the changes and release the client', () => {
+      expect(dbClientQueryMock).toHaveBeenCalledWith('COMMIT')
+      expect(dbClientReleaseMock).toHaveBeenCalled()
     })
   })
 })

@@ -54,7 +54,7 @@ export type AddListRequestBody = {
   userAddress: string
 }
 
-export type UpdateListRequestBody = Pick<AddListRequestBody, 'name' | 'description'> & {
+export type UpdateListRequestBody = Pick<Partial<AddListRequestBody>, 'name' | 'description'> & {
   private?: boolean
 }
 
