@@ -71,6 +71,7 @@ export function createListsComponent(
     }
 
     getListQuery.append(SQL` GROUP BY favorites.lists.id, favorites.acl.permission`)
+    getListQuery.append(SQL` ORDER BY favorites.acl.permission ASC LIMIT 1`)
 
     const result = await pg.query<DBListsWithItemsCount>(getListQuery)
 
