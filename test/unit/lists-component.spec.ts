@@ -649,6 +649,12 @@ describe('when getting a list', () => {
           text: expect.stringContaining('GROUP BY favorites.lists.id, favorites.acl.permission')
         })
       )
+
+      expect(dbQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('ORDER BY favorites.acl.permission ASC LIMIT 1')
+        })
+      )
     })
 
     it('should resolve with the list', () => {
@@ -715,6 +721,12 @@ describe('when getting a list', () => {
       expect(dbQueryMock).toHaveBeenCalledWith(
         expect.objectContaining({
           text: expect.stringContaining('GROUP BY favorites.lists.id, favorites.acl.permission')
+        })
+      )
+
+      expect(dbQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('ORDER BY favorites.acl.permission ASC LIMIT 1')
         })
       )
     })
@@ -797,6 +809,12 @@ describe('when getting a list', () => {
             text: expect.stringContaining('GROUP BY favorites.lists.id, favorites.acl.permission')
           })
         )
+
+        expect(dbQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining('ORDER BY favorites.acl.permission ASC LIMIT 1')
+          })
+        )
       })
 
       it('should resolve with the list', () => {
@@ -868,6 +886,12 @@ describe('when getting a list', () => {
         expect(dbQueryMock).toHaveBeenCalledWith(
           expect.objectContaining({
             text: expect.stringContaining('GROUP BY favorites.lists.id, favorites.acl.permission')
+          })
+        )
+
+        expect(dbQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining('ORDER BY favorites.acl.permission ASC LIMIT 1')
           })
         )
       })
