@@ -575,8 +575,8 @@ describe('when creating a new list', () => {
     it('should create the pick', () => {
       expect(dbQueryMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          strings: expect.arrayContaining([expect.stringContaining('INSERT INTO favorites.lists (name, user_address)')]),
-          values: [name, userAddress]
+          strings: expect.arrayContaining([expect.stringContaining('INSERT INTO favorites.lists (name, description, user_address)')]),
+          values: [name, null, userAddress]
         })
       )
     })
