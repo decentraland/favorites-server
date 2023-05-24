@@ -9,9 +9,10 @@ import {
 import { TPick } from '../../adapters/picks'
 import { isErrorWithMessage } from '../../logic/errors'
 import { getPaginationParams, getParameter } from '../../logic/http'
+import { DEFAULT_LIST_ID } from '../../migrations/1678303321034_default-list'
 import { Permission } from '../../ports/access'
 import { AccessNotFoundError, DuplicatedAccessError } from '../../ports/access/errors'
-import { AddListRequestBody, ListSortBy, ListSortDirection } from '../../ports/lists'
+import { AddListRequestBody, ListSortBy, ListSortDirection, UpdateListRequestBody } from '../../ports/lists'
 import {
   DuplicatedListError,
   ItemNotFoundError,
@@ -570,6 +571,161 @@ export async function deleteListHandler(
           message: error.message,
           data: {
             listId: error.listId
+          }
+        }
+      }
+    }
+
+    throw error
+  }
+}
+
+export async function updateListHandler(
+  context: Pick<HandlerContextWithPath<'lists', '/v1/lists/:id'>, 'components' | 'params' | 'request' | 'verification'>
+): Promise<HTTPResponse<List>> {
+  const {
+    components: { lists },
+    verification,
+    params,
+    request
+  } = context
+  const userAddress: string | undefined = verification?.auth.toLowerCase()
+  let body: UpdateListRequestBody
+
+  if (!userAddress) {
+    return {
+      status: StatusCode.UNAUTHORIZED,
+      body: {
+        ok: false,
+        message: 'Unauthorized'
+      }
+    }
+  }
+
+  try {
+    body = await request.json()
+
+    if (params.id === DEFAULT_LIST_ID) {
+      return {
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The default list cannot be modified.'
+        }
+      }
+    }
+
+    if (!body.name && typeof body.private === 'undefined') {
+      return {
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The body must contain at least one of the following properties: name or private.'
+        }
+      }
+    }
+
+    if (body.name && typeof body.name !== 'string') {
+      return {
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The property name is not of string type.'
+        }
+      }
+    }
+
+    if (body.private && typeof body.private !== 'boolean') {
+      return {
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The property private is not of boolean type.'
+        }
+      }
+    }
+
+    if (body.description && typeof body.description !== 'string') {
+      return {
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The property description is not of string type.'
+        }
+      }
+    }
+  } catch (error) {
+    return {
+      status: StatusCode.BAD_REQUEST,
+      body: {
+        ok: false,
+        message: 'The body must contain a parsable JSON.'
+      }
+    }
+  }
+
+  try {
+    const updateListResult = await lists.updateList(params.id, userAddress, body)
+
+    return {
+      status: StatusCode.UPDATED,
+      body: {
+        ok: true,
+        data: fromDBListToList(updateListResult)
+      }
+    }
+  } catch (error) {
+    if (error instanceof ListNotFoundError) {
+      return {
+        status: StatusCode.NOT_FOUND,
+        body: {
+          ok: false,
+          message: error.message,
+          data: {
+            listId: error.listId
+          }
+        }
+      }
+    }
+
+    if (error instanceof AccessNotFoundError) {
+      return {
+        status: StatusCode.NOT_FOUND,
+        body: {
+          ok: false,
+          message: error.message,
+          data: {
+            listId: error.listId,
+            permission: error.permission,
+            grantee: error.grantee
+          }
+        }
+      }
+    }
+
+    if (error instanceof DuplicatedListError) {
+      return {
+        status: StatusCode.UNPROCESSABLE_CONTENT,
+        body: {
+          ok: false,
+          message: error.message,
+          data: {
+            name: error.name
+          }
+        }
+      }
+    }
+
+    if (error instanceof DuplicatedAccessError) {
+      return {
+        status: StatusCode.CONFLICT,
+        body: {
+          ok: false,
+          message: error.message,
+          data: {
+            listId: error.listId,
+            permission: error.permission,
+            grantee: error.grantee
           }
         }
       }

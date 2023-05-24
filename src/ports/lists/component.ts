@@ -3,7 +3,11 @@ import { isErrorWithMessage } from '../../logic/errors'
 import { DEFAULT_LIST_USER_ADDRESS } from '../../migrations/1678303321034_default-list'
 import { AppComponents } from '../../types'
 import { Permission } from '../access'
+import { AccessNotFoundError } from '../access/errors'
+import { deleteAccessQuery, insertAccessQuery } from '../access/queries'
+import { validateAccessExists, validateDuplicatedAccess } from '../access/utils'
 import { DBGetFilteredPicksWithCount, DBPick } from '../picks'
+import { GRANTED_TO_ALL } from './constants'
 import {
   DuplicatedListError,
   ItemNotFoundError,
@@ -12,6 +16,7 @@ import {
   PickNotFoundError,
   QueryFailure
 } from './errors'
+import { getListQuery } from './queries'
 import {
   GetAuthenticatedAndPaginatedParameters,
   IListsComponents,
@@ -22,10 +27,10 @@ import {
   ListSortBy,
   ListSortDirection,
   GetListOptions,
-  DBListsWithItemsCount
+  DBListsWithItemsCount,
+  UpdateListRequestBody
 } from './types'
-
-const GRANTED_TO_ALL = '*'
+import { validateListExists } from './utils'
 
 export function createListsComponent(
   components: Pick<AppComponents, 'pg' | 'collectionsSubgraph' | 'snapshot' | 'logs'>
@@ -45,35 +50,10 @@ export function createListsComponent(
     return result.rows
   }
 
-  async function getList(
-    listId: string,
-    { requiredPermission, considerDefaultList = true, userAddress }: GetListOptions
-  ): Promise<DBListsWithItemsCount> {
-    const getListQuery = SQL`
-      SELECT favorites.lists.*, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS count_items
-      FROM favorites.lists
-      LEFT JOIN favorites.picks ON favorites.lists.id = favorites.picks.list_id AND favorites.picks.user_address = ${userAddress}
-      LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id`
+  async function getList(listId: string, options: GetListOptions): Promise<DBListsWithItemsCount> {
+    const query = getListQuery(listId, options)
 
-    getListQuery.append(SQL` WHERE favorites.lists.id = ${listId} AND (favorites.lists.user_address = ${userAddress}`)
-    if (considerDefaultList) {
-      getListQuery.append(SQL` OR favorites.lists.user_address = ${DEFAULT_LIST_USER_ADDRESS}`)
-    }
-    getListQuery.append(')')
-
-    if (requiredPermission) {
-      const requiredPermissions = (requiredPermission === Permission.VIEW ? [Permission.VIEW, Permission.EDIT] : [requiredPermission]).join(
-        ','
-      )
-      getListQuery.append(
-        SQL` OR ((favorites.acl.grantee = ${userAddress} OR favorites.acl.grantee = ${GRANTED_TO_ALL}) AND favorites.acl.permission IN (${requiredPermissions}))`
-      )
-    }
-
-    getListQuery.append(SQL` GROUP BY favorites.lists.id, favorites.acl.permission`)
-    getListQuery.append(SQL` ORDER BY favorites.acl.permission ASC LIMIT 1`)
-
-    const result = await pg.query<DBListsWithItemsCount>(getListQuery)
+    const result = await pg.query<DBListsWithItemsCount>(query)
 
     if (result.rowCount === 0) {
       throw new ListNotFoundError(listId)
@@ -204,16 +184,65 @@ export function createListsComponent(
     }
   }
 
+  async function updateList(id: string, userAddress: string, updatedList: UpdateListRequestBody): Promise<DBList> {
+    const { name, description, private: isPrivate } = updatedList
+    const shouldUpdate = name || description
+
+    const client = await pg.getPool().connect()
+    const accessQuery = isPrivate
+      ? deleteAccessQuery(id, Permission.VIEW, GRANTED_TO_ALL, userAddress)
+      : insertAccessQuery(id, Permission.VIEW, GRANTED_TO_ALL)
+
+    try {
+      await client.query('BEGIN')
+      const updateQuery = SQL`UPDATE favorites.lists SET `
+
+      if (name) updateQuery.append(SQL`name = ${name}`)
+      if (name && description) updateQuery.append(SQL`, `)
+      if (description) updateQuery.append(SQL`description = ${description}`)
+
+      updateQuery.append(SQL` WHERE id = ${id} AND user_address = ${userAddress} RETURNING *`)
+
+      const [updatedListResult, accessResult] = await Promise.all([
+        client.query<DBList>(shouldUpdate ? updateQuery : getListQuery(id, { userAddress })),
+        client.query(accessQuery)
+      ])
+
+      validateListExists(id, updatedListResult)
+
+      if (isPrivate) validateAccessExists(id, Permission.VIEW, GRANTED_TO_ALL, accessResult)
+
+      await client.query('COMMIT')
+
+      return updatedListResult.rows[0]
+    } catch (error) {
+      await client.query('ROLLBACK')
+
+      if (error instanceof ListNotFoundError || error instanceof AccessNotFoundError) throw error
+
+      if (name && error && typeof error === 'object' && 'constraint' in error && error.constraint === 'name_user_address_unique') {
+        throw new DuplicatedListError(name)
+      }
+
+      validateDuplicatedAccess(id, Permission.VIEW, GRANTED_TO_ALL, error)
+
+      throw new Error("The list couldn't be updated")
+    } finally {
+      // TODO: handle the following eslint-disable statement
+      // eslint-disable-next-line @typescript-eslint/await-thenable
+      await client.release()
+    }
+  }
+
   async function deleteList(id: string, userAddress: string): Promise<void> {
     const result = await pg.query(
       SQL`DELETE FROM favorites.lists
       WHERE favorites.lists.id = ${id}
       AND favorites.lists.user_address = ${userAddress}`
     )
-    if (result.rowCount === 0) {
-      throw new ListNotFoundError(id)
-    }
+
+    validateListExists(id, result)
   }
 
-  return { getPicksByListId, addPickToList, deletePickInList, getLists, addList, deleteList, getList }
+  return { getPicksByListId, addPickToList, deletePickInList, getLists, addList, deleteList, getList, updateList }
 }

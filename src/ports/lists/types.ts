@@ -10,6 +10,7 @@ export interface IListsComponents {
   addList(newList: AddListRequestBody): Promise<DBList>
   deleteList(id: string, userAddress: string): Promise<void>
   getList(listId: string, options?: GetListOptions): Promise<DBListsWithItemsCount>
+  updateList(id: string, userAddress: string, updatedList: UpdateListRequestBody): Promise<DBList>
 }
 
 export type GetAuthenticatedAndPaginatedParameters = {
@@ -51,6 +52,10 @@ export type AddListRequestBody = {
   name: string
   description?: string
   userAddress: string
+}
+
+export type UpdateListRequestBody = Pick<Partial<AddListRequestBody>, 'name' | 'description'> & {
+  private?: boolean
 }
 
 export enum ListSortBy {
