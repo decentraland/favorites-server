@@ -1,4 +1,3 @@
-import util from 'util'
 import * as authorizationMiddleware from 'decentraland-crypto-middleware'
 import { List, ListWithItemsCount, ListsWithCount } from '../../src/adapters/lists'
 import { TPick } from '../../src/adapters/picks'
@@ -28,8 +27,6 @@ import {
 import { DBGetFilteredPicksWithCount, DBPick } from '../../src/ports/picks'
 import { AppComponents, HTTPResponse, HandlerContextWithPath, StatusCode } from '../../src/types'
 import { createTestListsComponent, createTestAccessComponent } from '../components'
-
-util.inspect.defaultOptions.depth = null
 
 let verification: authorizationMiddleware.DecentralandSignatureData | undefined
 let listId: string
