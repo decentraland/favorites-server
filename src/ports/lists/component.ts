@@ -8,14 +8,7 @@ import { deleteAccessQuery, insertAccessQuery } from '../access/queries'
 import { validateAccessExists, validateDuplicatedAccess } from '../access/utils'
 import { DBGetFilteredPicksWithCount, DBPick } from '../picks'
 import { GRANTED_TO_ALL } from './constants'
-import {
-  DuplicatedListError,
-  ItemNotFoundError,
-  ListNotFoundError,
-  PickAlreadyExistsError,
-  PickNotFoundError,
-  QueryFailure
-} from './errors'
+import { ItemNotFoundError, ListNotFoundError, PickAlreadyExistsError, PickNotFoundError, QueryFailure } from './errors'
 import { getListQuery } from './queries'
 import {
   GetAuthenticatedAndPaginatedParameters,
@@ -30,7 +23,7 @@ import {
   DBListsWithItemsCount,
   UpdateListRequestBody
 } from './types'
-import { validateListExists } from './utils'
+import { validateDuplicatedListName, validateListExists } from './utils'
 
 export function createListsComponent(
   components: Pick<AppComponents, 'pg' | 'collectionsSubgraph' | 'snapshot' | 'logs'>
@@ -168,19 +161,32 @@ export function createListsComponent(
     return result.rows
   }
 
-  async function addList({ name, description, userAddress }: AddListRequestBody): Promise<DBList> {
+  function changeListPrivacyQuery(id: string, userAddress: string, isPrivate: boolean) {
+    return isPrivate
+      ? deleteAccessQuery(id, Permission.VIEW, GRANTED_TO_ALL, userAddress)
+      : insertAccessQuery(id, Permission.VIEW, GRANTED_TO_ALL)
+  }
+
+  async function addList({ name, description, userAddress, private: isPrivate }: AddListRequestBody): Promise<DBList> {
+    const client = await pg.getPool().connect()
+
     try {
-      const result = await pg.query<DBList>(
+      await client.query('BEGIN')
+      const insertionResult = await client.query<DBList>(
         SQL`INSERT INTO favorites.lists (name, description, user_address) VALUES (${name}, ${
           description ?? null
         }, ${userAddress}) RETURNING *`
       )
+      const insertedList = insertionResult.rows[0]
+      client.query(changeListPrivacyQuery(insertedList.id, userAddress, !!isPrivate))
 
-      return result.rows[0]
+      await client.query('COMMIT')
+
+      return insertedList
     } catch (error) {
-      if (error && typeof error === 'object' && 'constraint' in error && error.constraint === 'name_user_address_unique') {
-        throw new DuplicatedListError(name)
-      }
+      await client.query('ROLLBACK')
+
+      validateDuplicatedListName(name, error)
 
       throw new Error("The list couldn't be created")
     }
@@ -191,9 +197,6 @@ export function createListsComponent(
     const shouldUpdate = name || description
 
     const client = await pg.getPool().connect()
-    const accessQuery = isPrivate
-      ? deleteAccessQuery(id, Permission.VIEW, GRANTED_TO_ALL, userAddress)
-      : insertAccessQuery(id, Permission.VIEW, GRANTED_TO_ALL)
 
     try {
       await client.query('BEGIN')
@@ -207,7 +210,7 @@ export function createListsComponent(
 
       const [updatedListResult, accessResult] = await Promise.all([
         client.query<DBList>(shouldUpdate ? updateQuery : getListQuery(id, { userAddress })),
-        client.query(accessQuery)
+        client.query(changeListPrivacyQuery(id, userAddress, !!isPrivate))
       ])
       await client.query('COMMIT')
 
@@ -221,9 +224,7 @@ export function createListsComponent(
 
       if (error instanceof ListNotFoundError || error instanceof AccessNotFoundError) throw error
 
-      if (name && error && typeof error === 'object' && 'constraint' in error && error.constraint === 'name_user_address_unique') {
-        throw new DuplicatedListError(name)
-      }
+      if (name) validateDuplicatedListName(name, error)
 
       validateDuplicatedAccess(id, Permission.VIEW, GRANTED_TO_ALL, error)
 
