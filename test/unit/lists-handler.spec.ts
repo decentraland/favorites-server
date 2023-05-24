@@ -215,7 +215,7 @@ describe('when creating a pick', () => {
     })
   })
 
-  describe('and the request body does contains the itemId property but is not of string type', () => {
+  describe('and the request body does contains the itemId property but is not of type string', () => {
     beforeEach(() => {
       jsonMock.mockResolvedValueOnce({ itemId: 1 })
     })
@@ -527,7 +527,7 @@ describe('when deleting a list access', () => {
       jsonMock.mockResolvedValueOnce({ grantee: 1, permission: 'view' })
     })
 
-    it('should return a response with a message saying that the grantee is not of type string and the 400 status code', () => {
+    it('should return a response with a message saying that the grantee is not of string type and the 400 status code', () => {
       return expect(deleteAccessHandler({ components, verification, request, params })).resolves.toEqual({
         status: StatusCode.BAD_REQUEST,
         body: {
@@ -738,7 +738,7 @@ describe('when creating an access', () => {
       jsonMock.mockResolvedValueOnce({ grantee: 1, permission })
     })
 
-    it('should return a response with a message saying that the grantee is not of type string and the 400 status code', () => {
+    it('should return a response with a message saying that the grantee is not of string type and the 400 status code', () => {
       return expect(createAccessHandler({ components, verification, request, params })).resolves.toEqual({
         status: StatusCode.BAD_REQUEST,
         body: {
@@ -1048,7 +1048,7 @@ describe('when creating a list', () => {
 
   describe('and the request body does not contain a valid JSON', () => {
     beforeEach(() => {
-      jsonMock.mockRejectedValueOnce(new Error())
+      jsonMock.mockRejectedValueOnce(new SyntaxError())
     })
 
     it('should return a response with a message saying that the body must be a parsable JSON and the 400 status code', () => {
@@ -1067,20 +1067,36 @@ describe('when creating a list', () => {
       jsonMock.mockResolvedValueOnce({})
     })
 
-    it('should return a response with a message saying that the name property is not correct and the 400 status code', () => {
+    it('should return a response with a message saying that the name property is missing and the 400 status code', () => {
       return expect(createListHandler({ components, verification, request })).resolves.toEqual({
         status: StatusCode.BAD_REQUEST,
         body: {
           ok: false,
-          message: 'The property name is missing or is not of string type.'
+          message: 'The property name is missing.'
         }
       })
     })
   })
 
-  describe('and the request body does contains the name property but is not of string type', () => {
+  describe('and the request body does not contain the private property', () => {
     beforeEach(() => {
-      jsonMock.mockResolvedValueOnce({ name: 1 })
+      jsonMock.mockResolvedValueOnce({ name: 'aName' })
+    })
+
+    it('should return a response with a message saying that the private property is missing and the 400 status code', () => {
+      return expect(createListHandler({ components, verification, request })).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The property private is missing.'
+        }
+      })
+    })
+  })
+
+  describe('and the request body does contains the name property but is not of type string', () => {
+    beforeEach(() => {
+      jsonMock.mockResolvedValueOnce({ name: 1, private: true })
     })
 
     it('should return a response with a message saying that the name property is not correct and the 400 status code', () => {
@@ -1088,7 +1104,23 @@ describe('when creating a list', () => {
         status: StatusCode.BAD_REQUEST,
         body: {
           ok: false,
-          message: 'The property name is missing or is not of string type.'
+          message: 'The property name is not of string type.'
+        }
+      })
+    })
+  })
+
+  describe('and the request body does contains the private property but is not of type boolean', () => {
+    beforeEach(() => {
+      jsonMock.mockResolvedValueOnce({ name: 'aName', private: 5 })
+    })
+
+    it('should return a response with a message saying that the private property is not correct and the 400 status code', () => {
+      return expect(createListHandler({ components, verification, request })).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The property private is not of boolean type.'
         }
       })
     })
@@ -1096,7 +1128,7 @@ describe('when creating a list', () => {
 
   describe('and the request body does contains the name property but it longs more than 32 characters', () => {
     beforeEach(() => {
-      jsonMock.mockResolvedValueOnce({ name: 'a'.repeat(33) })
+      jsonMock.mockResolvedValueOnce({ name: 'a'.repeat(33), private: true })
     })
 
     it('should return a response with a message saying that the name property exceeds the 32 characters and the 400 status code', () => {
@@ -1110,9 +1142,25 @@ describe('when creating a list', () => {
     })
   })
 
+  describe('and the request body does contains a valid name and private properties but the description is not of type string', () => {
+    beforeEach(() => {
+      jsonMock.mockResolvedValueOnce({ name: 'aName', description: 12345, private: true })
+    })
+
+    it('should return a response with a message saying that the description property is not correct and the 400 status code', () => {
+      return expect(createListHandler({ components, verification, request })).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The property description is not of string type.'
+        }
+      })
+    })
+  })
+
   describe('and the request body does contains a valid description but it longs more than 100 characters', () => {
     beforeEach(() => {
-      jsonMock.mockResolvedValueOnce({ name: 'List'.repeat(8), description: 'desc'.repeat(26) })
+      jsonMock.mockResolvedValueOnce({ name: 'List'.repeat(8), description: 'desc'.repeat(26), private: true })
     })
 
     it('should return a response with a message saying that the description property exceeds the 100 characters and the 400 status code', () => {
@@ -1128,7 +1176,7 @@ describe('when creating a list', () => {
 
   describe('and the process to add a list fails with a duplicated list name error', () => {
     beforeEach(() => {
-      jsonMock.mockResolvedValueOnce({ name })
+      jsonMock.mockResolvedValueOnce({ name, private: true })
       addListMock.mockRejectedValueOnce(new DuplicatedListError(name))
     })
 
@@ -1150,7 +1198,7 @@ describe('when creating a list', () => {
     const error = new Error('anError')
 
     beforeEach(() => {
-      jsonMock.mockResolvedValueOnce({ name })
+      jsonMock.mockResolvedValueOnce({ name, private: true })
       addListMock.mockRejectedValueOnce(error)
     })
 
@@ -1171,7 +1219,7 @@ describe('when creating a list', () => {
         created_at: date,
         description: null
       }
-      jsonMock.mockResolvedValueOnce({ name })
+      jsonMock.mockResolvedValueOnce({ name, private: true })
       addListMock.mockResolvedValueOnce(list)
     })
 
@@ -1427,7 +1475,7 @@ describe('when updating a list', () => {
 
   describe('and the request body does not contain a valid JSON', () => {
     beforeEach(() => {
-      jsonMock.mockRejectedValueOnce(new Error())
+      jsonMock.mockRejectedValueOnce(new SyntaxError())
     })
 
     it('should return a response with a message saying that the body must be a parsable JSON and the 400 status code', () => {
@@ -1457,7 +1505,7 @@ describe('when updating a list', () => {
     })
   })
 
-  describe('and the request body does contains the name property but is not of string type', () => {
+  describe('and the request body does contains the name property but is not of type string', () => {
     beforeEach(() => {
       jsonMock.mockResolvedValueOnce({ name: 1 })
     })
@@ -1473,7 +1521,7 @@ describe('when updating a list', () => {
     })
   })
 
-  describe('and the request body does contains the private property but is not of boolean type', () => {
+  describe('and the request body does contains the private property but is not of type boolean', () => {
     beforeEach(() => {
       jsonMock.mockResolvedValueOnce({ private: 'not a boolean' })
     })
@@ -1489,7 +1537,7 @@ describe('when updating a list', () => {
     })
   })
 
-  describe('and the request body does contains the description property but is not of string type', () => {
+  describe('and the request body does contains the description property but is not of type string', () => {
     beforeEach(() => {
       jsonMock.mockResolvedValueOnce({ name, private: true, description: 1 })
     })
@@ -1500,6 +1548,38 @@ describe('when updating a list', () => {
         body: {
           ok: false,
           message: 'The property description is not of string type.'
+        }
+      })
+    })
+  })
+
+  describe('and the request body does contains the name property but it longs more than 32 characters', () => {
+    beforeEach(() => {
+      jsonMock.mockResolvedValueOnce({ name: 'a'.repeat(33) })
+    })
+
+    it('should return a response with a message saying that the name property exceeds the 32 characters and the 400 status code', () => {
+      return expect(updateListHandler({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The property name exceeds the 32 characters.'
+        }
+      })
+    })
+  })
+
+  describe('and the request body does contains a valid description but it longs more than 100 characters', () => {
+    beforeEach(() => {
+      jsonMock.mockResolvedValueOnce({ name: 'List'.repeat(8), description: 'desc'.repeat(26) })
+    })
+
+    it('should return a response with a message saying that the description property exceeds the 100 characters and the 400 status code', () => {
+      return expect(updateListHandler({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The property description exceeds the 100 characters.'
         }
       })
     })

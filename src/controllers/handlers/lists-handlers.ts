@@ -22,7 +22,7 @@ import {
 } from '../../ports/lists/errors'
 import { HandlerContextWithPath, HTTPResponse, StatusCode } from '../../types'
 import { AccessBody } from './types'
-import { validateAccessBody } from './utils'
+import { validateAccessBody, validateCreateOrUpdateListBody, wellKnownMessageOrUnknownError } from './utils'
 
 export async function getPicksByListIdHandler(
   context: Pick<HandlerContextWithPath<'lists', '/v1/lists/:id/picks'>, 'url' | 'components' | 'params' | 'request' | 'verification'>
@@ -486,41 +486,42 @@ export async function createListHandler(
 
   try {
     body = await request.json()
-    if (!body.name || (body.name && typeof body.name !== 'string')) {
+    if (!body.name) {
       return {
         status: StatusCode.BAD_REQUEST,
         body: {
           ok: false,
-          message: 'The property name is missing or is not of string type.'
-        }
-      }
-    } else if (body.name.length > 32) {
-      return {
-        status: StatusCode.BAD_REQUEST,
-        body: {
-          ok: false,
-          message: 'The property name exceeds the 32 characters.'
+          message: 'The property name is missing.'
         }
       }
     }
 
-    if (body.description && typeof body.description === 'string' && body.description.length > 100) {
+    if (typeof body.private === 'undefined') {
       return {
         status: StatusCode.BAD_REQUEST,
         body: {
           ok: false,
-          message: 'The property description exceeds the 100 characters.'
+          message: 'The property private is missing.'
         }
       }
     }
+
+    validateCreateOrUpdateListBody(body)
   } catch (error) {
-    return {
-      status: StatusCode.BAD_REQUEST,
-      body: {
-        ok: false,
-        message: 'The body must contain a parsable JSON.'
+    if (error instanceof DuplicatedListError) {
+      return {
+        status: StatusCode.UNPROCESSABLE_CONTENT,
+        body: {
+          ok: false,
+          message: error.message,
+          data: {
+            name: error.name
+          }
+        }
       }
     }
+
+    return wellKnownMessageOrUnknownError(error)
   }
 
   try {
@@ -643,43 +644,9 @@ export async function updateListHandler(
       }
     }
 
-    if (body.name && typeof body.name !== 'string') {
-      return {
-        status: StatusCode.BAD_REQUEST,
-        body: {
-          ok: false,
-          message: 'The property name is not of string type.'
-        }
-      }
-    }
-
-    if (body.private && typeof body.private !== 'boolean') {
-      return {
-        status: StatusCode.BAD_REQUEST,
-        body: {
-          ok: false,
-          message: 'The property private is not of boolean type.'
-        }
-      }
-    }
-
-    if (body.description && typeof body.description !== 'string') {
-      return {
-        status: StatusCode.BAD_REQUEST,
-        body: {
-          ok: false,
-          message: 'The property description is not of string type.'
-        }
-      }
-    }
+    validateCreateOrUpdateListBody(body)
   } catch (error) {
-    return {
-      status: StatusCode.BAD_REQUEST,
-      body: {
-        ok: false,
-        message: 'The body must contain a parsable JSON.'
-      }
-    }
+    return wellKnownMessageOrUnknownError(error)
   }
 
   try {

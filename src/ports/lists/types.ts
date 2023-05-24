@@ -52,11 +52,10 @@ export type AddListRequestBody = {
   name: string
   description?: string
   userAddress: string
-}
-
-export type UpdateListRequestBody = Pick<Partial<AddListRequestBody>, 'name' | 'description'> & {
   private?: boolean
 }
+
+export type UpdateListRequestBody = Pick<Partial<AddListRequestBody>, 'name' | 'description' | 'private'>
 
 export enum ListSortBy {
   CREATED_AT = 'createdAt',
