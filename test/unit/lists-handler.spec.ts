@@ -14,7 +14,7 @@ import {
 } from '../../src/controllers/handlers/lists-handlers'
 import { Permission } from '../../src/ports/access'
 import { AccessNotFoundError, DuplicatedAccessError } from '../../src/ports/access/errors'
-import { DBGetListsWithCount, DBList, DBListsWithItemsCount } from '../../src/ports/lists'
+import { DBGetListsWithCount, DBList, DBListsWithItemsCount, ListSortBy, ListSortDirection } from '../../src/ports/lists'
 import {
   DuplicatedListError,
   ItemNotFoundError,
@@ -23,7 +23,7 @@ import {
   PickNotFoundError
 } from '../../src/ports/lists/errors'
 import { DBGetFilteredPicksWithCount, DBPick } from '../../src/ports/picks'
-import { AppComponents, HandlerContextWithPath, StatusCode } from '../../src/types'
+import { AppComponents, HTTPResponse, HandlerContextWithPath, StatusCode } from '../../src/types'
 import { createTestListsComponent, createTestAccessComponent } from '../components'
 
 let verification: authorizationMiddleware.DecentralandSignatureData | undefined
@@ -959,6 +959,7 @@ describe('when getting the lists', () => {
   describe('and the process to get the lists is successful', () => {
     let dbLists: DBGetListsWithCount[]
     let lists: ListsWithCount['lists']
+    let result: Promise<HTTPResponse<Pick<List, 'id' | 'name'>>>
 
     beforeEach(() => {
       dbLists = [
@@ -974,16 +975,12 @@ describe('when getting the lists', () => {
       ]
       lists = [{ id: 'e96df126-f5bf-4311-94d8-6e261f368bb2', name: 'List #1', itemsCount: 2 }]
       getListsMock.mockResolvedValueOnce(dbLists)
+      url = new URL('http://localhost/v1/lists?sortBy=name&sortDirection=asc&itemId=anItemId&q=aName')
+      result = getListsHandler({ url, components, verification })
     })
 
     it('should return a response with an ok status code and the lists', () => {
-      return expect(
-        getListsHandler({
-          url,
-          components,
-          verification
-        })
-      ).resolves.toEqual({
+      return expect(result).resolves.toEqual({
         status: StatusCode.OK,
         body: {
           ok: true,
@@ -995,6 +992,18 @@ describe('when getting the lists', () => {
             limit: 100
           }
         }
+      })
+    })
+
+    it('should call the get lists procedure with the correct parameters', () => {
+      return expect(getListsMock).toHaveBeenCalledWith({
+        userAddress: verification?.auth,
+        offset: 0,
+        limit: 100,
+        sortBy: ListSortBy.NAME,
+        sortDirection: ListSortDirection.ASC,
+        itemId: 'anItemId',
+        q: 'aName'
       })
     })
   })

@@ -20,6 +20,7 @@ export type GetListsParameters = GetAuthenticatedAndPaginatedParameters & {
   sortBy?: ListSortBy
   sortDirection?: ListSortDirection
   itemId?: string | null
+  q?: string | null
 }
 
 export type GetListOptions = {
