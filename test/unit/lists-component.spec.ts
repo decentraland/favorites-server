@@ -410,6 +410,58 @@ describe('when getting lists', () => {
       })
     })
 
+    describe('and the item id parameter is set', () => {
+      let itemId: string
+
+      beforeEach(() => {
+        itemId = '0x08de0de733cc11081d43569b809c00e6ddf314fb-0'
+      })
+
+      it('should have made the query to get the lists taking into account if the item is in the list', async () => {
+        await expect(
+          listsComponent.getLists({
+            offset: 0,
+            limit: 10,
+            userAddress: '0xuseraddress',
+            itemId
+          })
+        ).resolves.toEqual(dbGetLists)
+
+        expect(dbQueryMock).toBeCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining(', MAX(CASE WHEN p.item_id = $2 THEN 1 ELSE 0 END)::BOOLEAN AS is_item_in_list'),
+            values: expect.arrayContaining([itemId])
+          })
+        )
+      })
+    })
+
+    describe('and the q parameter is set', () => {
+      let q: string
+
+      beforeEach(() => {
+        q = 'aName'
+      })
+
+      it('should have made the query to get the lists searching by the list names', async () => {
+        await expect(
+          listsComponent.getLists({
+            offset: 0,
+            limit: 10,
+            userAddress: '0xuseraddress',
+            q
+          })
+        ).resolves.toEqual(dbGetLists)
+
+        expect(dbQueryMock).toBeCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining("AND l.name ILIKE '%$5%'"),
+            values: expect.arrayContaining([q])
+          })
+        )
+      })
+    })
+
     describe('and the sorting parameters are set', () => {
       describe('and the sort by is "date"', () => {
         describe.each([ListSortDirection.ASC, ListSortDirection.DESC])('and the sort direction is "%s"', sortDirection => {
