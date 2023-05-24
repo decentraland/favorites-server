@@ -10,8 +10,10 @@ import {
   deleteAccessHandler,
   deleteListHandler,
   createAccessHandler,
-  getListHandler
+  getListHandler,
+  updateListHandler
 } from '../../src/controllers/handlers/lists-handlers'
+import { DEFAULT_LIST_ID } from '../../src/migrations/1678303321034_default-list'
 import { Permission } from '../../src/ports/access'
 import { AccessNotFoundError, DuplicatedAccessError } from '../../src/ports/access/errors'
 import { DBGetListsWithCount, DBList, DBListsWithItemsCount, ListSortBy, ListSortDirection } from '../../src/ports/lists'
@@ -1332,6 +1334,281 @@ describe('when deleting a list', () => {
 
     it('should propagate the error', () => {
       return expect(deleteListHandler({ components, verification, request, params })).rejects.toEqual(error)
+    })
+  })
+})
+
+describe('when updating a list', () => {
+  let name: string
+  let components: Pick<AppComponents, 'lists'>
+  let params: HandlerContextWithPath<'lists', '/v1/lists/:id/picks'>['params']
+  let request: HandlerContextWithPath<'lists', '/v1/lists/:id'>['request']
+  let jsonMock: jest.Mock
+  let updateListMock: jest.Mock
+
+  beforeEach(() => {
+    listId = 'list-id'
+    name = 'Test List'
+    jsonMock = jest.fn()
+    updateListMock = jest.fn()
+    components = {
+      lists: createTestListsComponent({ updateList: updateListMock })
+    }
+    request = {
+      json: jsonMock
+    } as unknown as HandlerContextWithPath<'lists', '/v1/lists/:id'>['request']
+    params = { id: listId }
+  })
+
+  describe('and the request is not authenticated', () => {
+    beforeEach(() => {
+      verification = undefined
+    })
+
+    it('should return an unauthorized response', () => {
+      return expect(updateListHandler({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.UNAUTHORIZED,
+        body: {
+          ok: false,
+          message: 'Unauthorized'
+        }
+      })
+    })
+  })
+
+  describe('and the request is trying to update the default list', () => {
+    beforeEach(() => {
+      params = { id: DEFAULT_LIST_ID }
+      jsonMock.mockResolvedValueOnce({})
+    })
+
+    it('should return a response with a message saying that the default list cannot be modified and the 400 status code', () => {
+      return expect(updateListHandler({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The default list cannot be modified.'
+        }
+      })
+    })
+  })
+
+  describe('and the request body does not contain a valid JSON', () => {
+    beforeEach(() => {
+      jsonMock.mockRejectedValueOnce(new Error())
+    })
+
+    it('should return a response with a message saying that the body must be a parsable JSON and the 400 status code', () => {
+      return expect(updateListHandler({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The body must contain a parsable JSON.'
+        }
+      })
+    })
+  })
+
+  describe('and the request body does not contain neither the name or the private properties', () => {
+    beforeEach(() => {
+      jsonMock.mockResolvedValueOnce({})
+    })
+
+    it('should return a response with a message saying that the name property is not correct and the 400 status code', () => {
+      return expect(updateListHandler({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The body must contain at least one of the following properties: name or private.'
+        }
+      })
+    })
+  })
+
+  describe('and the request body does contains the name property but is not of string type', () => {
+    beforeEach(() => {
+      jsonMock.mockResolvedValueOnce({ name: 1 })
+    })
+
+    it('should return a response with a message saying that the name property is not correct and the 400 status code', () => {
+      return expect(updateListHandler({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The property name is not of string type.'
+        }
+      })
+    })
+  })
+
+  describe('and the request body does contains the private property but is not of boolean type', () => {
+    beforeEach(() => {
+      jsonMock.mockResolvedValueOnce({ private: 'not a boolean' })
+    })
+
+    it('should return a response with a message saying that the private property is not correct and the 400 status code', () => {
+      return expect(updateListHandler({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The property private is not of boolean type.'
+        }
+      })
+    })
+  })
+
+  describe('and the request body does contains the description property but is not of string type', () => {
+    beforeEach(() => {
+      jsonMock.mockResolvedValueOnce({ name, private: true, description: 1 })
+    })
+
+    it('should return a response with a message saying that the description property is not correct and the 400 status code', () => {
+      return expect(updateListHandler({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The property description is not of string type.'
+        }
+      })
+    })
+  })
+
+  describe('and the process to update a list fails with a list not found error', () => {
+    beforeEach(() => {
+      jsonMock.mockResolvedValueOnce({ name })
+      updateListMock.mockRejectedValueOnce(new ListNotFoundError(listId))
+    })
+
+    it('should return a response with a message saying that the list was not found and the 404 status code', () => {
+      return expect(updateListHandler({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.NOT_FOUND,
+        body: {
+          ok: false,
+          message: 'The list was not found.',
+          data: {
+            listId
+          }
+        }
+      })
+    })
+  })
+
+  describe('and the process to update a list fails with a access not found error', () => {
+    beforeEach(() => {
+      jsonMock.mockResolvedValueOnce({ name })
+      updateListMock.mockRejectedValueOnce(new AccessNotFoundError(listId, Permission.VIEW, '*'))
+    })
+
+    it('should return a response with a message saying that the access was not found and the 404 status code', () => {
+      return expect(updateListHandler({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.NOT_FOUND,
+        body: {
+          ok: false,
+          message: "The access doesn't exist.",
+          data: {
+            listId,
+            permission: Permission.VIEW,
+            grantee: '*'
+          }
+        }
+      })
+    })
+  })
+
+  describe('and the process to update a list fails with a duplicated list error', () => {
+    beforeEach(() => {
+      jsonMock.mockResolvedValueOnce({ name })
+      updateListMock.mockRejectedValueOnce(new DuplicatedListError(name))
+    })
+
+    it('should return a response with a message saying that the a list with that name already exists and the 422 status code', () => {
+      return expect(updateListHandler({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.UNPROCESSABLE_CONTENT,
+        body: {
+          ok: false,
+          message: `There is already a list with the same name: ${name}.`,
+          data: {
+            name
+          }
+        }
+      })
+    })
+  })
+
+  describe('and the process to update a list fails with a access not found error', () => {
+    beforeEach(() => {
+      jsonMock.mockResolvedValueOnce({ name })
+      updateListMock.mockRejectedValueOnce(new DuplicatedAccessError(listId, Permission.VIEW, '*'))
+    })
+
+    it('should return a response with a message saying that the access already exists and the 409 status code', () => {
+      return expect(updateListHandler({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.CONFLICT,
+        body: {
+          ok: false,
+          message: 'The access already exists for the given list.',
+          data: {
+            listId,
+            grantee: '*',
+            permission: Permission.VIEW
+          }
+        }
+      })
+    })
+  })
+
+  describe('and the process to update a list fails with an unknown error', () => {
+    const error = new Error('anError')
+
+    beforeEach(() => {
+      jsonMock.mockResolvedValueOnce({ name })
+      updateListMock.mockRejectedValueOnce(error)
+    })
+
+    it('should propagate the error', () => {
+      return expect(updateListHandler({ components, verification, request, params })).rejects.toEqual(error)
+    })
+  })
+
+  describe('and the list gets updated correctly', () => {
+    let list: DBList
+    let result: Promise<HTTPResponse<List>>
+
+    const date = new Date()
+
+    beforeEach(() => {
+      list = {
+        id: listId,
+        name,
+        user_address: verification?.auth ?? '',
+        created_at: date,
+        description: null
+      }
+      jsonMock.mockResolvedValueOnce({ name })
+      updateListMock.mockResolvedValueOnce(list)
+
+      result = updateListHandler({ components, verification, request, params })
+    })
+
+    it('should convert the updated database list into a list and return it with the status 204', () => {
+      return expect(result).resolves.toEqual({
+        status: StatusCode.UPDATED,
+        body: {
+          ok: true,
+          data: {
+            id: listId,
+            name,
+            userAddress: verification?.auth,
+            createdAt: date,
+            description: null,
+            permission: undefined
+          }
+        }
+      })
+    })
+
+    it('should have called the update list procedure with the given parameters', () => {
+      expect(updateListMock).toHaveBeenCalledWith(listId, verification?.auth, { name, description: undefined, private: undefined })
     })
   })
 })

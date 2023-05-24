@@ -116,14 +116,16 @@ export function createTestListsComponent(
     getLists = jest.fn(),
     addList = jest.fn(),
     deleteList = jest.fn(),
-    getList = jest.fn()
+    getList = jest.fn(),
+    updateList = jest.fn()
   } = {
     getPicksByListId: jest.fn(),
     addPickToList: jest.fn(),
     deletePickInList: jest.fn(),
     getLists: jest.fn(),
     addList: jest.fn(),
-    deleteList: jest.fn()
+    deleteList: jest.fn(),
+    updateList: jest.fn()
   }
 ): IListsComponents {
   return {
@@ -133,7 +135,8 @@ export function createTestListsComponent(
     getLists,
     addList,
     deleteList,
-    getList
+    getList,
+    updateList
   }
 }
 
