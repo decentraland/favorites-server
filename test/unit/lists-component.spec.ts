@@ -990,6 +990,7 @@ describe('when updating a list', () => {
 
     it('should rollback the changes, release the client and throw a list not found error', async () => {
       await expect(listsComponent.updateList(listId, userAddress, updatedList)).rejects.toEqual(new ListNotFoundError(listId))
+      expect(dbClientQueryMock).not.toHaveBeenCalledWith('COMMIT')
       expect(dbClientQueryMock).toHaveBeenCalledWith('ROLLBACK')
       expect(dbClientReleaseMock).toHaveBeenCalled()
     })
@@ -1006,6 +1007,7 @@ describe('when updating a list', () => {
 
     it('should rollback the changes, release the client and throw a duplicated list error', async () => {
       await expect(listsComponent.updateList(listId, userAddress, updatedList)).rejects.toEqual(new DuplicatedListError(name))
+      expect(dbClientQueryMock).not.toHaveBeenCalledWith('COMMIT')
       expect(dbClientQueryMock).toHaveBeenCalledWith('ROLLBACK')
       expect(dbClientReleaseMock).toHaveBeenCalled()
     })
@@ -1024,6 +1026,7 @@ describe('when updating a list', () => {
       await expect(listsComponent.updateList(listId, userAddress, updatedList)).rejects.toEqual(
         new DuplicatedAccessError(listId, Permission.VIEW, '*')
       )
+      expect(dbClientQueryMock).not.toHaveBeenCalledWith('COMMIT')
       expect(dbClientQueryMock).toHaveBeenCalledWith('ROLLBACK')
       expect(dbClientReleaseMock).toHaveBeenCalled()
     })
@@ -1050,6 +1053,7 @@ describe('when updating a list', () => {
         await expect(listsComponent.updateList(listId, userAddress, updatedList)).rejects.toEqual(
           new AccessNotFoundError(listId, Permission.VIEW, '*')
         )
+        expect(dbClientQueryMock).not.toHaveBeenCalledWith('COMMIT')
         expect(dbClientQueryMock).toHaveBeenCalledWith('ROLLBACK')
         expect(dbClientReleaseMock).toHaveBeenCalled()
       })

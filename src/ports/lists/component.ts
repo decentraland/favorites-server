@@ -209,11 +209,12 @@ export function createListsComponent(
         client.query<DBList>(shouldUpdate ? updateQuery : getListQuery(id, { userAddress })),
         client.query(accessQuery)
       ])
-      await client.query('COMMIT')
 
       validateListExists(id, updatedListResult)
 
       if (isPrivate) validateAccessExists(id, Permission.VIEW, GRANTED_TO_ALL, accessResult)
+
+      await client.query('COMMIT')
 
       return updatedListResult.rows[0]
     } catch (error) {
