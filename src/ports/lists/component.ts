@@ -5,8 +5,10 @@ import { DEFAULT_LIST_USER_ADDRESS } from '../../migrations/1678303321034_defaul
 import { AppComponents } from '../../types'
 import { Permission } from '../access'
 import { AccessNotFoundError } from '../access/errors'
-import { deleteAccessQuery, insertAccessQuery, validateAccessExists, validateDuplicatedAccess } from '../access/utils'
+import { deleteAccessQuery, insertAccessQuery } from '../access/queries'
+import { validateAccessExists, validateDuplicatedAccess } from '../access/utils'
 import { DBGetFilteredPicksWithCount, DBPick } from '../picks'
+import { GRANTED_TO_ALL } from './constants'
 import {
   DuplicatedListError,
   ItemNotFoundError,
@@ -15,6 +17,7 @@ import {
   PickNotFoundError,
   QueryFailure
 } from './errors'
+import { getListQuery } from './queries'
 import {
   GetAuthenticatedAndPaginatedParameters,
   IListsComponents,
@@ -28,7 +31,7 @@ import {
   DBListsWithItemsCount,
   UpdateListRequestBody
 } from './types'
-import { GRANTED_TO_ALL, getListQuery, validateListExists } from './utils'
+import { validateListExists } from './utils'
 
 export function createListsComponent(
   components: Pick<AppComponents, 'pg' | 'collectionsSubgraph' | 'snapshot' | 'logs'>

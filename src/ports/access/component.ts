@@ -1,6 +1,7 @@
 import { AppComponents } from '../../types'
+import { deleteAccessQuery, insertAccessQuery } from './queries'
 import { IAccessComponent, Permission } from './types'
-import { deleteAccessQuery, insertAccessQuery, validateAccessExists, validateDuplicatedAccess } from './utils'
+import { validateAccessExists, validateDuplicatedAccess } from './utils'
 
 export function createAccessComponent(components: Pick<AppComponents, 'pg' | 'logs' | 'lists'>): IAccessComponent {
   const { pg, logs, lists } = components
