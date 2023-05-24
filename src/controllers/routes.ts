@@ -1,6 +1,6 @@
 import { Router } from '@well-known-components/http-server'
 import * as authorizationMiddleware from 'decentraland-crypto-middleware'
-import { ListCreationSchema } from '../ports/lists'
+import { ListCreationSchema, ListUpdateSchema } from '../ports/lists'
 import { GlobalContext } from '../types'
 import {
   createPickInListHandler,
@@ -92,7 +92,7 @@ export function setupRouter({ components: { schemaValidator } }: GlobalContext):
   router.post(
     '/v1/lists',
     authorizationMiddleware.wellKnownComponents({
-      optional: true,
+      optional: false,
       expiration: FIVE_MINUTES
     }),
     schemaValidator.withSchemaValidatorMiddleware(ListCreationSchema),
@@ -105,6 +105,7 @@ export function setupRouter({ components: { schemaValidator } }: GlobalContext):
       optional: false,
       expiration: FIVE_MINUTES
     }),
+    schemaValidator.withSchemaValidatorMiddleware(ListUpdateSchema),
     updateListHandler
   )
 

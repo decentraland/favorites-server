@@ -22,7 +22,7 @@ import {
 } from '../../ports/lists/errors'
 import { HandlerContextWithPath, HTTPResponse, StatusCode } from '../../types'
 import { AccessBody } from './types'
-import { validateAccessBody, validateCreateOrUpdateListBody, wellKnownMessageOrUnknownError } from './utils'
+import { validateAccessBody } from './utils'
 
 export async function getPicksByListIdHandler(
   context: Pick<HandlerContextWithPath<'lists', '/v1/lists/:id/picks'>, 'url' | 'components' | 'params' | 'request' | 'verification'>
@@ -471,7 +471,7 @@ export async function createListHandler(
     verification,
     request
   } = context
-  const userAddress: string | undefined = verification?.auth.toLowerCase() ?? '0x0'
+  const userAddress: string | undefined = verification?.auth.toLowerCase()
 
   if (!userAddress) {
     return {
@@ -570,7 +570,6 @@ export async function updateListHandler(
     request
   } = context
   const userAddress: string | undefined = verification?.auth.toLowerCase()
-  let body: UpdateListRequestBody
 
   if (!userAddress) {
     return {
@@ -582,35 +581,18 @@ export async function updateListHandler(
     }
   }
 
-  try {
-    body = await request.json()
-
-    if (params.id === DEFAULT_LIST_ID) {
-      return {
-        status: StatusCode.BAD_REQUEST,
-        body: {
-          ok: false,
-          message: 'The default list cannot be modified.'
-        }
+  if (params.id === DEFAULT_LIST_ID) {
+    return {
+      status: StatusCode.BAD_REQUEST,
+      body: {
+        ok: false,
+        message: 'The default list cannot be modified.'
       }
     }
-
-    if (!body.name && typeof body.private === 'undefined') {
-      return {
-        status: StatusCode.BAD_REQUEST,
-        body: {
-          ok: false,
-          message: 'The body must contain at least one of the following properties: name or private.'
-        }
-      }
-    }
-
-    validateCreateOrUpdateListBody(body)
-  } catch (error) {
-    return wellKnownMessageOrUnknownError(error)
   }
 
   try {
+    const body: UpdateListRequestBody = await request.json()
     const updateListResult = await lists.updateList(params.id, userAddress, body)
 
     return {

@@ -1,4 +1,3 @@
-import { JSONSchema } from '@dcl/schemas'
 import { PaginationParameters } from '../../logic/http'
 import { DBGetFilteredPicksWithCount, DBPick } from '../../ports/picks'
 import { Permission } from '../access'
@@ -71,27 +70,4 @@ export enum ListSortDirection {
   DESC = 'desc'
 }
 
-export const ListCreationSchema: JSONSchema<AddListRequestBody> = {
-  type: 'object',
-  properties: {
-    name: {
-      type: 'string',
-      minLength: 1,
-      maxLength: 32,
-      description: 'The name of the list'
-    },
-    description: {
-      type: 'string',
-      maxLength: 100,
-      nullable: true,
-      default: null,
-      description: 'A description of the list'
-    },
-    private: {
-      type: 'boolean',
-      description: 'Whether the list is private or not',
-      nullable: false
-    }
-  },
-  required: ['name', 'private']
-}
+export * from './schemas'
