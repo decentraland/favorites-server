@@ -605,6 +605,16 @@ export async function updateListHandler(
   try {
     body = await request.json()
 
+    if (params.id === DEFAULT_LIST_ID) {
+      return {
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The default list cannot be modified.'
+        }
+      }
+    }
+
     if (!body.name && typeof body.private === 'undefined') {
       return {
         status: StatusCode.BAD_REQUEST,
@@ -621,14 +631,6 @@ export async function updateListHandler(
         body: {
           ok: false,
           message: 'The property name is not of string type.'
-        }
-      }
-    } else if (body.name && params.id === DEFAULT_LIST_ID) {
-      return {
-        status: StatusCode.BAD_REQUEST,
-        body: {
-          ok: false,
-          message: 'The name of the default list cannot be modified.'
         }
       }
     }

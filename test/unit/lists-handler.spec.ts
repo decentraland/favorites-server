@@ -1379,6 +1379,23 @@ describe('when updating a list', () => {
     })
   })
 
+  describe('and the request is trying to update the default list', () => {
+    beforeEach(() => {
+      params = { id: DEFAULT_LIST_ID }
+      jsonMock.mockResolvedValueOnce({})
+    })
+
+    it('should return a response with a message saying that the default list cannot be modified and the 400 status code', () => {
+      return expect(updateListHandler({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The default list cannot be modified.'
+        }
+      })
+    })
+  })
+
   describe('and the request body does not contain a valid JSON', () => {
     beforeEach(() => {
       jsonMock.mockRejectedValueOnce(new Error())
@@ -1422,23 +1439,6 @@ describe('when updating a list', () => {
         body: {
           ok: false,
           message: 'The property name is not of string type.'
-        }
-      })
-    })
-  })
-
-  describe('and the request body does contains the name but is trying to update the name of the default list', () => {
-    beforeEach(() => {
-      params = { id: DEFAULT_LIST_ID }
-      jsonMock.mockResolvedValueOnce({ name: 'Not a Default List' })
-    })
-
-    it('should return a response with a message saying that the name property cannot be modified for the default list and the 400 status code', () => {
-      return expect(updateListHandler({ components, verification, request, params })).resolves.toEqual({
-        status: StatusCode.BAD_REQUEST,
-        body: {
-          ok: false,
-          message: 'The name of the default list cannot be modified.'
         }
       })
     })

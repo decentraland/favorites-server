@@ -1421,19 +1421,26 @@ describe('when updating a list', () => {
       expect(dbClientQueryMock).toHaveBeenCalledWith('BEGIN')
     })
 
-    it('should update the list', () => {
+    it('should get the list instead of updating it', () => {
       expect(dbClientQueryMock).toHaveBeenCalledWith(
         expect.objectContaining({
           strings: expect.arrayContaining([
-            expect.stringContaining('SELECT *, favorites.acl.permission as permission'),
+            expect.stringContaining(
+              'SELECT favorites.lists.*, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS count_items'
+            ),
             expect.stringContaining('FROM favorites.lists'),
+            expect.stringContaining(
+              'LEFT JOIN favorites.picks ON favorites.lists.id = favorites.picks.list_id AND favorites.picks.user_address ='
+            ),
             expect.stringContaining('LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id'),
-            expect.stringContaining('WHERE id ='),
-            expect.stringContaining('AND (user_address ='),
-            expect.stringContaining('OR user_address ='),
-            expect.stringContaining(')')
+            expect.stringContaining('WHERE favorites.lists.id ='),
+            expect.stringContaining('AND (favorites.lists.user_address ='),
+            expect.stringContaining('OR favorites.lists.user_address ='),
+            expect.stringContaining(')'),
+            expect.stringContaining('GROUP BY favorites.lists.id, favorites.acl.permission'),
+            expect.stringContaining('ORDER BY favorites.acl.permission ASC LIMIT 1')
           ]),
-          values: [listId, userAddress, DEFAULT_LIST_USER_ADDRESS]
+          values: [userAddress, listId, userAddress, DEFAULT_LIST_USER_ADDRESS]
         })
       )
     })
