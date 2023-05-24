@@ -382,21 +382,28 @@ describe('when getting lists', () => {
 
         expect(dbQueryMock).toBeCalledWith(
           expect.objectContaining({
-            text: expect.stringContaining('WHERE user_address = $2 OR user_address = $3'),
+            text: expect.stringContaining('LEFT JOIN favorites.picks p ON l.id = p.list_id AND p.user_address = $2'),
+            values: expect.arrayContaining(['0xuseraddress'])
+          })
+        )
+
+        expect(dbQueryMock).toBeCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining('WHERE l.user_address = $3 OR l.user_address = $4'),
             values: expect.arrayContaining(['0xuseraddress', DEFAULT_LIST_USER_ADDRESS])
           })
         )
 
         expect(dbQueryMock).toBeCalledWith(
           expect.objectContaining({
-            text: expect.stringContaining('ORDER BY is_default_list DESC, created_at $4'),
+            text: expect.stringContaining('ORDER BY is_default_list DESC, l.created_at $5'),
             values: expect.arrayContaining([ListSortDirection.DESC])
           })
         )
 
         expect(dbQueryMock).toBeCalledWith(
           expect.objectContaining({
-            text: expect.stringContaining('LIMIT $5 OFFSET $6'),
+            text: expect.stringContaining('LIMIT $6 OFFSET $7'),
             values: expect.arrayContaining([10, 0])
           })
         )
@@ -419,14 +426,14 @@ describe('when getting lists', () => {
 
             expect(dbQueryMock).toBeCalledWith(
               expect.objectContaining({
-                text: expect.stringContaining('ORDER BY is_default_list DESC, created_at $4'),
+                text: expect.stringContaining('ORDER BY is_default_list DESC, l.created_at $5'),
                 values: expect.arrayContaining([sortDirection])
               })
             )
 
             expect(dbQueryMock).toBeCalledWith(
               expect.objectContaining({
-                text: expect.stringContaining('LIMIT $5 OFFSET $6'),
+                text: expect.stringContaining('LIMIT $6 OFFSET $7'),
                 values: expect.arrayContaining([10, 0])
               })
             )
@@ -449,14 +456,14 @@ describe('when getting lists', () => {
 
             expect(dbQueryMock).toBeCalledWith(
               expect.objectContaining({
-                text: expect.stringContaining('ORDER BY is_default_list DESC, name $4'),
+                text: expect.stringContaining('ORDER BY is_default_list DESC, l.name $5'),
                 values: expect.arrayContaining([sortDirection])
               })
             )
 
             expect(dbQueryMock).toBeCalledWith(
               expect.objectContaining({
-                text: expect.stringContaining('LIMIT $5 OFFSET $6'),
+                text: expect.stringContaining('LIMIT $6 OFFSET $7'),
                 values: expect.arrayContaining([10, 0])
               })
             )
@@ -603,7 +610,9 @@ describe('when getting a list', () => {
     it('should have made the query to get without checking if the list belongs to the default user or if has the required permissions', () => {
       expect(dbQueryMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          text: expect.stringContaining('SELECT *, favorites.acl.permission as permission')
+          text: expect.stringContaining(
+            'SELECT favorites.lists.*, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS count_items'
+          )
         })
       )
 
@@ -615,14 +624,35 @@ describe('when getting a list', () => {
 
       expect(dbQueryMock).toHaveBeenCalledWith(
         expect.objectContaining({
+          text: expect.stringContaining(
+            'LEFT JOIN favorites.picks ON favorites.lists.id = favorites.picks.list_id AND favorites.picks.user_address = $1'
+          ),
+          values: expect.arrayContaining([userAddress])
+        })
+      )
+
+      expect(dbQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
           text: expect.stringContaining('LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id')
         })
       )
 
       expect(dbQueryMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          text: expect.stringContaining('WHERE id = $1 AND (user_address = $2)'),
+          text: expect.stringContaining('WHERE favorites.lists.id = $2 AND (favorites.lists.user_address = $3)'),
           values: expect.arrayContaining([listId, userAddress])
+        })
+      )
+
+      expect(dbQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('GROUP BY favorites.lists.id, favorites.acl.permission')
+        })
+      )
+
+      expect(dbQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('ORDER BY favorites.acl.permission ASC LIMIT 1')
         })
       )
     })
@@ -652,7 +682,9 @@ describe('when getting a list', () => {
     it('should have made the query to get the list checking if the list belongs to the default user without taking into account the permissions', () => {
       expect(dbQueryMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          text: expect.stringContaining('SELECT *, favorites.acl.permission as permission')
+          text: expect.stringContaining(
+            'SELECT favorites.lists.*, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS count_items'
+          )
         })
       )
 
@@ -664,14 +696,37 @@ describe('when getting a list', () => {
 
       expect(dbQueryMock).toHaveBeenCalledWith(
         expect.objectContaining({
+          text: expect.stringContaining(
+            'LEFT JOIN favorites.picks ON favorites.lists.id = favorites.picks.list_id AND favorites.picks.user_address = $1'
+          ),
+          values: expect.arrayContaining([userAddress])
+        })
+      )
+
+      expect(dbQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
           text: expect.stringContaining('LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id')
         })
       )
 
       expect(dbQueryMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          text: expect.stringContaining('WHERE id = $1 AND (user_address = $2 OR user_address = $3)'),
+          text: expect.stringContaining(
+            'WHERE favorites.lists.id = $2 AND (favorites.lists.user_address = $3 OR favorites.lists.user_address = $4)'
+          ),
           values: expect.arrayContaining([listId, userAddress, DEFAULT_LIST_USER_ADDRESS])
+        })
+      )
+
+      expect(dbQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('GROUP BY favorites.lists.id, favorites.acl.permission')
+        })
+      )
+
+      expect(dbQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('ORDER BY favorites.acl.permission ASC LIMIT 1')
         })
       )
     })
@@ -713,13 +768,24 @@ describe('when getting a list', () => {
       it('should have made the query to get the list matching the permission conditions', () => {
         expect(dbQueryMock).toHaveBeenCalledWith(
           expect.objectContaining({
-            text: expect.stringContaining('SELECT *, favorites.acl.permission as permission')
+            text: expect.stringContaining(
+              'SELECT favorites.lists.*, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS count_items'
+            )
           })
         )
 
         expect(dbQueryMock).toHaveBeenCalledWith(
           expect.objectContaining({
             text: expect.stringContaining('FROM favorites.lists')
+          })
+        )
+
+        expect(dbQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining(
+              'LEFT JOIN favorites.picks ON favorites.lists.id = favorites.picks.list_id AND favorites.picks.user_address = $1'
+            ),
+            values: expect.arrayContaining([userAddress])
           })
         )
 
@@ -732,9 +798,21 @@ describe('when getting a list', () => {
         expect(dbQueryMock).toHaveBeenCalledWith(
           expect.objectContaining({
             text: expect.stringContaining(
-              'WHERE id = $1 AND (user_address = $2 OR user_address = $3) OR ((favorites.acl.grantee = $4 OR favorites.acl.grantee = $5) AND favorites.acl.permission = ANY($6::text[]))'
+              'WHERE favorites.lists.id = $2 AND (favorites.lists.user_address = $3 OR favorites.lists.user_address = $4) OR ((favorites.acl.grantee = $5 OR favorites.acl.grantee = $6) AND favorites.acl.permission IN ($7)'
             ),
-            values: expect.arrayContaining([listId, userAddress, DEFAULT_LIST_USER_ADDRESS, userAddress, '*', [permission]])
+            values: expect.arrayContaining([listId, userAddress, DEFAULT_LIST_USER_ADDRESS, userAddress, '*', permission])
+          })
+        )
+
+        expect(dbQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining('GROUP BY favorites.lists.id, favorites.acl.permission')
+          })
+        )
+
+        expect(dbQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining('ORDER BY favorites.acl.permission ASC LIMIT 1')
           })
         )
       })
@@ -762,13 +840,24 @@ describe('when getting a list', () => {
       it('should have made the query to get the list matching the permission conditions', () => {
         expect(dbQueryMock).toHaveBeenCalledWith(
           expect.objectContaining({
-            text: expect.stringContaining('SELECT *, favorites.acl.permission as permission')
+            text: expect.stringContaining(
+              'SELECT favorites.lists.*, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS count_items'
+            )
           })
         )
 
         expect(dbQueryMock).toHaveBeenCalledWith(
           expect.objectContaining({
             text: expect.stringContaining('FROM favorites.lists')
+          })
+        )
+
+        expect(dbQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining(
+              'LEFT JOIN favorites.picks ON favorites.lists.id = favorites.picks.list_id AND favorites.picks.user_address = $1'
+            ),
+            values: expect.arrayContaining([userAddress])
           })
         )
 
@@ -781,7 +870,7 @@ describe('when getting a list', () => {
         expect(dbQueryMock).toHaveBeenCalledWith(
           expect.objectContaining({
             text: expect.stringContaining(
-              'WHERE id = $1 AND (user_address = $2 OR user_address = $3) OR ((favorites.acl.grantee = $4 OR favorites.acl.grantee = $5) AND favorites.acl.permission = ANY($6::text[]))'
+              'WHERE favorites.lists.id = $2 AND (favorites.lists.user_address = $3 OR favorites.lists.user_address = $4) OR ((favorites.acl.grantee = $5 OR favorites.acl.grantee = $6) AND favorites.acl.permission IN ($7))'
             ),
             values: expect.arrayContaining([
               listId,
@@ -789,8 +878,20 @@ describe('when getting a list', () => {
               DEFAULT_LIST_USER_ADDRESS,
               userAddress,
               '*',
-              [permission, Permission.EDIT]
+              `${permission},${Permission.EDIT}`
             ])
+          })
+        )
+
+        expect(dbQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining('GROUP BY favorites.lists.id, favorites.acl.permission')
+          })
+        )
+
+        expect(dbQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining('ORDER BY favorites.acl.permission ASC LIMIT 1')
           })
         )
       })

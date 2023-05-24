@@ -21,7 +21,8 @@ import {
   GetListsParameters,
   ListSortBy,
   ListSortDirection,
-  GetListOptions
+  GetListOptions,
+  DBListsWithItemsCount
 } from './types'
 
 const GRANTED_TO_ALL = '*'
@@ -44,26 +45,35 @@ export function createListsComponent(
     return result.rows
   }
 
-  async function getList(listId: string, { requiredPermission, considerDefaultList = true, userAddress }: GetListOptions): Promise<DBList> {
+  async function getList(
+    listId: string,
+    { requiredPermission, considerDefaultList = true, userAddress }: GetListOptions
+  ): Promise<DBListsWithItemsCount> {
     const getListQuery = SQL`
-      SELECT *, favorites.acl.permission as permission
+      SELECT favorites.lists.*, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS count_items
       FROM favorites.lists
+      LEFT JOIN favorites.picks ON favorites.lists.id = favorites.picks.list_id AND favorites.picks.user_address = ${userAddress}
       LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id`
 
-    getListQuery.append(SQL` WHERE id = ${listId} AND (user_address = ${userAddress}`)
+    getListQuery.append(SQL` WHERE favorites.lists.id = ${listId} AND (favorites.lists.user_address = ${userAddress}`)
     if (considerDefaultList) {
-      getListQuery.append(SQL` OR user_address = ${DEFAULT_LIST_USER_ADDRESS}`)
+      getListQuery.append(SQL` OR favorites.lists.user_address = ${DEFAULT_LIST_USER_ADDRESS}`)
     }
     getListQuery.append(')')
 
     if (requiredPermission) {
-      const requiredPermissions = requiredPermission === Permission.VIEW ? [Permission.VIEW, Permission.EDIT] : [requiredPermission]
+      const requiredPermissions = (requiredPermission === Permission.VIEW ? [Permission.VIEW, Permission.EDIT] : [requiredPermission]).join(
+        ','
+      )
       getListQuery.append(
-        SQL` OR ((favorites.acl.grantee = ${userAddress} OR favorites.acl.grantee = ${GRANTED_TO_ALL}) AND favorites.acl.permission = ANY(${requiredPermissions}::text[]))`
+        SQL` OR ((favorites.acl.grantee = ${userAddress} OR favorites.acl.grantee = ${GRANTED_TO_ALL}) AND favorites.acl.permission IN (${requiredPermissions}))`
       )
     }
 
-    const result = await pg.query<DBList>(getListQuery)
+    getListQuery.append(SQL` GROUP BY favorites.lists.id, favorites.acl.permission`)
+    getListQuery.append(SQL` ORDER BY favorites.acl.permission ASC LIMIT 1`)
+
+    const result = await pg.query<DBListsWithItemsCount>(getListQuery)
 
     if (result.rowCount === 0) {
       throw new ListNotFoundError(listId)
@@ -147,21 +157,23 @@ export function createListsComponent(
   async function getLists(params: GetListsParameters): Promise<DBGetListsWithCount[]> {
     const { userAddress, limit, offset, sortBy = ListSortBy.CREATED_AT, sortDirection = ListSortDirection.DESC } = params
     const query = SQL`
-        SELECT l.*, COUNT(*) OVER() as lists_count, user_address = ${DEFAULT_LIST_USER_ADDRESS} as is_default_list
+        SELECT l.*, COUNT(*) OVER() as lists_count, l.user_address = ${DEFAULT_LIST_USER_ADDRESS} as is_default_list, COUNT(p.item_id) AS items_count
         FROM favorites.lists l
-        WHERE user_address = ${userAddress} OR user_address = ${DEFAULT_LIST_USER_ADDRESS}
+        LEFT JOIN favorites.picks p ON l.id = p.list_id AND p.user_address = ${userAddress}
+        WHERE l.user_address = ${userAddress} OR l.user_address = ${DEFAULT_LIST_USER_ADDRESS}
         `
     const orderByQuery = SQL`ORDER BY is_default_list DESC`
 
     switch (sortBy) {
       case ListSortBy.CREATED_AT:
-        orderByQuery.append(SQL`, created_at ${sortDirection}`)
+        orderByQuery.append(SQL`, l.created_at ${sortDirection}`)
         break
       case ListSortBy.NAME:
-        orderByQuery.append(SQL`, name ${sortDirection}`)
+        orderByQuery.append(SQL`, l.name ${sortDirection}`)
         break
     }
 
+    query.append(SQL`GROUP BY l.id`)
     query.append(orderByQuery)
     query.append(SQL`\nLIMIT ${limit} OFFSET ${offset}`)
 

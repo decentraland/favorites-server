@@ -1,5 +1,5 @@
 import * as authorizationMiddleware from 'decentraland-crypto-middleware'
-import { List } from '../../src/adapters/lists'
+import { List, ListWithItemsCount, ListsWithCount } from '../../src/adapters/lists'
 import { TPick } from '../../src/adapters/picks'
 import {
   createListHandler,
@@ -14,7 +14,7 @@ import {
 } from '../../src/controllers/handlers/lists-handlers'
 import { Permission } from '../../src/ports/access'
 import { AccessNotFoundError, DuplicatedAccessError } from '../../src/ports/access/errors'
-import { DBGetListsWithCount, DBList } from '../../src/ports/lists'
+import { DBGetListsWithCount, DBList, DBListsWithItemsCount } from '../../src/ports/lists'
 import {
   DuplicatedListError,
   ItemNotFoundError,
@@ -958,7 +958,7 @@ describe('when getting the lists', () => {
 
   describe('and the process to get the lists is successful', () => {
     let dbLists: DBGetListsWithCount[]
-    let lists: Pick<List, 'id' | 'name'>[]
+    let lists: ListsWithCount['lists']
 
     beforeEach(() => {
       dbLists = [
@@ -968,10 +968,11 @@ describe('when getting the lists', () => {
           description: 'Description of List #1',
           user_address: '0x45abb534BD927284F84b03d43f33dF0E5C91C21f',
           created_at: new Date(),
-          lists_count: '1'
+          lists_count: '1',
+          items_count: '2'
         }
       ]
-      lists = [{ id: 'e96df126-f5bf-4311-94d8-6e261f368bb2', name: 'List #1' }]
+      lists = [{ id: 'e96df126-f5bf-4311-94d8-6e261f368bb2', name: 'List #1', itemsCount: 2 }]
       getListsMock.mockResolvedValueOnce(dbLists)
     })
 
@@ -1209,14 +1210,16 @@ describe('when getting a list', () => {
     })
   })
 
-  describe('and the request is successful because the user has %s permission to access the list', () => {
+  describe('and the request is successful because the user has the permission to access the list', () => {
     let permission: Permission
+    let dbListWithItemsCount: DBListsWithItemsCount
+    let listWithItemsCount: ListWithItemsCount
 
     beforeEach(() => {
       permission = Permission.VIEW
-      dbList = { ...dbList, permission }
-      list = { ...list, permission }
-      getListMock.mockResolvedValueOnce(dbList)
+      dbListWithItemsCount = { ...dbList, permission, items_count: '1' }
+      listWithItemsCount = { ...list, permission, itemsCount: 1 }
+      getListMock.mockResolvedValueOnce(dbListWithItemsCount)
     })
 
     it('should return an ok response with the list', () => {
@@ -1224,7 +1227,7 @@ describe('when getting a list', () => {
         status: StatusCode.OK,
         body: {
           ok: true,
-          data: list
+          data: listWithItemsCount
         }
       })
     })
