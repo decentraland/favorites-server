@@ -1092,11 +1092,12 @@ describe('when updating a list', () => {
             expect.objectContaining({
               strings: expect.arrayContaining([
                 expect.stringContaining('UPDATE favorites.lists SET'),
+                expect.stringContaining('name ='),
                 expect.stringContaining('WHERE id ='),
                 expect.stringContaining('AND user_address ='),
                 expect.stringContaining('RETURNING *')
               ]),
-              values: ['name', updatedList.name, listId, userAddress]
+              values: [updatedList.name, listId, userAddress]
             })
           )
         })
@@ -1141,11 +1142,12 @@ describe('when updating a list', () => {
             expect.objectContaining({
               strings: expect.arrayContaining([
                 expect.stringContaining('UPDATE favorites.lists SET'),
+                expect.stringContaining('description ='),
                 expect.stringContaining('WHERE id ='),
                 expect.stringContaining('AND user_address ='),
                 expect.stringContaining('RETURNING *')
               ]),
-              values: ['description', updatedList.description, listId, userAddress]
+              values: [updatedList.description, listId, userAddress]
             })
           )
         })
@@ -1190,11 +1192,13 @@ describe('when updating a list', () => {
             expect.objectContaining({
               strings: expect.arrayContaining([
                 expect.stringContaining('UPDATE favorites.lists SET'),
+                expect.stringContaining('name ='),
+                expect.stringContaining(', description ='),
                 expect.stringContaining('WHERE id ='),
                 expect.stringContaining('AND user_address ='),
                 expect.stringContaining('RETURNING *')
               ]),
-              values: ['name', updatedList.name, 'description', updatedList.description, listId, userAddress]
+              values: [updatedList.name, updatedList.description, listId, userAddress]
             })
           )
         })
@@ -1272,11 +1276,12 @@ describe('when updating a list', () => {
             expect.objectContaining({
               strings: expect.arrayContaining([
                 expect.stringContaining('UPDATE favorites.lists SET'),
+                expect.stringContaining('name ='),
                 expect.stringContaining('WHERE id ='),
                 expect.stringContaining('AND user_address ='),
                 expect.stringContaining('RETURNING *')
               ]),
-              values: ['name', updatedList.name, listId, userAddress]
+              values: [updatedList.name, listId, userAddress]
             })
           )
         })
@@ -1314,11 +1319,12 @@ describe('when updating a list', () => {
             expect.objectContaining({
               strings: expect.arrayContaining([
                 expect.stringContaining('UPDATE favorites.lists SET'),
+                expect.stringContaining('description ='),
                 expect.stringContaining('WHERE id ='),
                 expect.stringContaining('AND user_address ='),
                 expect.stringContaining('RETURNING *')
               ]),
-              values: ['description', updatedList.description, listId, userAddress]
+              values: [updatedList.description, listId, userAddress]
             })
           )
         })
@@ -1356,11 +1362,13 @@ describe('when updating a list', () => {
             expect.objectContaining({
               strings: expect.arrayContaining([
                 expect.stringContaining('UPDATE favorites.lists SET'),
+                expect.stringContaining('name ='),
+                expect.stringContaining(', description ='),
                 expect.stringContaining('WHERE id ='),
                 expect.stringContaining('AND user_address ='),
                 expect.stringContaining('RETURNING *')
               ]),
-              values: ['name', updatedList.name, 'description', updatedList.description, listId, userAddress]
+              values: [updatedList.name, updatedList.description, listId, userAddress]
             })
           )
         })

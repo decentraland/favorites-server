@@ -1,4 +1,3 @@
-import compact from 'lodash/compact'
 import SQL from 'sql-template-strings'
 import { isErrorWithMessage } from '../../logic/errors'
 import { DEFAULT_LIST_USER_ADDRESS } from '../../migrations/1678303321034_default-list'
@@ -187,8 +186,7 @@ export function createListsComponent(
 
   async function updateList(id: string, userAddress: string, updatedList: UpdateListRequestBody): Promise<DBList> {
     const { name, description, private: isPrivate } = updatedList
-    const updatableColumns: (keyof UpdateListRequestBody)[] = compact([name && 'name', description && 'description'])
-    const shouldUpdate = updatableColumns.length > 0
+    const shouldUpdate = name || description
 
     const client = await pg.getPool().connect()
     const accessQuery = isPrivate
@@ -199,12 +197,9 @@ export function createListsComponent(
       await client.query('BEGIN')
       const updateQuery = SQL`UPDATE favorites.lists SET `
 
-      updatableColumns.forEach((column, i) => {
-        updateQuery.append(SQL`${column} = ${updatedList[column]}`)
-        if (i < updatableColumns.length - 1) {
-          updateQuery.append(SQL`, `)
-        }
-      })
+      if (name) updateQuery.append(SQL`name = ${name}`)
+      if (name && description) updateQuery.append(SQL`, `)
+      if (description) updateQuery.append(SQL`description = ${description}`)
 
       updateQuery.append(SQL` WHERE id = ${id} AND user_address = ${userAddress} RETURNING *`)
 
