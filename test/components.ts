@@ -16,6 +16,7 @@ import { createAccessComponent, IAccessComponent } from '../src/ports/access'
 import { createFetchComponent } from '../src/ports/fetch'
 import { createListsComponent, IListsComponents } from '../src/ports/lists'
 import { createPicksComponent, IPicksComponent } from '../src/ports/picks'
+import { createSchemaValidatorComponent } from '../src/ports/schema-validator'
 import { createSnapshotComponent, ISnapshotComponent } from '../src/ports/snapshot'
 import { main } from '../src/service'
 import { GlobalContext, TestComponents } from '../src/types'
@@ -59,6 +60,7 @@ async function initComponents(): Promise<TestComponents> {
   instrumentHttpServerWithRequestLogger({ server, logger: logs }, { verbosity: Verbosity.INFO })
   const collectionsSubgraph = await createSubgraphComponent({ logs, config, fetch, metrics }, 'subgraph-url')
   const snapshot = await createSnapshotComponent({ fetch, config })
+  const schemaValidator = await createSchemaValidatorComponent()
   const lists = createListsComponent({
     pg,
     collectionsSubgraph,
@@ -74,6 +76,7 @@ async function initComponents(): Promise<TestComponents> {
     metrics,
     logs,
     pg,
+    schemaValidator,
     server,
     fetch,
     lists,
