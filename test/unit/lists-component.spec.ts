@@ -548,7 +548,7 @@ describe('when creating a new list', () => {
     })
 
     it('should throw a duplicated list name error', async () => {
-      await expect(listsComponent.addList({ name, userAddress })).rejects.toEqual(new DuplicatedListError(name))
+      await expect(listsComponent.addList({ name, userAddress, private: false })).rejects.toEqual(new DuplicatedListError(name))
     })
   })
 
@@ -569,7 +569,7 @@ describe('when creating a new list', () => {
         rowCount: 1,
         rows: [dbList]
       })
-      result = await listsComponent.addList({ name, userAddress })
+      result = await listsComponent.addList({ name, userAddress, private: false })
     })
 
     it('should create the pick', () => {
@@ -990,6 +990,7 @@ describe('when updating a list', () => {
 
     it('should rollback the changes, release the client and throw a list not found error', async () => {
       await expect(listsComponent.updateList(listId, userAddress, updatedList)).rejects.toEqual(new ListNotFoundError(listId))
+      expect(dbClientQueryMock).not.toHaveBeenCalledWith('COMMIT')
       expect(dbClientQueryMock).toHaveBeenCalledWith('ROLLBACK')
       expect(dbClientReleaseMock).toHaveBeenCalled()
     })
@@ -1006,6 +1007,7 @@ describe('when updating a list', () => {
 
     it('should rollback the changes, release the client and throw a duplicated list error', async () => {
       await expect(listsComponent.updateList(listId, userAddress, updatedList)).rejects.toEqual(new DuplicatedListError(name))
+      expect(dbClientQueryMock).not.toHaveBeenCalledWith('COMMIT')
       expect(dbClientQueryMock).toHaveBeenCalledWith('ROLLBACK')
       expect(dbClientReleaseMock).toHaveBeenCalled()
     })
@@ -1024,6 +1026,7 @@ describe('when updating a list', () => {
       await expect(listsComponent.updateList(listId, userAddress, updatedList)).rejects.toEqual(
         new DuplicatedAccessError(listId, Permission.VIEW, '*')
       )
+      expect(dbClientQueryMock).not.toHaveBeenCalledWith('COMMIT')
       expect(dbClientQueryMock).toHaveBeenCalledWith('ROLLBACK')
       expect(dbClientReleaseMock).toHaveBeenCalled()
     })
@@ -1050,6 +1053,7 @@ describe('when updating a list', () => {
         await expect(listsComponent.updateList(listId, userAddress, updatedList)).rejects.toEqual(
           new AccessNotFoundError(listId, Permission.VIEW, '*')
         )
+        expect(dbClientQueryMock).not.toHaveBeenCalledWith('COMMIT')
         expect(dbClientQueryMock).toHaveBeenCalledWith('ROLLBACK')
         expect(dbClientReleaseMock).toHaveBeenCalled()
       })

@@ -13,6 +13,7 @@ import { createAccessComponent } from './ports/access'
 import { createFetchComponent } from './ports/fetch'
 import { createListsComponent } from './ports/lists/component'
 import { createPicksComponent } from './ports/picks'
+import { createSchemaValidatorComponent } from './ports/schema-validator'
 import { createSnapshotComponent } from './ports/snapshot'
 import { AppComponents, GlobalContext } from './types'
 
@@ -61,6 +62,7 @@ export async function initComponents(): Promise<AppComponents> {
   createHttpTracerComponent({ server, tracer })
   instrumentHttpServerWithRequestLogger({ server, logger: logs })
   await instrumentHttpServerWithMetrics({ metrics, config, server })
+  const schemaValidator = await createSchemaValidatorComponent()
   const statusChecks = await createStatusCheckComponent({ server, config })
   const fetch = await createFetchComponent({ tracer })
   const collectionsSubgraph = await createSubgraphComponent({ logs, config, fetch, metrics }, COLLECTIONS_SUBGRAPH_URL)
@@ -83,6 +85,7 @@ export async function initComponents(): Promise<AppComponents> {
     fetch,
     metrics,
     pg,
+    schemaValidator,
     lists,
     snapshot,
     picks,

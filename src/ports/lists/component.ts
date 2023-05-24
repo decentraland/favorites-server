@@ -15,13 +15,13 @@ import {
   IListsComponents,
   DBList,
   DBGetListsWithCount,
-  AddListRequestBody,
   GetListsParameters,
   ListSortBy,
   ListSortDirection,
   GetListOptions,
   DBListsWithItemsCount,
-  UpdateListRequestBody
+  UpdateListRequestBody,
+  NewList
 } from './types'
 import { validateDuplicatedListName, validateListExists } from './utils'
 
@@ -167,7 +167,7 @@ export function createListsComponent(
       : insertAccessQuery(id, Permission.VIEW, GRANTED_TO_ALL)
   }
 
-  async function addList({ name, description, userAddress, private: isPrivate }: AddListRequestBody): Promise<DBList> {
+  async function addList({ name, description, userAddress, private: isPrivate }: NewList): Promise<DBList> {
     const client = await pg.getPool().connect()
 
     try {
@@ -212,11 +212,12 @@ export function createListsComponent(
         client.query<DBList>(shouldUpdate ? updateQuery : getListQuery(id, { userAddress })),
         client.query(changeListPrivacyQuery(id, userAddress, !!isPrivate))
       ])
-      await client.query('COMMIT')
 
       validateListExists(id, updatedListResult)
 
       if (isPrivate) validateAccessExists(id, Permission.VIEW, GRANTED_TO_ALL, accessResult)
+
+      await client.query('COMMIT')
 
       return updatedListResult.rows[0]
     } catch (error) {
