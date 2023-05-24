@@ -1,5 +1,6 @@
 import { Router } from '@well-known-components/http-server'
 import * as authorizationMiddleware from 'decentraland-crypto-middleware'
+import { ListCreationSchema } from '../ports/lists'
 import { GlobalContext } from '../types'
 import {
   createPickInListHandler,
@@ -18,7 +19,7 @@ import { pingHandler } from './handlers/ping-handler'
 
 const FIVE_MINUTES = 5 * 60 * 1000
 
-export function setupRouter(_globalContext: GlobalContext): Promise<Router<GlobalContext>> {
+export function setupRouter({ components: { schemaValidator } }: GlobalContext): Promise<Router<GlobalContext>> {
   const router = new Router<GlobalContext>()
 
   router.get('/ping', pingHandler)
@@ -91,9 +92,10 @@ export function setupRouter(_globalContext: GlobalContext): Promise<Router<Globa
   router.post(
     '/v1/lists',
     authorizationMiddleware.wellKnownComponents({
-      optional: false,
+      optional: true,
       expiration: FIVE_MINUTES
     }),
+    schemaValidator.withSchemaValidatorMiddleware(ListCreationSchema),
     createListHandler
   )
 

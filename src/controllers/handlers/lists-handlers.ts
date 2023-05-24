@@ -471,8 +471,7 @@ export async function createListHandler(
     verification,
     request
   } = context
-  const userAddress: string | undefined = verification?.auth.toLowerCase()
-  let body: AddListRequestBody
+  const userAddress: string | undefined = verification?.auth.toLowerCase() ?? '0x0'
 
   if (!userAddress) {
     return {
@@ -485,47 +484,9 @@ export async function createListHandler(
   }
 
   try {
-    body = await request.json()
-    if (!body.name) {
-      return {
-        status: StatusCode.BAD_REQUEST,
-        body: {
-          ok: false,
-          message: 'The property name is missing.'
-        }
-      }
-    }
+    const body: AddListRequestBody = await request.json()
 
-    if (typeof body.private === 'undefined') {
-      return {
-        status: StatusCode.BAD_REQUEST,
-        body: {
-          ok: false,
-          message: 'The property private is missing.'
-        }
-      }
-    }
-
-    validateCreateOrUpdateListBody(body)
-  } catch (error) {
-    if (error instanceof DuplicatedListError) {
-      return {
-        status: StatusCode.UNPROCESSABLE_CONTENT,
-        body: {
-          ok: false,
-          message: error.message,
-          data: {
-            name: error.name
-          }
-        }
-      }
-    }
-
-    return wellKnownMessageOrUnknownError(error)
-  }
-
-  try {
-    const addListResult = await lists.addList({ name: body.name, userAddress })
+    const addListResult = await lists.addList({ name: body.name, userAddress, private: body.private, description: body.description })
     return {
       status: StatusCode.CREATED,
       body: {

@@ -548,7 +548,7 @@ describe('when creating a new list', () => {
     })
 
     it('should throw a duplicated list name error', async () => {
-      await expect(listsComponent.addList({ name, userAddress })).rejects.toEqual(new DuplicatedListError(name))
+      await expect(listsComponent.addList({ name, userAddress, private: false })).rejects.toEqual(new DuplicatedListError(name))
     })
   })
 
@@ -569,7 +569,7 @@ describe('when creating a new list', () => {
         rowCount: 1,
         rows: [dbList]
       })
-      result = await listsComponent.addList({ name, userAddress })
+      result = await listsComponent.addList({ name, userAddress, private: false })
     })
 
     it('should create the pick', () => {
