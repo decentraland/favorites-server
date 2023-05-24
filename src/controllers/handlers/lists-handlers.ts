@@ -494,6 +494,24 @@ export async function createListHandler(
           message: 'The property name is missing or is not of string type.'
         }
       }
+    } else if (body.name.length > 32) {
+      return {
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The property name exceeds the 32 characters.'
+        }
+      }
+    }
+
+    if (body.description && typeof body.description === 'string' && body.description.length > 100) {
+      return {
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The property description exceeds the 100 characters.'
+        }
+      }
     }
   } catch (error) {
     return {

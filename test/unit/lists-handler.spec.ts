@@ -1094,6 +1094,38 @@ describe('when creating a list', () => {
     })
   })
 
+  describe('and the request body does contains the name property but it longs more than 32 characters', () => {
+    beforeEach(() => {
+      jsonMock.mockResolvedValueOnce({ name: 'a'.repeat(33) })
+    })
+
+    it('should return a response with a message saying that the name property exceeds the 32 characters and the 400 status code', () => {
+      return expect(createListHandler({ components, verification, request })).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The property name exceeds the 32 characters.'
+        }
+      })
+    })
+  })
+
+  describe('and the request body does contains a valid description but it longs more than 100 characters', () => {
+    beforeEach(() => {
+      jsonMock.mockResolvedValueOnce({ name: 'List'.repeat(8), description: 'desc'.repeat(26) })
+    })
+
+    it('should return a response with a message saying that the description property exceeds the 100 characters and the 400 status code', () => {
+      return expect(createListHandler({ components, verification, request })).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The property description exceeds the 100 characters.'
+        }
+      })
+    })
+  })
+
   describe('and the process to add a list fails with a duplicated list name error', () => {
     beforeEach(() => {
       jsonMock.mockResolvedValueOnce({ name })
