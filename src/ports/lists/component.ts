@@ -161,46 +161,32 @@ export function createListsComponent(
     return result.rows
   }
 
-  function changeListPrivacyQuery(id: string, userAddress: string, isPrivate: boolean) {
-    return isPrivate
-      ? deleteAccessQuery(id, Permission.VIEW, GRANTED_TO_ALL, userAddress)
-      : insertAccessQuery(id, Permission.VIEW, GRANTED_TO_ALL)
-  }
-
   async function addList({ name, description, userAddress, private: isPrivate }: NewList): Promise<DBList> {
-    const client = await pg.getPool().connect()
+    return pg.withTransaction(
+      async client => {
+        const insertionResult = await client.query<DBList>(
+          SQL`INSERT INTO favorites.lists (name, description, user_address) VALUES (${name}, ${
+            description ?? null
+          }, ${userAddress}) RETURNING *`
+        )
 
-    try {
-      await client.query('BEGIN')
-      const insertionResult = await client.query<DBList>(
-        SQL`INSERT INTO favorites.lists (name, description, user_address) VALUES (${name}, ${
-          description ?? null
-        }, ${userAddress}) RETURNING *`
-      )
+        const insertedList = insertionResult.rows[0]
+        const { id } = insertedList
 
-      const insertedList = insertionResult.rows[0]
-      const { id } = insertedList
+        if (!isPrivate) {
+          await client.query(insertAccessQuery(id, Permission.VIEW, GRANTED_TO_ALL))
+        }
 
-      const accessResult = await client.query(changeListPrivacyQuery(id, userAddress, !!isPrivate))
+        return insertedList
+      },
+      (error: unknown) => {
+        if (error instanceof AccessNotFoundError) throw error
 
-      if (isPrivate) validateAccessExists(id, Permission.VIEW, GRANTED_TO_ALL, accessResult)
+        validateDuplicatedListName(name, error)
 
-      await client.query('COMMIT')
-
-      return insertedList
-    } catch (error) {
-      await client.query('ROLLBACK')
-
-      if (error instanceof AccessNotFoundError) throw error
-
-      validateDuplicatedListName(name, error)
-
-      throw new Error("The list couldn't be created")
-    } finally {
-      // TODO: handle the following eslint-disable statement
-      // eslint-disable-next-line @typescript-eslint/await-thenable
-      await client.release()
-    }
+        throw new Error("The list couldn't be created")
+      }
+    )
   }
 
   async function updateList(id: string, userAddress: string, updatedList: UpdateListRequestBody): Promise<DBList> {
@@ -208,6 +194,10 @@ export function createListsComponent(
     const shouldUpdate = name || description
 
     const client = await pg.getPool().connect()
+
+    const accessQuery = isPrivate
+      ? deleteAccessQuery(id, Permission.VIEW, GRANTED_TO_ALL, userAddress)
+      : insertAccessQuery(id, Permission.VIEW, GRANTED_TO_ALL)
 
     try {
       await client.query('BEGIN')
@@ -221,7 +211,7 @@ export function createListsComponent(
 
       const [updatedListResult, accessResult] = await Promise.all([
         client.query<DBList>(shouldUpdate ? updateQuery : getListQuery(id, { userAddress })),
-        client.query(changeListPrivacyQuery(id, userAddress, !!isPrivate))
+        client.query(accessQuery)
       ])
 
       validateListExists(id, updatedListResult)

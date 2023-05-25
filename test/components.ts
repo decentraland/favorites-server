@@ -7,7 +7,6 @@ import { createServerComponent } from '@well-known-components/http-server'
 import { ILoggerComponent } from '@well-known-components/interfaces'
 import { createLogComponent } from '@well-known-components/logger'
 import { createMetricsComponent } from '@well-known-components/metrics'
-import { createPgComponent, IPgComponent } from '@well-known-components/pg-component'
 import { createRunner, createLocalFetchCompoment } from '@well-known-components/test-helpers'
 import { createSubgraphComponent, ISubgraphComponent } from '@well-known-components/thegraph-component'
 import { createTracerComponent } from '@well-known-components/tracer-component'
@@ -15,6 +14,7 @@ import { metricDeclarations } from '../src/metrics'
 import { createAccessComponent, IAccessComponent } from '../src/ports/access'
 import { createFetchComponent } from '../src/ports/fetch'
 import { createListsComponent, IListsComponents } from '../src/ports/lists'
+import { createPgComponent, IPgComponent } from '../src/ports/pg'
 import { createPicksComponent, IPicksComponent } from '../src/ports/picks'
 import { createSchemaValidatorComponent } from '../src/ports/schema-validator'
 import { createSnapshotComponent, ISnapshotComponent } from '../src/ports/snapshot'
@@ -159,12 +159,13 @@ export function createTestSubgraphComponent({ query = jest.fn() } = { query: jes
 }
 
 export function createTestPgComponent(
-  { query = jest.fn(), start = jest.fn(), streamQuery = jest.fn(), getPool = jest.fn(), stop = jest.fn() } = {
+  { query = jest.fn(), start = jest.fn(), streamQuery = jest.fn(), getPool = jest.fn(), stop = jest.fn(), withTransaction = jest.fn() } = {
     query: jest.fn(),
     start: jest.fn(),
     streamQuery: jest.fn(),
     getPool: jest.fn(),
-    stop: jest.fn()
+    stop: jest.fn(),
+    withTransaction: jest.fn()
   }
 ): IPgComponent {
   return {
@@ -172,6 +173,7 @@ export function createTestPgComponent(
     streamQuery,
     query,
     getPool,
-    stop
+    stop,
+    withTransaction
   }
 }

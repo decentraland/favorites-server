@@ -1,5 +1,4 @@
 import { IDatabase, ILoggerComponent } from '@well-known-components/interfaces'
-import { IPgComponent } from '@well-known-components/pg-component'
 import { ISubgraphComponent } from '@well-known-components/thegraph-component'
 import { DEFAULT_LIST_USER_ADDRESS } from '../../src/migrations/1678303321034_default-list'
 import { Permission } from '../../src/ports/access'
@@ -21,6 +20,7 @@ import {
   PickNotFoundError,
   QueryFailure
 } from '../../src/ports/lists/errors'
+import { IPgComponent } from '../../src/ports/pg'
 import { DBGetFilteredPicksWithCount, DBPick } from '../../src/ports/picks'
 import { ISnapshotComponent } from '../../src/ports/snapshot'
 import { createTestSnapshotComponent, createTestPgComponent, createTestSubgraphComponent, createTestLogsComponent } from '../components'
@@ -562,25 +562,6 @@ describe('when creating a new list', () => {
     })
   })
 
-  describe('and a private list is created but the access was not found to be deleted from the DB ', () => {
-    beforeEach(() => {
-      // Insert List Mock Query
-      dbClientQueryMock.mockResolvedValueOnce({ rows: [{ id: listId }] })
-
-      // Access Mock Query
-      dbClientQueryMock.mockResolvedValueOnce({ rowCount: 0 })
-    })
-
-    it('should rollback the transaction, release the client, and throw a access not found error', async () => {
-      await expect(listsComponent.addList({ name, userAddress, private: true })).rejects.toEqual(
-        new AccessNotFoundError(listId, Permission.VIEW, '*')
-      )
-      expect(dbClientQueryMock).not.toHaveBeenCalledWith('COMMIT')
-      expect(dbClientQueryMock).toHaveBeenCalledWith('ROLLBACK')
-      expect(dbClientReleaseMock).toHaveBeenCalled()
-    })
-  })
-
   describe('and the insert query fails with an unexpected error', () => {
     beforeEach(() => {
       // Insert List Mock Query
@@ -649,8 +630,8 @@ describe('when creating a new list', () => {
         )
       })
 
-      it('should delete the previous access to make the list private', () => {
-        expect(dbClientQueryMock).toHaveBeenCalledWith(
+      it('should not delete any access becasue it is a new list without previous rows in the db', () => {
+        expect(dbClientQueryMock).not.toHaveBeenCalledWith(
           expect.objectContaining({
             strings: expect.arrayContaining([
               expect.stringContaining('DELETE FROM favorites.acl USING favorites.lists'),
