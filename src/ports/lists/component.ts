@@ -177,8 +177,13 @@ export function createListsComponent(
           description ?? null
         }, ${userAddress}) RETURNING *`
       )
+
       const insertedList = insertionResult.rows[0]
-      client.query(changeListPrivacyQuery(insertedList.id, userAddress, !!isPrivate))
+      const { id } = insertedList
+
+      const accessResult = await client.query(changeListPrivacyQuery(id, userAddress, !!isPrivate))
+
+      if (isPrivate) validateAccessExists(id, Permission.VIEW, GRANTED_TO_ALL, accessResult)
 
       await client.query('COMMIT')
 
@@ -186,9 +191,15 @@ export function createListsComponent(
     } catch (error) {
       await client.query('ROLLBACK')
 
+      if (error instanceof AccessNotFoundError) throw error
+
       validateDuplicatedListName(name, error)
 
       throw new Error("The list couldn't be created")
+    } finally {
+      // TODO: handle the following eslint-disable statement
+      // eslint-disable-next-line @typescript-eslint/await-thenable
+      await client.release()
     }
   }
 

@@ -486,7 +486,7 @@ export async function createListHandler(
   try {
     const body: AddListRequestBody = await request.json()
 
-    const addListResult = await lists.addList({ name: body.name, userAddress, private: body.private, description: body.description })
+    const addListResult = await lists.addList({ ...body, userAddress })
     return {
       status: StatusCode.CREATED,
       body: {

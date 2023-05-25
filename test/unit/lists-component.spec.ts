@@ -538,17 +538,77 @@ describe('when getting lists', () => {
 describe('when creating a new list', () => {
   let name: string
 
+  beforeEach(() => {
+    name = 'Test List'
+    dbClientQueryMock.mockResolvedValueOnce(undefined)
+  })
+
   describe('and there is already a list created with the same name', () => {
     beforeEach(() => {
-      name = 'Test List'
-      // Insert pick mock
-      dbQueryMock.mockRejectedValueOnce({
+      // Insert List Mock Query
+      dbClientQueryMock.mockRejectedValueOnce({
         constraint: 'name_user_address_unique'
       })
+
+      // Access Mock Query
+      dbClientQueryMock.mockResolvedValueOnce(undefined)
     })
 
-    it('should throw a duplicated list name error', async () => {
+    it('should rollback the transaction, release the client, and throw a duplicated list name error', async () => {
       await expect(listsComponent.addList({ name, userAddress, private: false })).rejects.toEqual(new DuplicatedListError(name))
+      expect(dbClientQueryMock).not.toHaveBeenCalledWith('COMMIT')
+      expect(dbClientQueryMock).toHaveBeenCalledWith('ROLLBACK')
+      expect(dbClientReleaseMock).toHaveBeenCalled()
+    })
+  })
+
+  describe('and a private list is created but the access was not found to be deleted from the DB ', () => {
+    beforeEach(() => {
+      // Insert List Mock Query
+      dbClientQueryMock.mockResolvedValueOnce({ rows: [{ id: listId }] })
+
+      // Access Mock Query
+      dbClientQueryMock.mockResolvedValueOnce({ rowCount: 0 })
+    })
+
+    it('should rollback the transaction, release the client, and throw a access not found error', async () => {
+      await expect(listsComponent.addList({ name, userAddress, private: true })).rejects.toEqual(
+        new AccessNotFoundError(listId, Permission.VIEW, '*')
+      )
+      expect(dbClientQueryMock).not.toHaveBeenCalledWith('COMMIT')
+      expect(dbClientQueryMock).toHaveBeenCalledWith('ROLLBACK')
+      expect(dbClientReleaseMock).toHaveBeenCalled()
+    })
+  })
+
+  describe('and the insert query fails with an unexpected error', () => {
+    beforeEach(() => {
+      // Insert List Mock Query
+      dbClientQueryMock.mockRejectedValueOnce(new Error("Unexpected error when inserting the list's data"))
+    })
+
+    it('should rollback the changes, release the client and throw a generic error', async () => {
+      await expect(listsComponent.addList({ name, userAddress, private: false })).rejects.toEqual(new Error("The list couldn't be created"))
+      expect(dbClientQueryMock).not.toHaveBeenCalledWith('COMMIT')
+      expect(dbClientQueryMock).toHaveBeenCalledWith('ROLLBACK')
+      expect(dbClientReleaseMock).toHaveBeenCalled()
+    })
+  })
+
+  describe('and the access query fails with an unexpected error', () => {
+    beforeEach(() => {
+      // Insert List Mock Query
+      dbClientQueryMock.mockResolvedValueOnce({ rows: [{ id: listId }] })
+
+      // Access Mock Query
+      dbClientQueryMock.mockRejectedValueOnce(new Error("Unexpected error when inserting the list's data"))
+    })
+
+    it('should rollback the changes, release the client and throw a generic error', async () => {
+      await expect(listsComponent.addList({ name, userAddress, private: false })).rejects.toEqual(new Error("The list couldn't be created"))
+      expect(dbClientQueryMock).not.toHaveBeenCalledWith('COMMIT')
+      expect(dbClientQueryMock).toHaveBeenCalledWith('ROLLBACK')
+      expect(dbClientReleaseMock).toHaveBeenCalled()
     })
   })
 
@@ -556,8 +616,7 @@ describe('when creating a new list', () => {
     let dbList: DBList
     let result: DBList
 
-    beforeEach(async () => {
-      name = 'Test List'
+    beforeEach(() => {
       dbList = {
         id: listId,
         name,
@@ -565,24 +624,91 @@ describe('when creating a new list', () => {
         description: null,
         created_at: new Date()
       }
-      dbQueryMock.mockResolvedValueOnce({
+
+      // Create List Query
+      dbClientQueryMock.mockResolvedValueOnce({
         rowCount: 1,
         rows: [dbList]
       })
-      result = await listsComponent.addList({ name, userAddress, private: false })
     })
 
-    it('should create the pick', () => {
-      expect(dbQueryMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          strings: expect.arrayContaining([expect.stringContaining('INSERT INTO favorites.lists (name, description, user_address)')]),
-          values: [name, null, userAddress]
-        })
-      )
+    describe('and the list should be private', () => {
+      beforeEach(async () => {
+        // Access Mock Query
+        dbClientQueryMock.mockResolvedValueOnce({ rowCount: 1 })
+
+        result = await listsComponent.addList({ name, userAddress, private: true })
+      })
+
+      it('should create the list', () => {
+        expect(dbClientQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            strings: expect.arrayContaining([expect.stringContaining('INSERT INTO favorites.lists (name, description, user_address)')]),
+            values: [name, null, userAddress]
+          })
+        )
+      })
+
+      it('should delete the previous access to make the list private', () => {
+        expect(dbClientQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            strings: expect.arrayContaining([
+              expect.stringContaining('DELETE FROM favorites.acl USING favorites.lists'),
+              expect.stringContaining('WHERE favorites.acl.list_id = favorites.lists.id'),
+              expect.stringContaining('AND favorites.acl.list_id ='),
+              expect.stringContaining('AND favorites.lists.user_address ='),
+              expect.stringContaining('AND favorites.acl.permission ='),
+              expect.stringContaining('AND favorites.acl.grantee =')
+            ]),
+            values: [listId, userAddress, Permission.VIEW, '*']
+          })
+        )
+      })
+
+      it('should resolve with the new list', () => {
+        expect(result).toEqual(dbList)
+      })
+
+      it('should commit the changes and release the client', () => {
+        expect(dbClientQueryMock).toHaveBeenCalledWith('COMMIT')
+        expect(dbClientReleaseMock).toHaveBeenCalled()
+      })
     })
 
-    it('should resolve with the new pick', () => {
-      expect(result).toEqual(dbList)
+    describe('and the list should be public', () => {
+      beforeEach(async () => {
+        // Access Mock Query
+        dbClientQueryMock.mockResolvedValueOnce(undefined)
+
+        result = await listsComponent.addList({ name, userAddress, private: false })
+      })
+
+      it('should create the list', () => {
+        expect(dbClientQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            strings: expect.arrayContaining([expect.stringContaining('INSERT INTO favorites.lists (name, description, user_address)')]),
+            values: [name, null, userAddress]
+          })
+        )
+      })
+
+      it('should insert a new access to make the list public', () => {
+        expect(dbClientQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            strings: expect.arrayContaining([expect.stringContaining('INSERT INTO favorites.acl (list_id, permission, grantee) VALUES')]),
+            values: [listId, Permission.VIEW, '*']
+          })
+        )
+      })
+
+      it('should resolve with the new list', () => {
+        expect(result).toEqual(dbList)
+      })
+
+      it('should commit the changes and release the client', () => {
+        expect(dbClientQueryMock).toHaveBeenCalledWith('COMMIT')
+        expect(dbClientReleaseMock).toHaveBeenCalled()
+      })
     })
   })
 })
@@ -1026,6 +1152,37 @@ describe('when updating a list', () => {
       await expect(listsComponent.updateList(listId, userAddress, updatedList)).rejects.toEqual(
         new DuplicatedAccessError(listId, Permission.VIEW, '*')
       )
+      expect(dbClientQueryMock).not.toHaveBeenCalledWith('COMMIT')
+      expect(dbClientQueryMock).toHaveBeenCalledWith('ROLLBACK')
+      expect(dbClientReleaseMock).toHaveBeenCalled()
+    })
+  })
+
+  describe('and the update or select query fails because of an unexpected error', () => {
+    beforeEach(() => {
+      // Update List Mock Query
+      dbClientQueryMock.mockRejectedValueOnce(new Error('Unexpected Error'))
+    })
+
+    it('should rollback the changes, release the client and throw a generic error', async () => {
+      await expect(listsComponent.updateList(listId, userAddress, updatedList)).rejects.toEqual(new Error("The list couldn't be updated"))
+      expect(dbClientQueryMock).not.toHaveBeenCalledWith('COMMIT')
+      expect(dbClientQueryMock).toHaveBeenCalledWith('ROLLBACK')
+      expect(dbClientReleaseMock).toHaveBeenCalled()
+    })
+  })
+
+  describe('and the access query fails because of an unexpected error', () => {
+    beforeEach(() => {
+      // Update List Mock Query
+      dbClientQueryMock.mockResolvedValueOnce({ rowCount: 1 })
+
+      // Access Mock Query
+      dbClientQueryMock.mockRejectedValueOnce(new Error('Unexpected Error'))
+    })
+
+    it('should rollback the changes, release the client and throw a generic error', async () => {
+      await expect(listsComponent.updateList(listId, userAddress, updatedList)).rejects.toEqual(new Error("The list couldn't be updated"))
       expect(dbClientQueryMock).not.toHaveBeenCalledWith('COMMIT')
       expect(dbClientQueryMock).toHaveBeenCalledWith('ROLLBACK')
       expect(dbClientReleaseMock).toHaveBeenCalled()
