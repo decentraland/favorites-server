@@ -54,6 +54,9 @@ export const ListUpdateSchema: JSONSchema<UpdateListRequestBody> = {
     },
     {
       required: ['private']
+    },
+    {
+      required: ['description']
     }
   ]
 }
