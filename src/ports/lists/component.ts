@@ -193,49 +193,41 @@ export function createListsComponent(
     const { name, description, private: isPrivate } = updatedList
     const shouldUpdate = name || description
 
-    const client = await pg.getPool().connect()
-
     const accessQuery = isPrivate
       ? deleteAccessQuery(id, Permission.VIEW, GRANTED_TO_ALL, userAddress)
       : insertAccessQuery(id, Permission.VIEW, GRANTED_TO_ALL)
 
-    try {
-      await client.query('BEGIN')
-      const updateQuery = SQL`UPDATE favorites.lists SET `
+    return pg.withTransaction(
+      async client => {
+        const updateQuery = SQL`UPDATE favorites.lists SET `
 
-      if (name) updateQuery.append(SQL`name = ${name}`)
-      if (name && description) updateQuery.append(SQL`, `)
-      if (description) updateQuery.append(SQL`description = ${description}`)
+        if (name) updateQuery.append(SQL`name = ${name}`)
+        if (name && description) updateQuery.append(SQL`, `)
+        if (description) updateQuery.append(SQL`description = ${description}`)
 
-      updateQuery.append(SQL` WHERE id = ${id} AND user_address = ${userAddress} RETURNING *`)
+        updateQuery.append(SQL` WHERE id = ${id} AND user_address = ${userAddress} RETURNING *`)
 
-      const [updatedListResult, accessResult] = await Promise.all([
-        client.query<DBList>(shouldUpdate ? updateQuery : getListQuery(id, { userAddress })),
-        client.query(accessQuery)
-      ])
+        const [updatedListResult, accessResult] = await Promise.all([
+          client.query<DBList>(shouldUpdate ? updateQuery : getListQuery(id, { userAddress })),
+          client.query(accessQuery)
+        ])
 
-      validateListExists(id, updatedListResult)
+        validateListExists(id, updatedListResult)
 
-      if (isPrivate) validateAccessExists(id, Permission.VIEW, GRANTED_TO_ALL, accessResult)
+        if (isPrivate) validateAccessExists(id, Permission.VIEW, GRANTED_TO_ALL, accessResult)
 
-      await client.query('COMMIT')
+        return updatedListResult.rows[0]
+      },
+      (error: unknown) => {
+        if (error instanceof ListNotFoundError || error instanceof AccessNotFoundError) throw error
 
-      return updatedListResult.rows[0]
-    } catch (error) {
-      await client.query('ROLLBACK')
+        if (name) validateDuplicatedListName(name, error)
 
-      if (error instanceof ListNotFoundError || error instanceof AccessNotFoundError) throw error
+        validateDuplicatedAccess(id, Permission.VIEW, GRANTED_TO_ALL, error)
 
-      if (name) validateDuplicatedListName(name, error)
-
-      validateDuplicatedAccess(id, Permission.VIEW, GRANTED_TO_ALL, error)
-
-      throw new Error("The list couldn't be updated")
-    } finally {
-      // TODO: handle the following eslint-disable statement
-      // eslint-disable-next-line @typescript-eslint/await-thenable
-      await client.release()
-    }
+        throw new Error("The list couldn't be updated")
+      }
+    )
   }
 
   async function deleteList(id: string, userAddress: string): Promise<void> {
