@@ -218,8 +218,6 @@ describe('when creating a new pick', () => {
           }
         ]
       })
-      // Begin Query
-      dbClientQueryMock.mockResolvedValueOnce(undefined)
     })
 
     describe('and the pick already exists', () => {
@@ -232,10 +230,8 @@ describe('when creating a new pick', () => {
         dbClientQueryMock.mockResolvedValueOnce(undefined)
       })
 
-      it('should rollback the changes and release the client and throw a pick already exists error', async () => {
+      it('should throw a pick already exists error', async () => {
         await expect(listsComponent.addPickToList(listId, itemId, userAddress)).rejects.toEqual(new PickAlreadyExistsError(listId, itemId))
-        expect(dbClientQueryMock).toHaveBeenCalledWith('ROLLBACK')
-        expect(dbClientReleaseMock).toHaveBeenCalled()
       })
     })
 
@@ -289,11 +285,6 @@ describe('when creating a new pick', () => {
         it('should resolve with the new pick', () => {
           expect(result).toEqual(dbPick)
         })
-
-        it('should commit the changes and release the client', () => {
-          expect(dbClientQueryMock).toHaveBeenCalledWith('COMMIT')
-          expect(dbClientReleaseMock).toHaveBeenCalled()
-        })
       })
 
       describe('and the request to get the voting power was successful', () => {
@@ -328,11 +319,6 @@ describe('when creating a new pick', () => {
 
         it('should resolve with the new pick', () => {
           expect(result).toEqual(dbPick)
-        })
-
-        it('should commit the changes and release the client', () => {
-          expect(dbClientQueryMock).toHaveBeenCalledWith('COMMIT')
-          expect(dbClientReleaseMock).toHaveBeenCalled()
         })
       })
     })

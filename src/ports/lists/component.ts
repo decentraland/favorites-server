@@ -89,30 +89,30 @@ export function createListsComponent(
       throw new ItemNotFoundError(itemId)
     }
 
-    const client = await pg.getPool().connect()
-    try {
-      await client.query('BEGIN')
-      const results = await Promise.all([
-        client.query<DBPick>(
-          SQL`INSERT INTO favorites.picks (item_id, user_address, list_id) VALUES (${itemId}, ${userAddress}, ${list.id}) RETURNING *`
-        ),
-        client.query(vpQuery)
-      ])
-      await client.query('COMMIT')
+    return pg.withTransaction(
+      async client => {
+        const results = await Promise.all([
+          client.query<DBPick>(
+            SQL`INSERT INTO favorites.picks (item_id, user_address, list_id) VALUES (${itemId}, ${userAddress}, ${list.id}) RETURNING *`
+          ),
+          client.query(vpQuery)
+        ])
 
-      return results[0].rows[0]
-    } catch (error) {
-      await client.query('ROLLBACK')
-      if (error && typeof error === 'object' && 'constraint' in error && error.constraint === 'item_id_user_address_list_id_primary_key') {
-        throw new PickAlreadyExistsError(listId, itemId)
+        return results[0].rows[0]
+      },
+      (error: unknown) => {
+        if (
+          error &&
+          typeof error === 'object' &&
+          'constraint' in error &&
+          error.constraint === 'item_id_user_address_list_id_primary_key'
+        ) {
+          throw new PickAlreadyExistsError(listId, itemId)
+        }
+
+        throw new Error("The pick couldn't be created")
       }
-
-      throw new Error("The pick couldn't be created")
-    } finally {
-      // TODO: handle the following eslint-disable statement
-      // eslint-disable-next-line @typescript-eslint/await-thenable
-      await client.release()
-    }
+    )
   }
 
   async function deletePickInList(listId: string, itemId: string, userAddress: string): Promise<void> {
