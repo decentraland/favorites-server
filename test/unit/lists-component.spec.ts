@@ -548,7 +548,7 @@ describe('when creating a new list', () => {
     })
 
     it('should throw a duplicated list name error', async () => {
-      await expect(listsComponent.addList({ name, userAddress })).rejects.toEqual(new DuplicatedListError(name))
+      await expect(listsComponent.addList({ name, userAddress, private: false })).rejects.toEqual(new DuplicatedListError(name))
     })
   })
 
@@ -569,14 +569,14 @@ describe('when creating a new list', () => {
         rowCount: 1,
         rows: [dbList]
       })
-      result = await listsComponent.addList({ name, userAddress })
+      result = await listsComponent.addList({ name, userAddress, private: false })
     })
 
     it('should create the pick', () => {
       expect(dbQueryMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          strings: expect.arrayContaining([expect.stringContaining('INSERT INTO favorites.lists (name, user_address)')]),
-          values: [name, userAddress]
+          strings: expect.arrayContaining([expect.stringContaining('INSERT INTO favorites.lists (name, description, user_address)')]),
+          values: [name, null, userAddress]
         })
       )
     })

@@ -22,13 +22,13 @@ import {
   IListsComponents,
   DBList,
   DBGetListsWithCount,
-  AddListRequestBody,
   GetListsParameters,
   ListSortBy,
   ListSortDirection,
   GetListOptions,
   DBListsWithItemsCount,
-  UpdateListRequestBody
+  UpdateListRequestBody,
+  NewList
 } from './types'
 import { validateListExists } from './utils'
 
@@ -168,10 +168,12 @@ export function createListsComponent(
     return result.rows
   }
 
-  async function addList({ name, userAddress }: AddListRequestBody): Promise<DBList> {
+  async function addList({ name, description, userAddress }: NewList): Promise<DBList> {
     try {
       const result = await pg.query<DBList>(
-        SQL`INSERT INTO favorites.lists (name, user_address) VALUES (${name}, ${userAddress}) RETURNING *`
+        SQL`INSERT INTO favorites.lists (name, description, user_address) VALUES (${name}, ${
+          description ?? null
+        }, ${userAddress}) RETURNING *`
       )
 
       return result.rows[0]

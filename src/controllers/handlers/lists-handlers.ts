@@ -472,7 +472,6 @@ export async function createListHandler(
     request
   } = context
   const userAddress: string | undefined = verification?.auth.toLowerCase()
-  let body: AddListRequestBody
 
   if (!userAddress) {
     return {
@@ -485,28 +484,9 @@ export async function createListHandler(
   }
 
   try {
-    body = await request.json()
-    if (!body.name || (body.name && typeof body.name !== 'string')) {
-      return {
-        status: StatusCode.BAD_REQUEST,
-        body: {
-          ok: false,
-          message: 'The property name is missing or is not of string type.'
-        }
-      }
-    }
-  } catch (error) {
-    return {
-      status: StatusCode.BAD_REQUEST,
-      body: {
-        ok: false,
-        message: 'The body must contain a parsable JSON.'
-      }
-    }
-  }
+    const body: AddListRequestBody = await request.json()
 
-  try {
-    const addListResult = await lists.addList({ name: body.name, userAddress })
+    const addListResult = await lists.addList({ name: body.name, userAddress, private: body.private, description: body.description })
     return {
       status: StatusCode.CREATED,
       body: {
@@ -590,7 +570,6 @@ export async function updateListHandler(
     request
   } = context
   const userAddress: string | undefined = verification?.auth.toLowerCase()
-  let body: UpdateListRequestBody
 
   if (!userAddress) {
     return {
@@ -602,69 +581,18 @@ export async function updateListHandler(
     }
   }
 
-  try {
-    body = await request.json()
-
-    if (params.id === DEFAULT_LIST_ID) {
-      return {
-        status: StatusCode.BAD_REQUEST,
-        body: {
-          ok: false,
-          message: 'The default list cannot be modified.'
-        }
-      }
-    }
-
-    if (!body.name && typeof body.private === 'undefined') {
-      return {
-        status: StatusCode.BAD_REQUEST,
-        body: {
-          ok: false,
-          message: 'The body must contain at least one of the following properties: name or private.'
-        }
-      }
-    }
-
-    if (body.name && typeof body.name !== 'string') {
-      return {
-        status: StatusCode.BAD_REQUEST,
-        body: {
-          ok: false,
-          message: 'The property name is not of string type.'
-        }
-      }
-    }
-
-    if (body.private && typeof body.private !== 'boolean') {
-      return {
-        status: StatusCode.BAD_REQUEST,
-        body: {
-          ok: false,
-          message: 'The property private is not of boolean type.'
-        }
-      }
-    }
-
-    if (body.description && typeof body.description !== 'string') {
-      return {
-        status: StatusCode.BAD_REQUEST,
-        body: {
-          ok: false,
-          message: 'The property description is not of string type.'
-        }
-      }
-    }
-  } catch (error) {
+  if (params.id === DEFAULT_LIST_ID) {
     return {
       status: StatusCode.BAD_REQUEST,
       body: {
         ok: false,
-        message: 'The body must contain a parsable JSON.'
+        message: 'The default list cannot be modified.'
       }
     }
   }
 
   try {
+    const body: UpdateListRequestBody = await request.json()
     const updateListResult = await lists.updateList(params.id, userAddress, body)
 
     return {

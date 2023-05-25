@@ -215,7 +215,7 @@ describe('when creating a pick', () => {
     })
   })
 
-  describe('and the request body does contains the itemId property but is not of string type', () => {
+  describe('and the request body does contains the itemId property but is not of type string', () => {
     beforeEach(() => {
       jsonMock.mockResolvedValueOnce({ itemId: 1 })
     })
@@ -527,7 +527,7 @@ describe('when deleting a list access', () => {
       jsonMock.mockResolvedValueOnce({ grantee: 1, permission: 'view' })
     })
 
-    it('should return a response with a message saying that the grantee is not of type string and the 400 status code', () => {
+    it('should return a response with a message saying that the grantee is not of string type and the 400 status code', () => {
       return expect(deleteAccessHandler({ components, verification, request, params })).resolves.toEqual({
         status: StatusCode.BAD_REQUEST,
         body: {
@@ -738,7 +738,7 @@ describe('when creating an access', () => {
       jsonMock.mockResolvedValueOnce({ grantee: 1, permission })
     })
 
-    it('should return a response with a message saying that the grantee is not of type string and the 400 status code', () => {
+    it('should return a response with a message saying that the grantee is not of string type and the 400 status code', () => {
       return expect(createAccessHandler({ components, verification, request, params })).resolves.toEqual({
         status: StatusCode.BAD_REQUEST,
         body: {
@@ -1046,57 +1046,9 @@ describe('when creating a list', () => {
     })
   })
 
-  describe('and the request body does not contain a valid JSON', () => {
-    beforeEach(() => {
-      jsonMock.mockRejectedValueOnce(new Error())
-    })
-
-    it('should return a response with a message saying that the body must be a parsable JSON and the 400 status code', () => {
-      return expect(createListHandler({ components, verification, request })).resolves.toEqual({
-        status: StatusCode.BAD_REQUEST,
-        body: {
-          ok: false,
-          message: 'The body must contain a parsable JSON.'
-        }
-      })
-    })
-  })
-
-  describe('and the request body does not contain the name property', () => {
-    beforeEach(() => {
-      jsonMock.mockResolvedValueOnce({})
-    })
-
-    it('should return a response with a message saying that the name property is not correct and the 400 status code', () => {
-      return expect(createListHandler({ components, verification, request })).resolves.toEqual({
-        status: StatusCode.BAD_REQUEST,
-        body: {
-          ok: false,
-          message: 'The property name is missing or is not of string type.'
-        }
-      })
-    })
-  })
-
-  describe('and the request body does contains the name property but is not of string type', () => {
-    beforeEach(() => {
-      jsonMock.mockResolvedValueOnce({ name: 1 })
-    })
-
-    it('should return a response with a message saying that the name property is not correct and the 400 status code', () => {
-      return expect(createListHandler({ components, verification, request })).resolves.toEqual({
-        status: StatusCode.BAD_REQUEST,
-        body: {
-          ok: false,
-          message: 'The property name is missing or is not of string type.'
-        }
-      })
-    })
-  })
-
   describe('and the process to add a list fails with a duplicated list name error', () => {
     beforeEach(() => {
-      jsonMock.mockResolvedValueOnce({ name })
+      jsonMock.mockResolvedValueOnce({ name, private: true })
       addListMock.mockRejectedValueOnce(new DuplicatedListError(name))
     })
 
@@ -1118,7 +1070,7 @@ describe('when creating a list', () => {
     const error = new Error('anError')
 
     beforeEach(() => {
-      jsonMock.mockResolvedValueOnce({ name })
+      jsonMock.mockResolvedValueOnce({ name, private: true })
       addListMock.mockRejectedValueOnce(error)
     })
 
@@ -1139,7 +1091,7 @@ describe('when creating a list', () => {
         created_at: date,
         description: null
       }
-      jsonMock.mockResolvedValueOnce({ name })
+      jsonMock.mockResolvedValueOnce({ name, private: true })
       addListMock.mockResolvedValueOnce(list)
     })
 
@@ -1388,86 +1340,6 @@ describe('when updating a list', () => {
         body: {
           ok: false,
           message: 'The default list cannot be modified.'
-        }
-      })
-    })
-  })
-
-  describe('and the request body does not contain a valid JSON', () => {
-    beforeEach(() => {
-      jsonMock.mockRejectedValueOnce(new Error())
-    })
-
-    it('should return a response with a message saying that the body must be a parsable JSON and the 400 status code', () => {
-      return expect(updateListHandler({ components, verification, request, params })).resolves.toEqual({
-        status: StatusCode.BAD_REQUEST,
-        body: {
-          ok: false,
-          message: 'The body must contain a parsable JSON.'
-        }
-      })
-    })
-  })
-
-  describe('and the request body does not contain neither the name or the private properties', () => {
-    beforeEach(() => {
-      jsonMock.mockResolvedValueOnce({})
-    })
-
-    it('should return a response with a message saying that the name property is not correct and the 400 status code', () => {
-      return expect(updateListHandler({ components, verification, request, params })).resolves.toEqual({
-        status: StatusCode.BAD_REQUEST,
-        body: {
-          ok: false,
-          message: 'The body must contain at least one of the following properties: name or private.'
-        }
-      })
-    })
-  })
-
-  describe('and the request body does contains the name property but is not of string type', () => {
-    beforeEach(() => {
-      jsonMock.mockResolvedValueOnce({ name: 1 })
-    })
-
-    it('should return a response with a message saying that the name property is not correct and the 400 status code', () => {
-      return expect(updateListHandler({ components, verification, request, params })).resolves.toEqual({
-        status: StatusCode.BAD_REQUEST,
-        body: {
-          ok: false,
-          message: 'The property name is not of string type.'
-        }
-      })
-    })
-  })
-
-  describe('and the request body does contains the private property but is not of boolean type', () => {
-    beforeEach(() => {
-      jsonMock.mockResolvedValueOnce({ private: 'not a boolean' })
-    })
-
-    it('should return a response with a message saying that the private property is not correct and the 400 status code', () => {
-      return expect(updateListHandler({ components, verification, request, params })).resolves.toEqual({
-        status: StatusCode.BAD_REQUEST,
-        body: {
-          ok: false,
-          message: 'The property private is not of boolean type.'
-        }
-      })
-    })
-  })
-
-  describe('and the request body does contains the description property but is not of string type', () => {
-    beforeEach(() => {
-      jsonMock.mockResolvedValueOnce({ name, private: true, description: 1 })
-    })
-
-    it('should return a response with a message saying that the description property is not correct and the 400 status code', () => {
-      return expect(updateListHandler({ components, verification, request, params })).resolves.toEqual({
-        status: StatusCode.BAD_REQUEST,
-        body: {
-          ok: false,
-          message: 'The property description is not of string type.'
         }
       })
     })

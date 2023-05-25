@@ -6,6 +6,7 @@ import { metricDeclarations } from './metrics'
 import { IAccessComponent } from './ports/access'
 import { IListsComponents } from './ports/lists/types'
 import { IPicksComponent } from './ports/picks'
+import { ISchemaValidatorComponent } from './ports/schema-validator'
 import { ISnapshotComponent } from './ports/snapshot'
 import type { IFetchComponent } from '@well-known-components/http-server'
 import type {
@@ -29,6 +30,7 @@ export type BaseComponents = {
   fetch: IFetchComponent
   metrics: IMetricsComponent<keyof typeof metricDeclarations>
   pg: IPgComponent & IDatabase
+  schemaValidator: ISchemaValidatorComponent
   lists: IListsComponents
   collectionsSubgraph: ISubgraphComponent
   snapshot: ISnapshotComponent
