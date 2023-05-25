@@ -52,6 +52,18 @@ beforeEach(() => {
         query: dbClientQueryMock,
         release: dbClientReleaseMock
       })
+    }),
+    withTransaction: jest.fn().mockImplementation(async (callback, onError) => {
+      try {
+        const results = await callback({
+          query: dbClientQueryMock,
+          release: dbClientReleaseMock
+        })
+        return results
+      } catch (error) {
+        await onError(error)
+        throw error
+      }
     })
   })
   logs = createTestLogsComponent({
@@ -540,7 +552,6 @@ describe('when creating a new list', () => {
 
   beforeEach(() => {
     name = 'Test List'
-    dbClientQueryMock.mockResolvedValueOnce(undefined)
   })
 
   describe('and there is already a list created with the same name', () => {
@@ -549,16 +560,10 @@ describe('when creating a new list', () => {
       dbClientQueryMock.mockRejectedValueOnce({
         constraint: 'name_user_address_unique'
       })
-
-      // Access Mock Query
-      dbClientQueryMock.mockResolvedValueOnce(undefined)
     })
 
-    it('should rollback the transaction, release the client, and throw a duplicated list name error', async () => {
+    it('should throw a duplicated list name error', async () => {
       await expect(listsComponent.addList({ name, userAddress, private: false })).rejects.toEqual(new DuplicatedListError(name))
-      expect(dbClientQueryMock).not.toHaveBeenCalledWith('COMMIT')
-      expect(dbClientQueryMock).toHaveBeenCalledWith('ROLLBACK')
-      expect(dbClientReleaseMock).toHaveBeenCalled()
     })
   })
 
@@ -568,11 +573,8 @@ describe('when creating a new list', () => {
       dbClientQueryMock.mockRejectedValueOnce(new Error("Unexpected error when inserting the list's data"))
     })
 
-    it('should rollback the changes, release the client and throw a generic error', async () => {
+    it('should throw a generic error', async () => {
       await expect(listsComponent.addList({ name, userAddress, private: false })).rejects.toEqual(new Error("The list couldn't be created"))
-      expect(dbClientQueryMock).not.toHaveBeenCalledWith('COMMIT')
-      expect(dbClientQueryMock).toHaveBeenCalledWith('ROLLBACK')
-      expect(dbClientReleaseMock).toHaveBeenCalled()
     })
   })
 
@@ -585,11 +587,8 @@ describe('when creating a new list', () => {
       dbClientQueryMock.mockRejectedValueOnce(new Error("Unexpected error when inserting the list's data"))
     })
 
-    it('should rollback the changes, release the client and throw a generic error', async () => {
+    it('should throw a generic error', async () => {
       await expect(listsComponent.addList({ name, userAddress, private: false })).rejects.toEqual(new Error("The list couldn't be created"))
-      expect(dbClientQueryMock).not.toHaveBeenCalledWith('COMMIT')
-      expect(dbClientQueryMock).toHaveBeenCalledWith('ROLLBACK')
-      expect(dbClientReleaseMock).toHaveBeenCalled()
     })
   })
 
@@ -649,11 +648,6 @@ describe('when creating a new list', () => {
       it('should resolve with the new list', () => {
         expect(result).toEqual(dbList)
       })
-
-      it('should commit the changes and release the client', () => {
-        expect(dbClientQueryMock).toHaveBeenCalledWith('COMMIT')
-        expect(dbClientReleaseMock).toHaveBeenCalled()
-      })
     })
 
     describe('and the list should be public', () => {
@@ -684,11 +678,6 @@ describe('when creating a new list', () => {
 
       it('should resolve with the new list', () => {
         expect(result).toEqual(dbList)
-      })
-
-      it('should commit the changes and release the client', () => {
-        expect(dbClientQueryMock).toHaveBeenCalledWith('COMMIT')
-        expect(dbClientReleaseMock).toHaveBeenCalled()
       })
     })
   })
