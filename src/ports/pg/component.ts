@@ -9,7 +9,7 @@ export async function createPgComponent(
 ): Promise<IPgComponent & IBaseComponent> {
   const pg = await createBasePgComponent(components, options)
 
-  async function withTransaction<T>(callback: (client: PoolClient) => Promise<T>, onError?: (error: unknown) => void): Promise<T> {
+  async function withTransaction<T>(callback: (client: PoolClient) => Promise<T>, onError?: (error: unknown) => Promise<void>): Promise<T> {
     const client = await pg.getPool().connect()
 
     try {
@@ -20,7 +20,7 @@ export async function createPgComponent(
       return result
     } catch (error) {
       await client.query('ROLLBACK')
-      if (onError) onError(error)
+      if (onError) await onError(error)
       throw error
     } finally {
       // TODO: handle the following eslint-disable statement
