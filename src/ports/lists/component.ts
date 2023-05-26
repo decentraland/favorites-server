@@ -3,9 +3,7 @@ import { isErrorWithMessage } from '../../logic/errors'
 import { DEFAULT_LIST_USER_ADDRESS } from '../../migrations/1678303321034_default-list'
 import { AppComponents } from '../../types'
 import { Permission } from '../access'
-import { AccessNotFoundError } from '../access/errors'
 import { deleteAccessQuery, insertAccessQuery } from '../access/queries'
-import { validateAccessExists, validateDuplicatedAccess } from '../access/utils'
 import { DBGetFilteredPicksWithCount, DBPick } from '../picks'
 import { GRANTED_TO_ALL } from './constants'
 import { ItemNotFoundError, ListNotFoundError, PickAlreadyExistsError, PickNotFoundError, QueryFailure } from './errors'
@@ -205,25 +203,19 @@ export function createListsComponent(
 
         updateQuery.append(SQL` WHERE id = ${id} AND user_address = ${userAddress} RETURNING *`)
 
-        const [updatedListResult, accessResult] = await Promise.all([
+        const [updatedListResult] = await Promise.all([
           client.query<DBList>(shouldUpdate ? updateQuery : getListQuery(id, { userAddress })),
           client.query(accessQuery)
         ])
 
         validateListExists(id, updatedListResult)
 
-        // TODO: validación al dope, si no existe el acceso no pasa nada que no se pueda borrar. La lista sigue siendo privada
-        if (isPrivate) validateAccessExists(id, Permission.VIEW, GRANTED_TO_ALL, accessResult)
-
         return updatedListResult.rows[0]
       },
       (error: unknown) => {
-        if (error instanceof ListNotFoundError || error instanceof AccessNotFoundError) throw error
+        if (error instanceof ListNotFoundError) throw error
 
         if (name) validateDuplicatedListName(name, error)
-
-        // TODO: debiera ignorarlo en este caso. Si quiero hacer la lista pública, pero ya lo es, no hay drama.
-        validateDuplicatedAccess(id, Permission.VIEW, GRANTED_TO_ALL, error)
 
         throw new Error("The list couldn't be updated")
       }

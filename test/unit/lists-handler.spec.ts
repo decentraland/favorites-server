@@ -1365,28 +1365,6 @@ describe('when updating a list', () => {
     })
   })
 
-  describe('and the process to update a list fails with a access not found error', () => {
-    beforeEach(() => {
-      jsonMock.mockResolvedValueOnce({ name })
-      updateListMock.mockRejectedValueOnce(new AccessNotFoundError(listId, Permission.VIEW, '*'))
-    })
-
-    it('should return a response with a message saying that the access was not found and the 404 status code', () => {
-      return expect(updateListHandler({ components, verification, request, params })).resolves.toEqual({
-        status: StatusCode.NOT_FOUND,
-        body: {
-          ok: false,
-          message: "The access doesn't exist.",
-          data: {
-            listId,
-            permission: Permission.VIEW,
-            grantee: '*'
-          }
-        }
-      })
-    })
-  })
-
   describe('and the process to update a list fails with a duplicated list error', () => {
     beforeEach(() => {
       jsonMock.mockResolvedValueOnce({ name })
@@ -1401,28 +1379,6 @@ describe('when updating a list', () => {
           message: `There is already a list with the same name: ${name}.`,
           data: {
             name
-          }
-        }
-      })
-    })
-  })
-
-  describe('and the process to update a list fails with a access not found error', () => {
-    beforeEach(() => {
-      jsonMock.mockResolvedValueOnce({ name })
-      updateListMock.mockRejectedValueOnce(new DuplicatedAccessError(listId, Permission.VIEW, '*'))
-    })
-
-    it('should return a response with a message saying that the access already exists and the 409 status code', () => {
-      return expect(updateListHandler({ components, verification, request, params })).resolves.toEqual({
-        status: StatusCode.CONFLICT,
-        body: {
-          ok: false,
-          message: 'The access already exists for the given list.',
-          data: {
-            listId,
-            grantee: '*',
-            permission: Permission.VIEW
           }
         }
       })

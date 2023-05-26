@@ -2,7 +2,7 @@ import { IDatabase, ILoggerComponent } from '@well-known-components/interfaces'
 import { ISubgraphComponent } from '@well-known-components/thegraph-component'
 import { DEFAULT_LIST_USER_ADDRESS } from '../../src/migrations/1678303321034_default-list'
 import { Permission } from '../../src/ports/access'
-import { AccessNotFoundError, DuplicatedAccessError } from '../../src/ports/access/errors'
+import { AccessNotFoundError } from '../../src/ports/access/errors'
 import {
   createListsComponent,
   DBGetListsWithCount,
@@ -1086,22 +1086,6 @@ describe('when updating a list', () => {
     })
   })
 
-  describe('and the access is being duplicated', () => {
-    beforeEach(() => {
-      // Update List Mock Query
-      dbClientQueryMock.mockResolvedValueOnce({ rowCount: 1 })
-
-      // Access Mock Query
-      dbClientQueryMock.mockRejectedValueOnce({ constraint: 'list_id_permissions_grantee_primary_key' })
-    })
-
-    it('should throw a duplicated access error', async () => {
-      await expect(listsComponent.updateList(listId, userAddress, updatedList)).rejects.toEqual(
-        new DuplicatedAccessError(listId, Permission.VIEW, '*')
-      )
-    })
-  })
-
   describe('and the update or select query fails because of an unexpected error', () => {
     beforeEach(() => {
       // Update List Mock Query
@@ -1138,20 +1122,20 @@ describe('when updating a list', () => {
     describe('and the lists exists but the access to be removed does not', () => {
       beforeEach(() => {
         // Update List Mock Query
-        dbClientQueryMock.mockResolvedValueOnce({ rowCount: 1 })
+        dbClientQueryMock.mockResolvedValueOnce({ rowCount: 1, rows: [updatedList] })
 
         // Delete Access Mock Query
         dbClientQueryMock.mockResolvedValueOnce({ rowCount: 0 })
       })
 
-      it('should throw a access not found error', async () => {
-        await expect(listsComponent.updateList(listId, userAddress, updatedList)).rejects.toEqual(
+      it('should not throw an error because this means the list is already private', () => {
+        expect(() => listsComponent.updateList(listId, userAddress, updatedList)).not.toThrow(
           new AccessNotFoundError(listId, Permission.VIEW, '*')
         )
       })
     })
 
-    describe('and the list and access exist, and the name is not being duplicated', () => {
+    describe('and the query succeeds', () => {
       let dbList: DBList
       let result: DBList
 
@@ -1308,7 +1292,7 @@ describe('when updating a list', () => {
       }
     })
 
-    describe('and the list and access exist, and the name is not being duplicated', () => {
+    describe('and the query succeeds', () => {
       let dbList: DBList
       let result: DBList
 
