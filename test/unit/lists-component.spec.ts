@@ -588,7 +588,8 @@ describe('when creating a new list', () => {
         name,
         user_address: userAddress,
         description: null,
-        created_at: new Date()
+        created_at: new Date(),
+        updated_at: new Date()
       }
 
       // Create List Query
@@ -743,7 +744,8 @@ describe('when getting a list', () => {
         name: 'aListName',
         description: null,
         user_address: 'aUserAddress',
-        created_at: new Date()
+        created_at: new Date(),
+        updated_at: new Date()
       }
 
       dbQueryMock.mockResolvedValueOnce({ rowCount: 1, rows: [dbList] })
@@ -815,7 +817,8 @@ describe('when getting a list', () => {
         name: 'aListName',
         description: null,
         user_address: 'aUserAddress',
-        created_at: new Date()
+        created_at: new Date(),
+        updated_at: new Date()
       }
 
       dbQueryMock.mockResolvedValueOnce({ rowCount: 1, rows: [dbList] })
@@ -889,7 +892,8 @@ describe('when getting a list', () => {
         name: 'aListName',
         description: null,
         user_address: 'aUserAddress',
-        created_at: new Date()
+        created_at: new Date(),
+        updated_at: new Date()
       }
     })
 
@@ -1145,7 +1149,8 @@ describe('when updating a list', () => {
           name: 'aListName',
           description: null,
           user_address: userAddress,
-          created_at: new Date()
+          created_at: new Date(),
+          updated_at: new Date()
         }
 
         // Update List Mock Query
@@ -1302,7 +1307,8 @@ describe('when updating a list', () => {
           name: 'aListName',
           description: null,
           user_address: userAddress,
-          created_at: new Date()
+          created_at: new Date(),
+          updated_at: new Date()
         }
 
         // Update List Mock Query
@@ -1436,7 +1442,8 @@ describe('when updating a list', () => {
         name: 'aListName',
         description: null,
         user_address: userAddress,
-        created_at: new Date()
+        created_at: new Date(),
+        updated_at: new Date()
       }
 
       // Update List Mock Query

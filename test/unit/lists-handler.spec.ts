@@ -971,6 +971,7 @@ describe('when getting the lists', () => {
           description: 'Description of List #1',
           user_address: '0x45abb534BD927284F84b03d43f33dF0E5C91C21f',
           created_at: new Date(),
+          updated_at: new Date(),
           lists_count: '1',
           items_count: '2'
         }
@@ -1089,6 +1090,7 @@ describe('when creating a list', () => {
         name,
         user_address: verification?.auth ?? '',
         created_at: date,
+        updated_at: date,
         description: null
       }
       jsonMock.mockResolvedValueOnce({ name, private: true })
@@ -1105,6 +1107,7 @@ describe('when creating a list', () => {
             name,
             userAddress: verification?.auth,
             createdAt: date,
+            updatedAt: date,
             description: null,
             permission: undefined
           }
@@ -1138,7 +1141,8 @@ describe('when getting a list', () => {
       name: 'Test List',
       description: 'Description of List #1',
       user_address: '0x45abb534BD927284F84b03d43f33dF0E5C91C21f',
-      created_at: date
+      created_at: date,
+      updated_at: date
     }
 
     list = {
@@ -1146,6 +1150,7 @@ describe('when getting a list', () => {
       name: 'Test List',
       userAddress: '0x45abb534BD927284F84b03d43f33dF0E5C91C21f',
       createdAt: date,
+      updatedAt: date,
       description: 'Description of List #1',
       permission: undefined
     }
@@ -1410,6 +1415,7 @@ describe('when updating a list', () => {
         name,
         user_address: verification?.auth ?? '',
         created_at: date,
+        updated_at: date,
         description: null
       }
       jsonMock.mockResolvedValueOnce({ name })
@@ -1428,6 +1434,7 @@ describe('when updating a list', () => {
             name,
             userAddress: verification?.auth,
             createdAt: date,
+            updatedAt: date,
             description: null,
             permission: undefined
           }
