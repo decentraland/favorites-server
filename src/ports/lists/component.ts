@@ -150,13 +150,15 @@ export function createListsComponent(
     }
 
     const orderByQuery = SQL`\nORDER BY is_default_list DESC`
+    // Converts the sort direction into a explicit string to avoid using the SQL statement
+    const sortDirectionKeyword = ListSortDirection.DESC === sortDirection ? 'DESC' : 'ASC'
 
     switch (sortBy) {
       case ListSortBy.CREATED_AT:
-        orderByQuery.append(SQL`, l.created_at ${sortDirection}`)
+        orderByQuery.append(`, l.created_at ${sortDirectionKeyword}`)
         break
       case ListSortBy.NAME:
-        orderByQuery.append(SQL`, l.name ${sortDirection}`)
+        orderByQuery.append(`, l.name ${sortDirectionKeyword}`)
         break
     }
 
