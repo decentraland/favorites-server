@@ -180,8 +180,6 @@ export function createListsComponent(
         return insertedList
       },
       (error: unknown) => {
-        if (error instanceof AccessNotFoundError) throw error
-
         validateDuplicatedListName(name, error)
 
         throw new Error("The list couldn't be created")
@@ -214,6 +212,7 @@ export function createListsComponent(
 
         validateListExists(id, updatedListResult)
 
+        // TODO: validación al dope, si no existe el acceso no pasa nada que no se pueda borrar. La lista sigue siendo privada
         if (isPrivate) validateAccessExists(id, Permission.VIEW, GRANTED_TO_ALL, accessResult)
 
         return updatedListResult.rows[0]
@@ -223,6 +222,7 @@ export function createListsComponent(
 
         if (name) validateDuplicatedListName(name, error)
 
+        // TODO: debiera ignorarlo en este caso. Si quiero hacer la lista pública, pero ya lo es, no hay drama.
         validateDuplicatedAccess(id, Permission.VIEW, GRANTED_TO_ALL, error)
 
         throw new Error("The list couldn't be updated")
