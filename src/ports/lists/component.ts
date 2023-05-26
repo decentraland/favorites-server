@@ -146,6 +146,9 @@ export function createListsComponent(
       case ListSortBy.CREATED_AT:
         orderByQuery.append(SQL`, l.created_at ${sortDirection}`)
         break
+      case ListSortBy.UPDATED_AT:
+        orderByQuery.append(SQL`, l.updated_at ${sortDirection}`)
+        break
       case ListSortBy.NAME:
         orderByQuery.append(SQL`, l.name ${sortDirection}`)
         break

@@ -909,7 +909,7 @@ describe('when getting the lists', () => {
         status: StatusCode.BAD_REQUEST,
         body: {
           ok: false,
-          message: 'The sort by parameter is not defined as date or name.',
+          message: 'The sort by parameter is not defined as createdAt, name, or updatedAt.',
           data: undefined
         }
       })

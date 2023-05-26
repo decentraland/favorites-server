@@ -469,8 +469,12 @@ describe('when getting lists', () => {
       })
     })
 
-    describe('and the sorting parameters are set', () => {
-      describe('and the sort by is "date"', () => {
+    describe.each([
+      [ListSortBy.CREATED_AT, 'created_at'],
+      [ListSortBy.NAME, 'name'],
+      [ListSortBy.UPDATED_AT, 'updated_at']
+    ])('and the sorting parameters are set', (sortBy, expectedOrderByColumn) => {
+      describe('and the sort by is "%s"', () => {
         describe.each([ListSortDirection.ASC, ListSortDirection.DESC])('and the sort direction is "%s"', sortDirection => {
           it('should have made the query to get the lists matching those conditions', async () => {
             await expect(
@@ -478,44 +482,14 @@ describe('when getting lists', () => {
                 offset: 0,
                 limit: 10,
                 userAddress: '0xuseraddress',
-                sortBy: ListSortBy.CREATED_AT,
+                sortBy,
                 sortDirection
               })
             ).resolves.toEqual(dbGetLists)
 
             expect(dbQueryMock).toBeCalledWith(
               expect.objectContaining({
-                text: expect.stringContaining('ORDER BY is_default_list DESC, l.created_at $5'),
-                values: expect.arrayContaining([sortDirection])
-              })
-            )
-
-            expect(dbQueryMock).toBeCalledWith(
-              expect.objectContaining({
-                text: expect.stringContaining('LIMIT $6 OFFSET $7'),
-                values: expect.arrayContaining([10, 0])
-              })
-            )
-          })
-        })
-      })
-
-      describe('and the sort by is "name"', () => {
-        describe.each([ListSortDirection.ASC, ListSortDirection.DESC])('and the sort direction is "%s"', sortDirection => {
-          it('should have made the query to get the lists matching those conditions', async () => {
-            await expect(
-              listsComponent.getLists({
-                offset: 0,
-                limit: 10,
-                userAddress: '0xuseraddress',
-                sortBy: ListSortBy.NAME,
-                sortDirection
-              })
-            ).resolves.toEqual(dbGetLists)
-
-            expect(dbQueryMock).toBeCalledWith(
-              expect.objectContaining({
-                text: expect.stringContaining('ORDER BY is_default_list DESC, l.name $5'),
+                text: expect.stringContaining(`ORDER BY is_default_list DESC, l.${expectedOrderByColumn} $5`),
                 values: expect.arrayContaining([sortDirection])
               })
             )
