@@ -391,28 +391,32 @@ describe('when getting lists', () => {
 
         expect(dbQueryMock).toBeCalledWith(
           expect.objectContaining({
-            text: expect.stringContaining('LEFT JOIN favorites.picks p ON l.id = p.list_id AND p.user_address = $2'),
+            strings: expect.arrayContaining([
+              expect.stringContaining('LEFT JOIN favorites.picks p ON l.id = p.list_id AND p.user_address =')
+            ]),
             values: expect.arrayContaining(['0xuseraddress'])
           })
         )
 
         expect(dbQueryMock).toBeCalledWith(
           expect.objectContaining({
-            text: expect.stringContaining('WHERE l.user_address = $3 OR l.user_address = $4'),
+            strings: expect.arrayContaining([
+              expect.stringContaining('WHERE l.user_address ='),
+              expect.stringContaining('OR l.user_address =')
+            ]),
             values: expect.arrayContaining(['0xuseraddress', DEFAULT_LIST_USER_ADDRESS])
           })
         )
 
         expect(dbQueryMock).toBeCalledWith(
           expect.objectContaining({
-            text: expect.stringContaining('ORDER BY is_default_list DESC, l.created_at $5'),
-            values: expect.arrayContaining([ListSortDirection.DESC])
+            strings: expect.arrayContaining([expect.stringContaining('ORDER BY is_default_list DESC, l.created_at DESC')])
           })
         )
 
         expect(dbQueryMock).toBeCalledWith(
           expect.objectContaining({
-            text: expect.stringContaining('LIMIT $6 OFFSET $7'),
+            strings: expect.arrayContaining([expect.stringContaining('LIMIT'), expect.stringContaining('OFFSET')]),
             values: expect.arrayContaining([10, 0])
           })
         )
@@ -487,14 +491,15 @@ describe('when getting lists', () => {
 
             expect(dbQueryMock).toBeCalledWith(
               expect.objectContaining({
-                text: expect.stringContaining('ORDER BY is_default_list DESC, l.created_at $5'),
-                values: expect.arrayContaining([sortDirection])
+                strings: expect.arrayContaining([
+                  expect.stringContaining(`ORDER BY is_default_list DESC, l.created_at ${sortDirection.toUpperCase()}`)
+                ])
               })
             )
 
             expect(dbQueryMock).toBeCalledWith(
               expect.objectContaining({
-                text: expect.stringContaining('LIMIT $6 OFFSET $7'),
+                strings: expect.arrayContaining([expect.stringContaining('LIMIT'), expect.stringContaining('OFFSET')]),
                 values: expect.arrayContaining([10, 0])
               })
             )
@@ -517,14 +522,15 @@ describe('when getting lists', () => {
 
             expect(dbQueryMock).toBeCalledWith(
               expect.objectContaining({
-                text: expect.stringContaining('ORDER BY is_default_list DESC, l.name $5'),
-                values: expect.arrayContaining([sortDirection])
+                strings: expect.arrayContaining([
+                  expect.stringContaining(`ORDER BY is_default_list DESC, l.name ${sortDirection.toUpperCase()}`)
+                ])
               })
             )
 
             expect(dbQueryMock).toBeCalledWith(
               expect.objectContaining({
-                text: expect.stringContaining('LIMIT $6 OFFSET $7'),
+                strings: expect.arrayContaining([expect.stringContaining('LIMIT'), expect.stringContaining('OFFSET')]),
                 values: expect.arrayContaining([10, 0])
               })
             )
