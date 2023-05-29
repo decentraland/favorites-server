@@ -618,9 +618,7 @@ describe('when creating a new list', () => {
       it('should not insert a new access to make the list public', () => {
         expect(dbClientQueryMock).not.toHaveBeenCalledWith(
           expect.objectContaining({
-            strings: expect.arrayContaining([
-              expect.stringContaining('INSERT INTO favorites.acl (list_id, permission, grantee) VALUES'),
-            ])
+            strings: expect.arrayContaining([expect.stringContaining('INSERT INTO favorites.acl (list_id, permission, grantee) VALUES')])
           })
         )
       })
