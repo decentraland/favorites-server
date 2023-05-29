@@ -149,7 +149,7 @@ export function createListsComponent(
         orderByQuery.append(`, l.created_at ${sortDirectionKeyword}`)
         break
       case ListSortBy.UPDATED_AT:
-        orderByQuery.append(SQL`, l.updated_at ${sortDirection}`)
+        orderByQuery.append(`, l.updated_at ${sortDirectionKeyword}`)
         break
       case ListSortBy.NAME:
         orderByQuery.append(`, l.name ${sortDirectionKeyword}`)

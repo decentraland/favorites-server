@@ -493,8 +493,9 @@ describe('when getting lists', () => {
 
             expect(dbQueryMock).toBeCalledWith(
               expect.objectContaining({
-                text: expect.stringContaining(`ORDER BY is_default_list DESC, l.${expectedOrderByColumn} $5`),
-                values: expect.arrayContaining([sortDirection])
+                strings: expect.arrayContaining([
+                  expect.stringContaining(`ORDER BY is_default_list DESC, l.${expectedOrderByColumn} ${sortDirection.toUpperCase()}`)
+                ])
               })
             )
 
