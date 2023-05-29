@@ -615,18 +615,12 @@ describe('when creating a new list', () => {
         )
       })
 
-      it('should not delete any access becasue it is a new list without previous rows in the db', () => {
+      it('should not insert a new access to make the list public', () => {
         expect(dbClientQueryMock).not.toHaveBeenCalledWith(
           expect.objectContaining({
             strings: expect.arrayContaining([
-              expect.stringContaining('DELETE FROM favorites.acl USING favorites.lists'),
-              expect.stringContaining('WHERE favorites.acl.list_id = favorites.lists.id'),
-              expect.stringContaining('AND favorites.acl.list_id ='),
-              expect.stringContaining('AND favorites.lists.user_address ='),
-              expect.stringContaining('AND favorites.acl.permission ='),
-              expect.stringContaining('AND favorites.acl.grantee =')
-            ]),
-            values: [listId, userAddress, Permission.VIEW, '*']
+              expect.stringContaining('INSERT INTO favorites.acl (list_id, permission, grantee) VALUES'),
+            ])
           })
         )
       })
