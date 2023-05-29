@@ -10,4 +10,4 @@ export const deleteAccessQuery = (listId: string, permission: Permission, grante
     AND favorites.acl.grantee = ${grantee}`
 
 export const insertAccessQuery = (listId: string, permission: Permission, grantee: string) =>
-  SQL`INSERT INTO favorites.acl (list_id, permission, grantee) VALUES (${listId}, ${permission}, ${grantee})`
+  SQL`INSERT INTO favorites.acl (list_id, permission, grantee) VALUES (${listId}, ${permission}, ${grantee}) ON CONFLICT (list_id, permission, grantee) DO NOTHING`

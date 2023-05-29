@@ -1,9 +1,9 @@
 import { ILoggerComponent } from '@well-known-components/interfaces'
-import { IPgComponent } from '@well-known-components/pg-component'
 import { IAccessComponent, Permission, createAccessComponent } from '../../src/ports/access'
 import { AccessNotFoundError, DuplicatedAccessError } from '../../src/ports/access/errors'
 import { IListsComponents } from '../../src/ports/lists'
 import { ListNotFoundError } from '../../src/ports/lists/errors'
+import { IPgComponent } from '../../src/ports/pg'
 import { createTestListsComponent, createTestLogsComponent, createTestPgComponent } from '../components'
 
 let accessComponent: IAccessComponent

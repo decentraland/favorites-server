@@ -486,7 +486,7 @@ export async function createListHandler(
   try {
     const body: AddListRequestBody = await request.json()
 
-    const addListResult = await lists.addList({ name: body.name, userAddress, private: body.private, description: body.description })
+    const addListResult = await lists.addList({ ...body, userAddress })
     return {
       status: StatusCode.CREATED,
       body: {
@@ -616,21 +616,6 @@ export async function updateListHandler(
       }
     }
 
-    if (error instanceof AccessNotFoundError) {
-      return {
-        status: StatusCode.NOT_FOUND,
-        body: {
-          ok: false,
-          message: error.message,
-          data: {
-            listId: error.listId,
-            permission: error.permission,
-            grantee: error.grantee
-          }
-        }
-      }
-    }
-
     if (error instanceof DuplicatedListError) {
       return {
         status: StatusCode.UNPROCESSABLE_CONTENT,
@@ -639,21 +624,6 @@ export async function updateListHandler(
           message: error.message,
           data: {
             name: error.name
-          }
-        }
-      }
-    }
-
-    if (error instanceof DuplicatedAccessError) {
-      return {
-        status: StatusCode.CONFLICT,
-        body: {
-          ok: false,
-          message: error.message,
-          data: {
-            listId: error.listId,
-            permission: error.permission,
-            grantee: error.grantee
           }
         }
       }

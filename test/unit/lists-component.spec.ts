@@ -1,9 +1,8 @@
 import { IDatabase, ILoggerComponent } from '@well-known-components/interfaces'
-import { IPgComponent } from '@well-known-components/pg-component'
 import { ISubgraphComponent } from '@well-known-components/thegraph-component'
 import { DEFAULT_LIST_USER_ADDRESS } from '../../src/migrations/1678303321034_default-list'
 import { Permission } from '../../src/ports/access'
-import { AccessNotFoundError, DuplicatedAccessError } from '../../src/ports/access/errors'
+import { AccessNotFoundError } from '../../src/ports/access/errors'
 import {
   createListsComponent,
   DBGetListsWithCount,
@@ -21,6 +20,7 @@ import {
   PickNotFoundError,
   QueryFailure
 } from '../../src/ports/lists/errors'
+import { IPgComponent } from '../../src/ports/pg'
 import { DBGetFilteredPicksWithCount, DBPick } from '../../src/ports/picks'
 import { ISnapshotComponent } from '../../src/ports/snapshot'
 import { createTestSnapshotComponent, createTestPgComponent, createTestSubgraphComponent, createTestLogsComponent } from '../components'
@@ -52,6 +52,18 @@ beforeEach(() => {
         query: dbClientQueryMock,
         release: dbClientReleaseMock
       })
+    }),
+    withTransaction: jest.fn().mockImplementation(async (callback, onError) => {
+      try {
+        const results = await callback({
+          query: dbClientQueryMock,
+          release: dbClientReleaseMock
+        })
+        return results
+      } catch (error) {
+        await onError(error)
+        throw error
+      }
     })
   })
   logs = createTestLogsComponent({
@@ -206,8 +218,6 @@ describe('when creating a new pick', () => {
           }
         ]
       })
-      // Begin Query
-      dbClientQueryMock.mockResolvedValueOnce(undefined)
     })
 
     describe('and the pick already exists', () => {
@@ -220,10 +230,8 @@ describe('when creating a new pick', () => {
         dbClientQueryMock.mockResolvedValueOnce(undefined)
       })
 
-      it('should rollback the changes and release the client and throw a pick already exists error', async () => {
+      it('should throw a pick already exists error', async () => {
         await expect(listsComponent.addPickToList(listId, itemId, userAddress)).rejects.toEqual(new PickAlreadyExistsError(listId, itemId))
-        expect(dbClientQueryMock).toHaveBeenCalledWith('ROLLBACK')
-        expect(dbClientReleaseMock).toHaveBeenCalled()
       })
     })
 
@@ -277,11 +285,6 @@ describe('when creating a new pick', () => {
         it('should resolve with the new pick', () => {
           expect(result).toEqual(dbPick)
         })
-
-        it('should commit the changes and release the client', () => {
-          expect(dbClientQueryMock).toHaveBeenCalledWith('COMMIT')
-          expect(dbClientReleaseMock).toHaveBeenCalled()
-        })
       })
 
       describe('and the request to get the voting power was successful', () => {
@@ -316,11 +319,6 @@ describe('when creating a new pick', () => {
 
         it('should resolve with the new pick', () => {
           expect(result).toEqual(dbPick)
-        })
-
-        it('should commit the changes and release the client', () => {
-          expect(dbClientQueryMock).toHaveBeenCalledWith('COMMIT')
-          expect(dbClientReleaseMock).toHaveBeenCalled()
         })
       })
     })
@@ -538,11 +536,14 @@ describe('when getting lists', () => {
 describe('when creating a new list', () => {
   let name: string
 
+  beforeEach(() => {
+    name = 'Test List'
+  })
+
   describe('and there is already a list created with the same name', () => {
     beforeEach(() => {
-      name = 'Test List'
-      // Insert pick mock
-      dbQueryMock.mockRejectedValueOnce({
+      // Insert List Mock Query
+      dbClientQueryMock.mockRejectedValueOnce({
         constraint: 'name_user_address_unique'
       })
     })
@@ -552,12 +553,36 @@ describe('when creating a new list', () => {
     })
   })
 
+  describe('and the insert query fails with an unexpected error', () => {
+    beforeEach(() => {
+      // Insert List Mock Query
+      dbClientQueryMock.mockRejectedValueOnce(new Error("Unexpected error when inserting the list's data"))
+    })
+
+    it('should throw a generic error', async () => {
+      await expect(listsComponent.addList({ name, userAddress, private: false })).rejects.toEqual(new Error("The list couldn't be created"))
+    })
+  })
+
+  describe('and the access query fails with an unexpected error', () => {
+    beforeEach(() => {
+      // Insert List Mock Query
+      dbClientQueryMock.mockResolvedValueOnce({ rows: [{ id: listId }] })
+
+      // Access Mock Query
+      dbClientQueryMock.mockRejectedValueOnce(new Error("Unexpected error when inserting the list's data"))
+    })
+
+    it('should throw a generic error', async () => {
+      await expect(listsComponent.addList({ name, userAddress, private: false })).rejects.toEqual(new Error("The list couldn't be created"))
+    })
+  })
+
   describe('and there are no lists with the same name', () => {
     let dbList: DBList
     let result: DBList
 
-    beforeEach(async () => {
-      name = 'Test List'
+    beforeEach(() => {
       dbList = {
         id: listId,
         name,
@@ -565,24 +590,73 @@ describe('when creating a new list', () => {
         description: null,
         created_at: new Date()
       }
-      dbQueryMock.mockResolvedValueOnce({
+
+      // Create List Query
+      dbClientQueryMock.mockResolvedValueOnce({
         rowCount: 1,
         rows: [dbList]
       })
-      result = await listsComponent.addList({ name, userAddress, private: false })
     })
 
-    it('should create the pick', () => {
-      expect(dbQueryMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          strings: expect.arrayContaining([expect.stringContaining('INSERT INTO favorites.lists (name, description, user_address)')]),
-          values: [name, null, userAddress]
-        })
-      )
+    describe('and the list should be private', () => {
+      beforeEach(async () => {
+        // Access Mock Query
+        dbClientQueryMock.mockResolvedValueOnce({ rowCount: 1 })
+
+        result = await listsComponent.addList({ name, userAddress, private: true })
+      })
+
+      it('should create the list', () => {
+        expect(dbClientQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            strings: expect.arrayContaining([expect.stringContaining('INSERT INTO favorites.lists (name, description, user_address)')]),
+            values: [name, null, userAddress]
+          })
+        )
+      })
+
+      it('should not insert a new access to make the list public', () => {
+        expect(dbClientQueryMock).not.toHaveBeenCalledWith(
+          expect.objectContaining({
+            strings: expect.arrayContaining([expect.stringContaining('INSERT INTO favorites.acl (list_id, permission, grantee) VALUES')])
+          })
+        )
+      })
+
+      it('should resolve with the new list', () => {
+        expect(result).toEqual(dbList)
+      })
     })
 
-    it('should resolve with the new pick', () => {
-      expect(result).toEqual(dbList)
+    describe('and the list should be public', () => {
+      beforeEach(async () => {
+        // Access Mock Query
+        dbClientQueryMock.mockResolvedValueOnce(undefined)
+
+        result = await listsComponent.addList({ name, userAddress, private: false })
+      })
+
+      it('should create the list', () => {
+        expect(dbClientQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            strings: expect.arrayContaining([expect.stringContaining('INSERT INTO favorites.lists (name, description, user_address)')]),
+            values: [name, null, userAddress]
+          })
+        )
+      })
+
+      it('should insert a new access to make the list public', () => {
+        expect(dbClientQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            strings: expect.arrayContaining([expect.stringContaining('INSERT INTO favorites.acl (list_id, permission, grantee) VALUES')]),
+            values: [listId, Permission.VIEW, '*']
+          })
+        )
+      })
+
+      it('should resolve with the new list', () => {
+        expect(result).toEqual(dbList)
+      })
     })
   })
 })
@@ -974,9 +1048,6 @@ describe('when updating a list', () => {
       name,
       description: 'Updated List Description'
     }
-
-    // Begin Query
-    dbClientQueryMock.mockResolvedValueOnce(undefined)
   })
 
   describe('and the list does not exist', () => {
@@ -988,11 +1059,8 @@ describe('when updating a list', () => {
       dbClientQueryMock.mockResolvedValueOnce(undefined)
     })
 
-    it('should rollback the changes, release the client and throw a list not found error', async () => {
+    it('should throw a list not found error', async () => {
       await expect(listsComponent.updateList(listId, userAddress, updatedList)).rejects.toEqual(new ListNotFoundError(listId))
-      expect(dbClientQueryMock).not.toHaveBeenCalledWith('COMMIT')
-      expect(dbClientQueryMock).toHaveBeenCalledWith('ROLLBACK')
-      expect(dbClientReleaseMock).toHaveBeenCalled()
     })
   })
 
@@ -1005,30 +1073,33 @@ describe('when updating a list', () => {
       dbClientQueryMock.mockResolvedValueOnce(undefined)
     })
 
-    it('should rollback the changes, release the client and throw a duplicated list error', async () => {
+    it('should throw a duplicated list error', async () => {
       await expect(listsComponent.updateList(listId, userAddress, updatedList)).rejects.toEqual(new DuplicatedListError(name))
-      expect(dbClientQueryMock).not.toHaveBeenCalledWith('COMMIT')
-      expect(dbClientQueryMock).toHaveBeenCalledWith('ROLLBACK')
-      expect(dbClientReleaseMock).toHaveBeenCalled()
     })
   })
 
-  describe('and the access is being duplicated', () => {
+  describe('and the update or select query fails because of an unexpected error', () => {
+    beforeEach(() => {
+      // Update List Mock Query
+      dbClientQueryMock.mockRejectedValueOnce(new Error('Unexpected Error'))
+    })
+
+    it('should throw a generic error', async () => {
+      await expect(listsComponent.updateList(listId, userAddress, updatedList)).rejects.toEqual(new Error("The list couldn't be updated"))
+    })
+  })
+
+  describe('and the access query fails because of an unexpected error', () => {
     beforeEach(() => {
       // Update List Mock Query
       dbClientQueryMock.mockResolvedValueOnce({ rowCount: 1 })
 
       // Access Mock Query
-      dbClientQueryMock.mockRejectedValueOnce({ constraint: 'list_id_permissions_grantee_primary_key' })
+      dbClientQueryMock.mockRejectedValueOnce(new Error('Unexpected Error'))
     })
 
-    it('should rollback the changes, release the client and throw a duplicated access error', async () => {
-      await expect(listsComponent.updateList(listId, userAddress, updatedList)).rejects.toEqual(
-        new DuplicatedAccessError(listId, Permission.VIEW, '*')
-      )
-      expect(dbClientQueryMock).not.toHaveBeenCalledWith('COMMIT')
-      expect(dbClientQueryMock).toHaveBeenCalledWith('ROLLBACK')
-      expect(dbClientReleaseMock).toHaveBeenCalled()
+    it('should throw a generic error', async () => {
+      await expect(listsComponent.updateList(listId, userAddress, updatedList)).rejects.toEqual(new Error("The list couldn't be updated"))
     })
   })
 
@@ -1043,23 +1114,20 @@ describe('when updating a list', () => {
     describe('and the lists exists but the access to be removed does not', () => {
       beforeEach(() => {
         // Update List Mock Query
-        dbClientQueryMock.mockResolvedValueOnce({ rowCount: 1 })
+        dbClientQueryMock.mockResolvedValueOnce({ rowCount: 1, rows: [updatedList] })
 
         // Delete Access Mock Query
         dbClientQueryMock.mockResolvedValueOnce({ rowCount: 0 })
       })
 
-      it('should rollback the changes, release the client and throw a access not found error', async () => {
-        await expect(listsComponent.updateList(listId, userAddress, updatedList)).rejects.toEqual(
+      it('should not throw an error because this means the list is already private', () => {
+        expect(() => listsComponent.updateList(listId, userAddress, updatedList)).not.toThrow(
           new AccessNotFoundError(listId, Permission.VIEW, '*')
         )
-        expect(dbClientQueryMock).not.toHaveBeenCalledWith('COMMIT')
-        expect(dbClientQueryMock).toHaveBeenCalledWith('ROLLBACK')
-        expect(dbClientReleaseMock).toHaveBeenCalled()
       })
     })
 
-    describe('and the list and access exist, and the name is not being duplicated', () => {
+    describe('and the query succeeds', () => {
       let dbList: DBList
       let result: DBList
 
@@ -1087,10 +1155,6 @@ describe('when updating a list', () => {
           result = await listsComponent.updateList(listId, userAddress, { ...updatedList, description: undefined })
         })
 
-        it('should begin the transaction', () => {
-          expect(dbClientQueryMock).toHaveBeenCalledWith('BEGIN')
-        })
-
         it('should update the list', () => {
           expect(dbClientQueryMock).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -1125,20 +1189,11 @@ describe('when updating a list', () => {
         it('should resolve with the updated list', () => {
           expect(result).toEqual(dbList)
         })
-
-        it('should commit the changes and release the client', () => {
-          expect(dbClientQueryMock).toHaveBeenCalledWith('COMMIT')
-          expect(dbClientReleaseMock).toHaveBeenCalled()
-        })
       })
 
       describe('and the updated list has only an updated description without a new name', () => {
         beforeEach(async () => {
           result = await listsComponent.updateList(listId, userAddress, { ...updatedList, name: undefined })
-        })
-
-        it('should begin the transaction', () => {
-          expect(dbClientQueryMock).toHaveBeenCalledWith('BEGIN')
         })
 
         it('should update the list', () => {
@@ -1175,20 +1230,11 @@ describe('when updating a list', () => {
         it('should resolve with the updated list', () => {
           expect(result).toEqual(dbList)
         })
-
-        it('should commit the changes and release the client', () => {
-          expect(dbClientQueryMock).toHaveBeenCalledWith('COMMIT')
-          expect(dbClientReleaseMock).toHaveBeenCalled()
-        })
       })
 
       describe('and the updated list has both an updated name and description', () => {
         beforeEach(async () => {
           result = await listsComponent.updateList(listId, userAddress, updatedList)
-        })
-
-        it('should begin the transaction', () => {
-          expect(dbClientQueryMock).toHaveBeenCalledWith('BEGIN')
         })
 
         it('should update the list', () => {
@@ -1226,11 +1272,6 @@ describe('when updating a list', () => {
         it('should resolve with the updated list', () => {
           expect(result).toEqual(dbList)
         })
-
-        it('should commit the changes and release the client', () => {
-          expect(dbClientQueryMock).toHaveBeenCalledWith('COMMIT')
-          expect(dbClientReleaseMock).toHaveBeenCalled()
-        })
       })
     })
   })
@@ -1243,7 +1284,7 @@ describe('when updating a list', () => {
       }
     })
 
-    describe('and the list and access exist, and the name is not being duplicated', () => {
+    describe('and the query succeeds', () => {
       let dbList: DBList
       let result: DBList
 
@@ -1271,10 +1312,6 @@ describe('when updating a list', () => {
           result = await listsComponent.updateList(listId, userAddress, { ...updatedList, description: undefined })
         })
 
-        it('should begin the transaction', () => {
-          expect(dbClientQueryMock).toHaveBeenCalledWith('BEGIN')
-        })
-
         it('should update the list', () => {
           expect(dbClientQueryMock).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -1302,20 +1339,11 @@ describe('when updating a list', () => {
         it('should resolve with the updated list', () => {
           expect(result).toEqual(dbList)
         })
-
-        it('should commit the changes and release the client', () => {
-          expect(dbClientQueryMock).toHaveBeenCalledWith('COMMIT')
-          expect(dbClientReleaseMock).toHaveBeenCalled()
-        })
       })
 
       describe('and the updated list has only an updated description without a new name', () => {
         beforeEach(async () => {
           result = await listsComponent.updateList(listId, userAddress, { ...updatedList, name: undefined })
-        })
-
-        it('should begin the transaction', () => {
-          expect(dbClientQueryMock).toHaveBeenCalledWith('BEGIN')
         })
 
         it('should update the list', () => {
@@ -1345,20 +1373,11 @@ describe('when updating a list', () => {
         it('should resolve with the updated list', () => {
           expect(result).toEqual(dbList)
         })
-
-        it('should commit the changes and release the client', () => {
-          expect(dbClientQueryMock).toHaveBeenCalledWith('COMMIT')
-          expect(dbClientReleaseMock).toHaveBeenCalled()
-        })
       })
 
       describe('and the updated list has both an updated name and description', () => {
         beforeEach(async () => {
           result = await listsComponent.updateList(listId, userAddress, updatedList)
-        })
-
-        it('should begin the transaction', () => {
-          expect(dbClientQueryMock).toHaveBeenCalledWith('BEGIN')
         })
 
         it('should update the list', () => {
@@ -1388,11 +1407,6 @@ describe('when updating a list', () => {
 
         it('should resolve with the updated list', () => {
           expect(result).toEqual(dbList)
-        })
-
-        it('should commit the changes and release the client', () => {
-          expect(dbClientQueryMock).toHaveBeenCalledWith('COMMIT')
-          expect(dbClientReleaseMock).toHaveBeenCalled()
         })
       })
     })
@@ -1429,10 +1443,6 @@ describe('when updating a list', () => {
       result = await listsComponent.updateList(listId, userAddress, updatedList)
     })
 
-    it('should begin the transaction', () => {
-      expect(dbClientQueryMock).toHaveBeenCalledWith('BEGIN')
-    })
-
     it('should get the list instead of updating it', () => {
       expect(dbClientQueryMock).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -1459,11 +1469,6 @@ describe('when updating a list', () => {
 
     it('should resolve with the updated list', () => {
       expect(result).toEqual(dbList)
-    })
-
-    it('should commit the changes and release the client', () => {
-      expect(dbClientQueryMock).toHaveBeenCalledWith('COMMIT')
-      expect(dbClientReleaseMock).toHaveBeenCalled()
     })
   })
 })

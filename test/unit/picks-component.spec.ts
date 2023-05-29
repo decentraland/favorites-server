@@ -1,5 +1,5 @@
 import { IDatabase } from '@well-known-components/interfaces'
-import { IPgComponent } from '@well-known-components/pg-component'
+import { IPgComponent } from '../../src/ports/pg'
 import { createPicksComponent, DBGetFilteredPicksWithCount, DBPickStats, IPicksComponent } from '../../src/ports/picks'
 import { createTestPgComponent } from '../components'
 
