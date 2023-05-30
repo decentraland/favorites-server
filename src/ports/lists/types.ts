@@ -36,6 +36,7 @@ export type DBList = {
   description: string | null
   user_address: string
   created_at: Date
+  updated_at: Date | null
   permission?: string | null
 }
 
@@ -62,7 +63,8 @@ export type NewList = AddListRequestBody & {
 
 export enum ListSortBy {
   CREATED_AT = 'createdAt',
-  NAME = 'name'
+  NAME = 'name',
+  UPDATED_AT = 'updatedAt'
 }
 
 export enum ListSortDirection {

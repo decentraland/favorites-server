@@ -120,6 +120,7 @@ describe('when transforming DB retrieved lists to lists with count', () => {
           description: 'Super description of list #1',
           user_address: '0x45abb534BD927284F84b03d43f33dF0E5C91C21f',
           created_at: new Date(),
+          updated_at: new Date(),
           lists_count: '3',
           items_count: '5',
           is_item_in_list: true
@@ -130,6 +131,7 @@ describe('when transforming DB retrieved lists to lists with count', () => {
           description: 'Super description of list #2',
           user_address: '0x45abb534BD927284F84b03d43f33dF0E5C91C21f',
           created_at: new Date(),
+          updated_at: new Date(),
           lists_count: '3',
           items_count: '4',
           is_item_in_list: false
@@ -140,6 +142,7 @@ describe('when transforming DB retrieved lists to lists with count', () => {
           description: 'Super description of list #3',
           user_address: '0x45abb534BD927284F84b03d43f33dF0E5C91C21f',
           created_at: new Date(),
+          updated_at: new Date(),
           lists_count: '3',
           items_count: '2'
         }
@@ -170,7 +173,8 @@ describe('when transforming a DB retrieved list to a list', () => {
       name: 'List #1',
       user_address: '0x45abb534BD927284F84b03d43f33dF0E5C91C21f',
       description: 'This is a list',
-      created_at: date
+      created_at: date,
+      updated_at: date
     }
   })
 
@@ -181,6 +185,7 @@ describe('when transforming a DB retrieved list to a list', () => {
       userAddress: dbList.user_address,
       description: dbList.description,
       createdAt: date,
+      updatedAt: date,
       permission: undefined
     })
   })
@@ -197,6 +202,7 @@ describe('when transforming a DB retrieved list with items count to a list with 
       user_address: '0x45abb534BD927284F84b03d43f33dF0E5C91C21f',
       description: 'This is a list',
       created_at: date,
+      updated_at: date,
       items_count: '5'
     }
   })
@@ -208,6 +214,7 @@ describe('when transforming a DB retrieved list with items count to a list with 
       userAddress: dbListWithItemsCount.user_address,
       description: dbListWithItemsCount.description,
       createdAt: date,
+      updatedAt: date,
       permission: undefined,
       itemsCount: 5
     })

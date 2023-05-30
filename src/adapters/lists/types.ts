@@ -9,6 +9,7 @@ export type List = {
   description: string | null
   userAddress: string
   createdAt: Date
+  updatedAt: Date | null
   permission?: Permission | null
 }
 
