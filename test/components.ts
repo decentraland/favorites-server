@@ -70,7 +70,7 @@ async function initComponents(): Promise<TestComponents> {
     logs
   })
   const access = createAccessComponent({ pg, logs, lists })
-  const picks = createPicksComponent({ pg })
+  const picks = createPicksComponent({ pg, items, snapshot, logs })
 
   return {
     config,

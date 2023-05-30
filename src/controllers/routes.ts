@@ -1,6 +1,7 @@
 import { Router } from '@well-known-components/http-server'
 import * as authorizationMiddleware from 'decentraland-crypto-middleware'
 import { ListCreationSchema, ListUpdateSchema } from '../ports/lists'
+import { PickUnpickInBulkSchema } from '../ports/picks'
 import { GlobalContext } from '../types'
 import {
   createPickInListHandler,
@@ -14,7 +15,12 @@ import {
   getListHandler,
   updateListHandler
 } from './handlers/lists-handlers'
-import { getPickStatsHandler, getPicksByItemIdHandler, getPickStatsOfItemHandler } from './handlers/picks-handlers'
+import {
+  getPickStatsHandler,
+  getPicksByItemIdHandler,
+  getPickStatsOfItemHandler,
+  pickAndUnpickInBulkHandler
+} from './handlers/picks-handlers'
 import { pingHandler } from './handlers/ping-handler'
 
 const FIVE_MINUTES = 5 * 60 * 1000
@@ -69,6 +75,16 @@ export function setupRouter({ components: { schemaValidator } }: GlobalContext):
       expiration: FIVE_MINUTES
     }),
     getPicksByItemIdHandler
+  )
+
+  router.post(
+    '/v1/picks/:itemId',
+    authorizationMiddleware.wellKnownComponents({
+      optional: false,
+      expiration: FIVE_MINUTES
+    }),
+    schemaValidator.withSchemaValidatorMiddleware(PickUnpickInBulkSchema),
+    pickAndUnpickInBulkHandler
   )
 
   router.get(

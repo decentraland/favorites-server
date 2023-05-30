@@ -10,6 +10,7 @@ export interface IPicksComponent {
    */
   getPicksStats(itemId: string[], options?: ByUserAddressAndPower): Promise<DBPickStats[]>
   getPicksByItemId(itemId: string, options: GetPicksByItemIdParameters): Promise<DBGetFilteredPicksWithCount[]>
+  pickAndUnpickInBulk(itemId: string, body: PickUnpickInBulkBody, userAddress: string): Promise<void>
 }
 
 export type DBPickStats = {
@@ -41,3 +42,11 @@ export type DBPick = {
 export type DBGetFilteredPicksWithCount = DBPick & {
   picks_count: string
 }
+
+export type PickUnpickInBulkBody = {
+  pickedFor?: string[]
+  unpickedFrom?: string[]
+}
+
+// TODO (repeated from the lists port): is this a circular dependency?
+export * from './schemas'
