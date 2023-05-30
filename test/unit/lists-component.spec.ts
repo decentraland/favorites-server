@@ -723,7 +723,7 @@ describe('when getting a list', () => {
       result = await listsComponent.getList(DEFAULT_LIST_ID, { userAddress })
     })
 
-    it('should us as the updated at the last time this user picked an item for the default list', () => {
+    it('should return as the updated at the last time this user picked an item for the default list', () => {
       expect(dbQueryMock).toHaveBeenCalledWith(
         expect.objectContaining({
           text: expect.stringContaining('MAX(favorites.picks.created_at) as updated_at')
