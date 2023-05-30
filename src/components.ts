@@ -10,6 +10,7 @@ import { createTracerComponent } from '@well-known-components/tracer-component'
 import { metricDeclarations } from './metrics'
 import { createAccessComponent } from './ports/access'
 import { createFetchComponent } from './ports/fetch'
+import { createItemsComponent } from './ports/items'
 import { createListsComponent } from './ports/lists/component'
 import { createPgComponent } from './ports/pg'
 import { createPicksComponent } from './ports/picks'
@@ -67,9 +68,10 @@ export async function initComponents(): Promise<AppComponents> {
   const fetch = await createFetchComponent({ tracer })
   const collectionsSubgraph = await createSubgraphComponent({ logs, config, fetch, metrics }, COLLECTIONS_SUBGRAPH_URL)
   const snapshot = await createSnapshotComponent({ fetch, config })
+  const items = createItemsComponent({ logs, collectionsSubgraph })
   const lists = createListsComponent({
     pg,
-    collectionsSubgraph,
+    items,
     snapshot,
     logs
   })
@@ -89,6 +91,7 @@ export async function initComponents(): Promise<AppComponents> {
     lists,
     snapshot,
     picks,
-    access
+    access,
+    items
   }
 }

@@ -1,8 +1,9 @@
 import { IDatabase, ILoggerComponent } from '@well-known-components/interfaces'
-import { ISubgraphComponent } from '@well-known-components/thegraph-component'
 import { DEFAULT_LIST_USER_ADDRESS } from '../../src/migrations/1678303321034_default-list'
 import { Permission } from '../../src/ports/access'
 import { AccessNotFoundError } from '../../src/ports/access/errors'
+import { IItemsComponent } from '../../src/ports/items'
+import { ItemNotFoundError } from '../../src/ports/items/errors'
 import {
   createListsComponent,
   DBGetListsWithCount,
@@ -14,7 +15,6 @@ import {
 } from '../../src/ports/lists'
 import {
   DuplicatedListError,
-  ItemNotFoundError,
   ListNotFoundError,
   PickAlreadyExistsError,
   PickNotFoundError,
@@ -23,7 +23,7 @@ import {
 import { IPgComponent } from '../../src/ports/pg'
 import { DBGetFilteredPicksWithCount, DBPick } from '../../src/ports/picks'
 import { ISnapshotComponent } from '../../src/ports/snapshot'
-import { createTestSnapshotComponent, createTestPgComponent, createTestSubgraphComponent, createTestLogsComponent } from '../components'
+import { createTestSnapshotComponent, createTestPgComponent, createTestItemsComponent, createTestLogsComponent } from '../components'
 
 let listId: string
 let itemId: string
@@ -32,16 +32,16 @@ let dbQueryMock: jest.Mock
 let dbClientQueryMock: jest.Mock
 let dbClientReleaseMock: jest.Mock
 let getScoreMock: jest.Mock
-let collectionsSubgraphQueryMock: jest.Mock
+let validateItemExistsMock: jest.Mock
 let pg: IPgComponent & IDatabase
 let listsComponent: IListsComponents
-let collectionsSubgraph: ISubgraphComponent
+let items: IItemsComponent
 let snapshot: ISnapshotComponent
 let logs: ILoggerComponent
 
 beforeEach(() => {
   dbQueryMock = jest.fn()
-  collectionsSubgraphQueryMock = jest.fn()
+  validateItemExistsMock = jest.fn()
   getScoreMock = jest.fn()
   dbClientQueryMock = jest.fn()
   dbClientReleaseMock = jest.fn().mockResolvedValue(undefined)
@@ -70,12 +70,12 @@ beforeEach(() => {
     getLogger: jest.fn().mockReturnValue({ error: () => undefined, info: () => undefined })
   })
   snapshot = createTestSnapshotComponent({ getScore: getScoreMock })
-  collectionsSubgraph = createTestSubgraphComponent({
-    query: collectionsSubgraphQueryMock
+  items = createTestItemsComponent({
+    validateItemExists: validateItemExistsMock
   })
   listsComponent = createListsComponent({
     pg,
-    collectionsSubgraph,
+    items,
     logs,
     snapshot
   })
@@ -170,7 +170,7 @@ describe('when creating a new pick', () => {
           }
         ]
       })
-      collectionsSubgraphQueryMock.mockRejectedValueOnce(new Error('anError'))
+      validateItemExistsMock.mockRejectedValueOnce(new QueryFailure('anError'))
     })
 
     it('should throw an error saying that the request failed', () => {
@@ -193,7 +193,7 @@ describe('when creating a new pick', () => {
         ]
       })
       getScoreMock.mockResolvedValueOnce(10)
-      collectionsSubgraphQueryMock.mockResolvedValueOnce({ items: [] })
+      validateItemExistsMock.mockRejectedValueOnce(new ItemNotFoundError(itemId))
     })
 
     it('should throw an item not found error', () => {
@@ -203,7 +203,7 @@ describe('when creating a new pick', () => {
 
   describe('and the item being picked exists and the user is allowed to create a new pick on the given list', () => {
     beforeEach(() => {
-      collectionsSubgraphQueryMock.mockResolvedValueOnce({
+      validateItemExistsMock.mockResolvedValueOnce({
         items: [{ id: itemId }]
       })
       dbQueryMock.mockResolvedValueOnce({

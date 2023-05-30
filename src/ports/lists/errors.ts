@@ -10,12 +10,6 @@ export class PickAlreadyExistsError extends Error {
   }
 }
 
-export class ItemNotFoundError extends Error {
-  constructor(public itemId: string) {
-    super("The item trying to get favorited doesn't exist.")
-  }
-}
-
 export class PickNotFoundError extends Error {
   constructor(public listId: string, public itemId: string) {
     super('The pick does not exist or is not accessible by this user.')

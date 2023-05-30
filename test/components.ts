@@ -13,6 +13,7 @@ import { createTracerComponent } from '@well-known-components/tracer-component'
 import { metricDeclarations } from '../src/metrics'
 import { createAccessComponent, IAccessComponent } from '../src/ports/access'
 import { createFetchComponent } from '../src/ports/fetch'
+import { createItemsComponent, IItemsComponent } from '../src/ports/items'
 import { createListsComponent, IListsComponents } from '../src/ports/lists'
 import { createPgComponent, IPgComponent } from '../src/ports/pg'
 import { createPicksComponent, IPicksComponent } from '../src/ports/picks'
@@ -61,9 +62,10 @@ async function initComponents(): Promise<TestComponents> {
   const collectionsSubgraph = await createSubgraphComponent({ logs, config, fetch, metrics }, 'subgraph-url')
   const snapshot = await createSnapshotComponent({ fetch, config })
   const schemaValidator = await createSchemaValidatorComponent()
+  const items = createItemsComponent({ collectionsSubgraph, logs })
   const lists = createListsComponent({
     pg,
-    collectionsSubgraph,
+    items,
     snapshot,
     logs
   })
@@ -83,7 +85,8 @@ async function initComponents(): Promise<TestComponents> {
     picks,
     collectionsSubgraph,
     localFetch: await createLocalFetchCompoment(config),
-    access
+    access,
+    items
   }
 }
 
@@ -94,14 +97,16 @@ export function createTestLogsComponent({ getLogger = jest.fn() } = { getLogger:
 }
 
 export function createTestPicksComponent(
-  { getPicksStats = jest.fn(), getPicksByItemId = jest.fn() } = {
+  { getPicksStats = jest.fn(), getPicksByItemId = jest.fn(), pickAndUnpickInBulk = jest.fn() } = {
     getPicksStats: jest.fn(),
-    getPicksByItemId: jest.fn()
+    getPicksByItemId: jest.fn(),
+    pickAndUnpickInBulk: jest.fn()
   }
 ): IPicksComponent {
   return {
     getPicksStats,
-    getPicksByItemId
+    getPicksByItemId,
+    pickAndUnpickInBulk
   }
 }
 
@@ -149,6 +154,12 @@ export function createTestAccessComponent(
   return {
     createAccess,
     deleteAccess
+  }
+}
+
+export function createTestItemsComponent({ validateItemExists = jest.fn() }): IItemsComponent {
+  return {
+    validateItemExists
   }
 }
 

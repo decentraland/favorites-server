@@ -16,14 +16,9 @@ import {
 import { DEFAULT_LIST_ID } from '../../src/migrations/1678303321034_default-list'
 import { Permission } from '../../src/ports/access'
 import { AccessNotFoundError, DuplicatedAccessError } from '../../src/ports/access/errors'
+import { ItemNotFoundError } from '../../src/ports/items/errors'
 import { DBGetListsWithCount, DBList, DBListsWithItemsCount, ListSortBy, ListSortDirection } from '../../src/ports/lists'
-import {
-  DuplicatedListError,
-  ItemNotFoundError,
-  ListNotFoundError,
-  PickAlreadyExistsError,
-  PickNotFoundError
-} from '../../src/ports/lists/errors'
+import { DuplicatedListError, ListNotFoundError, PickAlreadyExistsError, PickNotFoundError } from '../../src/ports/lists/errors'
 import { DBGetFilteredPicksWithCount, DBPick } from '../../src/ports/picks'
 import { AppComponents, HTTPResponse, HandlerContextWithPath, StatusCode } from '../../src/types'
 import { createTestListsComponent, createTestAccessComponent } from '../components'
@@ -283,7 +278,7 @@ describe('when creating a pick', () => {
         status: StatusCode.NOT_FOUND,
         body: {
           ok: false,
-          message: "The item trying to get favorited doesn't exist.",
+          message: "The item trying to get saved doesn't exist.",
           data: {
             itemId
           }

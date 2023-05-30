@@ -1,12 +1,12 @@
 import SQL from 'sql-template-strings'
-import { isErrorWithMessage } from '../../logic/errors'
 import { DEFAULT_LIST_USER_ADDRESS } from '../../migrations/1678303321034_default-list'
 import { AppComponents } from '../../types'
 import { Permission } from '../access'
 import { deleteAccessQuery, insertAccessQuery } from '../access/queries'
 import { DBGetFilteredPicksWithCount, DBPick } from '../picks'
+import { insertVPQuery } from '../vp/queries'
 import { GRANTED_TO_ALL } from './constants'
-import { ItemNotFoundError, ListNotFoundError, PickAlreadyExistsError, PickNotFoundError, QueryFailure } from './errors'
+import { ListNotFoundError, PickAlreadyExistsError, PickNotFoundError } from './errors'
 import { getListQuery } from './queries'
 import {
   GetAuthenticatedAndPaginatedParameters,
@@ -23,10 +23,8 @@ import {
 } from './types'
 import { validateDuplicatedListName, validateListExists } from './utils'
 
-export function createListsComponent(
-  components: Pick<AppComponents, 'pg' | 'collectionsSubgraph' | 'snapshot' | 'logs'>
-): IListsComponents {
-  const { pg, collectionsSubgraph, snapshot, logs } = components
+export function createListsComponent(components: Pick<AppComponents, 'pg' | 'snapshot' | 'logs' | 'items'>): IListsComponents {
+  const { pg, items, snapshot, logs } = components
   const logger = logs.getLogger('Lists component')
 
   async function getPicksByListId(listId: string, params: GetAuthenticatedAndPaginatedParameters): Promise<DBGetFilteredPicksWithCount[]> {
@@ -55,37 +53,13 @@ export function createListsComponent(
 
   async function addPickToList(listId: string, itemId: string, userAddress: string): Promise<DBPick> {
     const list = await getList(listId, { userAddress, requiredPermission: Permission.EDIT })
-    const [queryResult, power] = await Promise.allSettled([
-      collectionsSubgraph.query<{ items: { id: string }[] }>(
-        `query items($itemId: String) {
-        items(first: 1, where: { id: $itemId }) {
-          id
-        }
-      }`,
-        { itemId }
-      ),
-      snapshot.getScore(userAddress)
-    ])
 
-    if (queryResult.status === 'rejected') {
-      logger.error('Querying the collections subgraph failed.')
-      throw new QueryFailure(isErrorWithMessage(queryResult.reason) ? queryResult.reason.message : 'Unknown')
-    }
+    await items.validateItemExists(itemId)
 
-    if (queryResult.value.items.length === 0) {
-      throw new ItemNotFoundError(itemId)
-    }
+    // TODO: is there a better way to do this?
+    const [power] = await Promise.allSettled([snapshot.getScore(userAddress)])
 
-    const vpQuery = SQL`INSERT INTO favorites.voting (user_address, power) `
-
-    // If the snapshot query fails, try to set the VP to 0 without overwriting it if it already exists
-    if (power.status === 'rejected') {
-      logger.error(`Querying snapshot failed: ${isErrorWithMessage(power.reason) ? power.reason.message : 'Unknown'}`)
-      vpQuery.append(SQL`VALUES (${userAddress}, ${0}) ON CONFLICT (user_address) DO NOTHING`)
-    } else {
-      logger.info(`The voting power for ${userAddress} was updated to ${power.value}`)
-      vpQuery.append(SQL`VALUES (${userAddress}, ${power.value}) ON CONFLICT (user_address) DO UPDATE SET power = ${power.value}`)
-    }
+    const vpQuery = insertVPQuery(power, userAddress, { logger })
 
     return pg.withTransaction(
       async client => {
