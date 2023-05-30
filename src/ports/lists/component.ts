@@ -72,6 +72,10 @@ export function createListsComponent(
       throw new QueryFailure(isErrorWithMessage(queryResult.reason) ? queryResult.reason.message : 'Unknown')
     }
 
+    if (queryResult.value.items.length === 0) {
+      throw new ItemNotFoundError(itemId)
+    }
+
     const vpQuery = SQL`INSERT INTO favorites.voting (user_address, power) `
 
     // If the snapshot query fails, try to set the VP to 0 without overwriting it if it already exists
@@ -81,10 +85,6 @@ export function createListsComponent(
     } else {
       logger.info(`The voting power for ${userAddress} was updated to ${power.value}`)
       vpQuery.append(SQL`VALUES (${userAddress}, ${power.value}) ON CONFLICT (user_address) DO UPDATE SET power = ${power.value}`)
-    }
-
-    if (queryResult.value.items.length === 0) {
-      throw new ItemNotFoundError(itemId)
     }
 
     return pg.withTransaction(
