@@ -1,5 +1,5 @@
 import { IDatabase, ILoggerComponent } from '@well-known-components/interfaces'
-import { DEFAULT_LIST_USER_ADDRESS } from '../../src/migrations/1678303321034_default-list'
+import { DEFAULT_LIST_ID, DEFAULT_LIST_USER_ADDRESS } from '../../src/migrations/1678303321034_default-list'
 import { Permission } from '../../src/ports/access'
 import { AccessNotFoundError } from '../../src/ports/access/errors'
 import { IItemsComponent } from '../../src/ports/items'
@@ -475,8 +475,12 @@ describe('when getting lists', () => {
       })
     })
 
-    describe('and the sorting parameters are set', () => {
-      describe('and the sort by is "date"', () => {
+    describe.each([
+      [ListSortBy.CREATED_AT, 'created_at'],
+      [ListSortBy.NAME, 'name'],
+      [ListSortBy.UPDATED_AT, 'updated_at']
+    ])('and the sorting parameters are set', (sortBy, expectedOrderByColumn) => {
+      describe('and the sort by is "%s"', () => {
         describe.each([ListSortDirection.ASC, ListSortDirection.DESC])('and the sort direction is "%s"', sortDirection => {
           it('should have made the query to get the lists matching those conditions', async () => {
             await expect(
@@ -484,7 +488,7 @@ describe('when getting lists', () => {
                 offset: 0,
                 limit: 10,
                 userAddress: '0xuseraddress',
-                sortBy: ListSortBy.CREATED_AT,
+                sortBy,
                 sortDirection
               })
             ).resolves.toEqual(dbGetLists)
@@ -492,38 +496,7 @@ describe('when getting lists', () => {
             expect(dbQueryMock).toBeCalledWith(
               expect.objectContaining({
                 strings: expect.arrayContaining([
-                  expect.stringContaining(`ORDER BY is_default_list DESC, l.created_at ${sortDirection.toUpperCase()}`)
-                ])
-              })
-            )
-
-            expect(dbQueryMock).toBeCalledWith(
-              expect.objectContaining({
-                strings: expect.arrayContaining([expect.stringContaining('LIMIT'), expect.stringContaining('OFFSET')]),
-                values: expect.arrayContaining([10, 0])
-              })
-            )
-          })
-        })
-      })
-
-      describe('and the sort by is "name"', () => {
-        describe.each([ListSortDirection.ASC, ListSortDirection.DESC])('and the sort direction is "%s"', sortDirection => {
-          it('should have made the query to get the lists matching those conditions', async () => {
-            await expect(
-              listsComponent.getLists({
-                offset: 0,
-                limit: 10,
-                userAddress: '0xuseraddress',
-                sortBy: ListSortBy.NAME,
-                sortDirection
-              })
-            ).resolves.toEqual(dbGetLists)
-
-            expect(dbQueryMock).toBeCalledWith(
-              expect.objectContaining({
-                strings: expect.arrayContaining([
-                  expect.stringContaining(`ORDER BY is_default_list DESC, l.name ${sortDirection.toUpperCase()}`)
+                  expect.stringContaining(`ORDER BY is_default_list DESC, l.${expectedOrderByColumn} ${sortDirection.toUpperCase()}`)
                 ])
               })
             )
@@ -596,7 +569,8 @@ describe('when creating a new list', () => {
         name,
         user_address: userAddress,
         description: null,
-        created_at: new Date()
+        created_at: new Date(),
+        updated_at: new Date()
       }
 
       // Create List Query
@@ -733,6 +707,37 @@ describe('when getting a list', () => {
     })
   })
 
+  describe('and the default list is the one retrieved', () => {
+    let dbList: DBList
+    let result: DBList
+
+    beforeEach(async () => {
+      dbList = {
+        id: DEFAULT_LIST_ID,
+        name: 'aListName',
+        description: null,
+        user_address: 'aUserAddress',
+        created_at: new Date(),
+        updated_at: new Date()
+      }
+
+      dbQueryMock.mockResolvedValueOnce({ rowCount: 1, rows: [dbList] })
+      result = await listsComponent.getList(DEFAULT_LIST_ID, { userAddress })
+    })
+
+    it('should return as the updated at the last time this user picked an item for the default list', () => {
+      expect(dbQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('MAX(favorites.picks.created_at) as updated_at')
+        })
+      )
+    })
+
+    it('should resolve with the list', () => {
+      return expect(result).toEqual(dbList)
+    })
+  })
+
   describe('and neither the default list nor the permissions should be considered', () => {
     let dbList: DBList
     let result: DBList
@@ -743,7 +748,8 @@ describe('when getting a list', () => {
         name: 'aListName',
         description: null,
         user_address: 'aUserAddress',
-        created_at: new Date()
+        created_at: new Date(),
+        updated_at: new Date()
       }
 
       dbQueryMock.mockResolvedValueOnce({ rowCount: 1, rows: [dbList] })
@@ -754,7 +760,7 @@ describe('when getting a list', () => {
       expect(dbQueryMock).toHaveBeenCalledWith(
         expect.objectContaining({
           text: expect.stringContaining(
-            'SELECT favorites.lists.*, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS count_items'
+            'SELECT favorites.lists.id, favorites.lists.name, favorites.lists.description, favorites.lists.user_address, favorites.lists.created_at, favorites.lists.updated_at, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS count_items'
           )
         })
       )
@@ -815,7 +821,8 @@ describe('when getting a list', () => {
         name: 'aListName',
         description: null,
         user_address: 'aUserAddress',
-        created_at: new Date()
+        created_at: new Date(),
+        updated_at: new Date()
       }
 
       dbQueryMock.mockResolvedValueOnce({ rowCount: 1, rows: [dbList] })
@@ -826,7 +833,7 @@ describe('when getting a list', () => {
       expect(dbQueryMock).toHaveBeenCalledWith(
         expect.objectContaining({
           text: expect.stringContaining(
-            'SELECT favorites.lists.*, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS count_items'
+            'SELECT favorites.lists.id, favorites.lists.name, favorites.lists.description, favorites.lists.user_address, favorites.lists.created_at, favorites.lists.updated_at, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS count_items'
           )
         })
       )
@@ -889,7 +896,8 @@ describe('when getting a list', () => {
         name: 'aListName',
         description: null,
         user_address: 'aUserAddress',
-        created_at: new Date()
+        created_at: new Date(),
+        updated_at: new Date()
       }
     })
 
@@ -912,7 +920,7 @@ describe('when getting a list', () => {
         expect(dbQueryMock).toHaveBeenCalledWith(
           expect.objectContaining({
             text: expect.stringContaining(
-              'SELECT favorites.lists.*, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS count_items'
+              'SELECT favorites.lists.id, favorites.lists.name, favorites.lists.description, favorites.lists.user_address, favorites.lists.created_at, favorites.lists.updated_at, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS count_items'
             )
           })
         )
@@ -984,7 +992,7 @@ describe('when getting a list', () => {
         expect(dbQueryMock).toHaveBeenCalledWith(
           expect.objectContaining({
             text: expect.stringContaining(
-              'SELECT favorites.lists.*, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS count_items'
+              'SELECT favorites.lists.id, favorites.lists.name, favorites.lists.description, favorites.lists.user_address, favorites.lists.created_at, favorites.lists.updated_at, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS count_items'
             )
           })
         )
@@ -1145,7 +1153,8 @@ describe('when updating a list', () => {
           name: 'aListName',
           description: null,
           user_address: userAddress,
-          created_at: new Date()
+          created_at: new Date(),
+          updated_at: new Date()
         }
 
         // Update List Mock Query
@@ -1302,7 +1311,8 @@ describe('when updating a list', () => {
           name: 'aListName',
           description: null,
           user_address: userAddress,
-          created_at: new Date()
+          created_at: new Date(),
+          updated_at: new Date()
         }
 
         // Update List Mock Query
@@ -1436,7 +1446,8 @@ describe('when updating a list', () => {
         name: 'aListName',
         description: null,
         user_address: userAddress,
-        created_at: new Date()
+        created_at: new Date(),
+        updated_at: new Date()
       }
 
       // Update List Mock Query
@@ -1456,7 +1467,7 @@ describe('when updating a list', () => {
         expect.objectContaining({
           strings: expect.arrayContaining([
             expect.stringContaining(
-              'SELECT favorites.lists.*, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS count_items'
+              'SELECT favorites.lists.id, favorites.lists.name, favorites.lists.description, favorites.lists.user_address, favorites.lists.created_at, favorites.lists.updated_at, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS count_items'
             ),
             expect.stringContaining('FROM favorites.lists'),
             expect.stringContaining(

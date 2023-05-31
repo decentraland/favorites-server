@@ -45,6 +45,7 @@ export function fromDBListToList(dbList: DBList): List {
     description: dbList.description,
     userAddress: dbList.user_address,
     createdAt: dbList.created_at,
+    updatedAt: dbList.updated_at,
     permission: dbList.permission as Permission
   }
 }
