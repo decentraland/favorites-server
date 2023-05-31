@@ -70,7 +70,7 @@ async function initComponents(): Promise<TestComponents> {
     logs
   })
   const access = createAccessComponent({ pg, logs, lists })
-  const picks = createPicksComponent({ pg, items, snapshot, logs })
+  const picks = createPicksComponent({ pg, items, snapshot, logs, lists })
 
   return {
     config,
@@ -125,7 +125,8 @@ export function createTestListsComponent(
     addList = jest.fn(),
     deleteList = jest.fn(),
     getList = jest.fn(),
-    updateList = jest.fn()
+    updateList = jest.fn(),
+    checkNonEditableLists = jest.fn()
   } = {
     getPicksByListId: jest.fn(),
     addPickToList: jest.fn(),
@@ -133,7 +134,8 @@ export function createTestListsComponent(
     getLists: jest.fn(),
     addList: jest.fn(),
     deleteList: jest.fn(),
-    updateList: jest.fn()
+    updateList: jest.fn(),
+    getList: jest.fn()
   }
 ): IListsComponents {
   return {
@@ -144,7 +146,8 @@ export function createTestListsComponent(
     addList,
     deleteList,
     getList,
-    updateList
+    updateList,
+    checkNonEditableLists
   }
 }
 

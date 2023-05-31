@@ -1,11 +1,25 @@
 import { IDatabase, ILoggerComponent } from '@well-known-components/interfaces'
 import { IItemsComponent } from '../../src/ports/items'
 import { ItemNotFoundError } from '../../src/ports/items/errors'
-import { QueryFailure } from '../../src/ports/lists/errors'
+import { IListsComponents } from '../../src/ports/lists'
+import { ListsNotFoundError } from '../../src/ports/lists/errors'
 import { IPgComponent } from '../../src/ports/pg'
-import { createPicksComponent, DBGetFilteredPicksWithCount, DBPickStats, IPicksComponent } from '../../src/ports/picks'
+import {
+  createPicksComponent,
+  DBGetFilteredPicksWithCount,
+  DBPickStats,
+  IPicksComponent,
+  PickUnpickInBulkBody
+} from '../../src/ports/picks'
 import { ISnapshotComponent } from '../../src/ports/snapshot'
-import { createTestItemsComponent, createTestLogsComponent, createTestPgComponent, createTestSnapshotComponent } from '../components'
+import { ScoreError } from '../../src/ports/snapshot/errors'
+import {
+  createTestItemsComponent,
+  createTestListsComponent,
+  createTestLogsComponent,
+  createTestPgComponent,
+  createTestSnapshotComponent
+} from '../components'
 
 let options: {
   userAddress?: string
@@ -18,8 +32,10 @@ let dbClientQueryMock: jest.Mock
 let dbClientReleaseMock: jest.Mock
 let getScoreMock: jest.Mock
 let validateItemExistsMock: jest.Mock
+let checkNonEditableListsMock: jest.Mock
 let pg: IPgComponent & IDatabase
 let items: IItemsComponent
+let lists: IListsComponents
 let snapshot: ISnapshotComponent
 let logs: ILoggerComponent
 let picksComponent: IPicksComponent
@@ -27,6 +43,7 @@ let picksComponent: IPicksComponent
 beforeEach(() => {
   dbQueryMock = jest.fn()
   validateItemExistsMock = jest.fn()
+  checkNonEditableListsMock = jest.fn()
   getScoreMock = jest.fn()
   dbClientQueryMock = jest.fn()
   dbClientReleaseMock = jest.fn().mockResolvedValue(undefined)
@@ -47,7 +64,7 @@ beforeEach(() => {
         })
         return results
       } catch (error) {
-        await onError(error)
+        if (onError) await onError(error)
         throw error
       }
     })
@@ -65,7 +82,10 @@ beforeEach(() => {
   items = createTestItemsComponent({
     validateItemExists: validateItemExistsMock
   })
-  picksComponent = createPicksComponent({ pg, items, snapshot, logs })
+  lists = createTestListsComponent({
+    checkNonEditableLists: checkNonEditableListsMock
+  })
+  picksComponent = createPicksComponent({ pg, items, snapshot, lists, logs })
 })
 
 describe('when getting the pick stats of an item', () => {
@@ -295,15 +315,7 @@ describe('when getting picks by item id', () => {
 })
 
 describe('when picking or unpicking an item in bulk', () => {
-  describe('and the collections subgraph query fails', () => {
-    beforeEach(() => {
-      validateItemExistsMock.mockRejectedValueOnce(new QueryFailure('anError'))
-    })
-
-    it('should throw an error saying that the request failed', () => {
-      return expect(picksComponent.pickAndUnpickInBulk(itemId, {}, userAddress)).rejects.toEqual(new QueryFailure('anError'))
-    })
-  })
+  let body: PickUnpickInBulkBody
 
   describe("and the item doesn't exist", () => {
     beforeEach(() => {
@@ -312,6 +324,175 @@ describe('when picking or unpicking an item in bulk', () => {
 
     it('should throw an item not found error', () => {
       return expect(picksComponent.pickAndUnpickInBulk(itemId, {}, userAddress)).rejects.toEqual(new ItemNotFoundError(itemId))
+    })
+  })
+
+  describe('and there are non-editable lists', () => {
+    beforeEach(() => {
+      validateItemExistsMock.mockResolvedValueOnce(undefined)
+      checkNonEditableListsMock.mockRejectedValueOnce(new ListsNotFoundError(['list-id-1', 'list-id-2']))
+    })
+
+    it('should throw a lists not found error', () => {
+      return expect(picksComponent.pickAndUnpickInBulk(itemId, {}, userAddress)).rejects.toEqual(
+        new ListsNotFoundError(['list-id-1', 'list-id-2'])
+      )
+    })
+  })
+
+  describe('when the pick for lists query fails', () => {
+    const error = new Error('Something went wrong while inserting the new picks in the database')
+    beforeEach(() => {
+      body = {
+        pickedFor: ['list-id-1', 'list-id-2']
+      }
+
+      validateItemExistsMock.mockResolvedValueOnce(undefined)
+      checkNonEditableListsMock.mockResolvedValueOnce(undefined)
+      dbClientQueryMock.mockRejectedValueOnce(error)
+    })
+
+    it('should throw the error', () => {
+      return expect(picksComponent.pickAndUnpickInBulk(itemId, body, userAddress)).rejects.toEqual(error)
+    })
+  })
+
+  describe('when the unpick from lists query fails', () => {
+    const error = new Error('Something went wrong while deleting picks in the database')
+    beforeEach(() => {
+      body = {
+        unpickedFrom: ['list-id-1', 'list-id-2']
+      }
+
+      validateItemExistsMock.mockResolvedValueOnce(undefined)
+      checkNonEditableListsMock.mockResolvedValueOnce(undefined)
+      dbClientQueryMock.mockRejectedValueOnce(error)
+    })
+
+    it('should throw the error', () => {
+      return expect(picksComponent.pickAndUnpickInBulk(itemId, body, userAddress)).rejects.toEqual(error)
+    })
+  })
+
+  describe('when the insert VP query fails', () => {
+    const error = new Error('Something went wrong while inserting the VP in the database')
+    beforeEach(() => {
+      body = {
+        pickedFor: ['list-id-1', 'list-id-2']
+      }
+
+      validateItemExistsMock.mockResolvedValueOnce(undefined)
+      checkNonEditableListsMock.mockResolvedValueOnce(undefined)
+      // Insert new picks
+      dbClientQueryMock.mockResolvedValueOnce(undefined)
+      // Insert VP
+      dbClientQueryMock.mockRejectedValueOnce(error)
+    })
+
+    it('should throw the error', () => {
+      return expect(picksComponent.pickAndUnpickInBulk(itemId, body, userAddress)).rejects.toEqual(error)
+    })
+  })
+
+  describe('when there are some lists that have been picked', () => {
+    beforeEach(() => {
+      body = {
+        pickedFor: ['list-id-1', 'list-id-2']
+      }
+
+      validateItemExistsMock.mockResolvedValueOnce(undefined)
+      checkNonEditableListsMock.mockResolvedValueOnce(undefined)
+    })
+
+    describe('and the query to get the VP fails', () => {
+      beforeEach(async () => {
+        getScoreMock.mockRejectedValueOnce(new ScoreError('Something went wrong while getting the VP', userAddress))
+        // Insert new picks
+        dbClientQueryMock.mockResolvedValueOnce(undefined)
+        // Insert 0 as the VP
+        dbClientQueryMock.mockResolvedValueOnce(undefined)
+
+        await picksComponent.pickAndUnpickInBulk(itemId, body, userAddress)
+      })
+
+      it('should insert the new picks in the selected lists', () => {
+        expect(dbClientQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining(
+              'INSERT INTO favorites.picks (item_id, user_address, list_id) SELECT $1, $2, id AS list_id FROM favorites.lists WHERE id IN'
+            ),
+            values: expect.arrayContaining([itemId, userAddress, body.pickedFor?.join(', ')])
+          })
+        )
+      })
+
+      it('should insert 0 as the new VP', () => {
+        expect(dbClientQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining('VALUES ($1, $2) ON CONFLICT (user_address) DO NOTHING'),
+            values: expect.arrayContaining([userAddress, 0])
+          })
+        )
+      })
+    })
+
+    describe('and the query to get the VP succeeds', () => {
+      let power: number
+      beforeEach(async () => {
+        power = 10
+        getScoreMock.mockResolvedValueOnce(power)
+        // Insert new picks
+        dbClientQueryMock.mockResolvedValueOnce(undefined)
+        // Insert 0 as the VP
+        dbClientQueryMock.mockResolvedValueOnce(undefined)
+
+        await picksComponent.pickAndUnpickInBulk(itemId, body, userAddress)
+      })
+
+      it('should insert the new picks in the selected lists', () => {
+        expect(dbClientQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining(
+              'INSERT INTO favorites.picks (item_id, user_address, list_id) SELECT $1, $2, id AS list_id FROM favorites.lists WHERE id IN'
+            ),
+            values: expect.arrayContaining([itemId, userAddress, body.pickedFor?.join(', ')])
+          })
+        )
+      })
+
+      it('should insert the new VP got from snapshot', () => {
+        expect(dbClientQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining('VALUES ($1, $2) ON CONFLICT (user_address) DO UPDATE SET power = $3'),
+            values: expect.arrayContaining([userAddress, power, power])
+          })
+        )
+      })
+    })
+  })
+
+  describe('when there are some lists that have been unpicked', () => {
+    beforeEach(async () => {
+      body = {
+        unpickedFrom: ['list-id-1', 'list-id-2']
+      }
+
+      validateItemExistsMock.mockResolvedValueOnce(undefined)
+      checkNonEditableListsMock.mockResolvedValueOnce(undefined)
+
+      // Delete picks
+      dbClientQueryMock.mockResolvedValueOnce(undefined)
+
+      await picksComponent.pickAndUnpickInBulk(itemId, body, userAddress)
+    })
+
+    it('should delete new picks from the selected lists', () => {
+      expect(dbClientQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('DELETE FROM favorites.picks WHERE item_id = $1 AND user_address = $2 AND list_id IN'),
+          values: expect.arrayContaining([itemId, userAddress, body.unpickedFrom?.join(', ')])
+        })
+      )
     })
   })
 })

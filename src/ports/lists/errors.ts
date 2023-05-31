@@ -4,6 +4,12 @@ export class ListNotFoundError extends Error {
   }
 }
 
+export class ListsNotFoundError extends Error {
+  constructor(public listIds: string[]) {
+    super('Some lists were not found.')
+  }
+}
+
 export class PickAlreadyExistsError extends Error {
   constructor(public listId: string, public itemId: string) {
     super('The item was already favorited.')

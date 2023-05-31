@@ -1,12 +1,14 @@
 import SQL from 'sql-template-strings'
+import { isErrorWithMessage } from '../../logic/errors'
 import { DEFAULT_LIST_USER_ADDRESS } from '../../migrations/1678303321034_default-list'
 import { AppComponents } from '../../types'
 import { Permission } from '../access'
 import { deleteAccessQuery, insertAccessQuery } from '../access/queries'
 import { DBGetFilteredPicksWithCount, DBPick } from '../picks'
+import { ScoreError } from '../snapshot/errors'
 import { insertVPQuery } from '../vp/queries'
 import { GRANTED_TO_ALL } from './constants'
-import { ListNotFoundError, PickAlreadyExistsError, PickNotFoundError } from './errors'
+import { ListNotFoundError, ListsNotFoundError, PickAlreadyExistsError, PickNotFoundError } from './errors'
 import { getListQuery } from './queries'
 import {
   GetAuthenticatedAndPaginatedParameters,
@@ -53,13 +55,17 @@ export function createListsComponent(components: Pick<AppComponents, 'pg' | 'sna
 
   async function addPickToList(listId: string, itemId: string, userAddress: string): Promise<DBPick> {
     const list = await getList(listId, { userAddress, requiredPermission: Permission.EDIT })
+    let power: number | undefined
 
-    await items.validateItemExists(itemId)
+    try {
+      ;[power] = await Promise.all([snapshot.getScore(userAddress), items.validateItemExists(itemId)])
+      logger.info(`The voting power for ${userAddress} will be updated to ${power}`)
+    } catch (error) {
+      if (error instanceof ScoreError) logger.error(`Querying snapshot failed: ${isErrorWithMessage(error) ? error.message : 'Unknown'}`)
+      else throw error
+    }
 
-    // TODO: is there a better way to do this?
-    const [power] = await Promise.allSettled([snapshot.getScore(userAddress)])
-
-    const vpQuery = insertVPQuery(power, userAddress, { logger })
+    const vpQuery = insertVPQuery(power, userAddress)
 
     return pg.withTransaction(
       async client => {
@@ -208,5 +214,18 @@ export function createListsComponent(components: Pick<AppComponents, 'pg' | 'sna
     validateListExists(id, result)
   }
 
-  return { getPicksByListId, addPickToList, deletePickInList, getLists, addList, deleteList, getList, updateList }
+  async function checkNonEditableLists(listIds: string[], userAddress: string): Promise<void> {
+    const { rows, rowCount } = await pg.query<Pick<DBList, 'id'>>(
+      SQL`SELECT favorites.lists.id FROM favorites.lists
+      LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id
+      WHERE favorites.lists.id IN (${listIds.join(', ')}) AND favorites.lists.user_address != ${userAddress}
+      AND (favorites.acl.permission != ${Permission.EDIT} OR favorites.acl.grantee NOT IN (${userAddress}, ${GRANTED_TO_ALL}))`
+    )
+
+    if (rowCount > 0) {
+      throw new ListsNotFoundError(rows.map(({ id }) => id))
+    }
+  }
+
+  return { getPicksByListId, addPickToList, deletePickInList, getLists, addList, deleteList, getList, updateList, checkNonEditableLists }
 }

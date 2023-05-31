@@ -1,14 +1,12 @@
 import SQL, { SQLStatement } from 'sql-template-strings'
+import { isErrorWithMessage } from '../../logic/errors'
 import { AppComponents } from '../../types'
-import { Permission } from '../access'
-import { GRANTED_TO_ALL } from '../lists/constants'
 import { insertVPQuery } from '../vp/queries'
 import { DEFAULT_VOTING_POWER } from './constants'
-import { ForbiddenLists } from './errors'
 import { DBGetFilteredPicksWithCount, DBPickStats, GetPicksByItemIdParameters, IPicksComponent, PickUnpickInBulkBody } from './types'
 
-export function createPicksComponent(components: Pick<AppComponents, 'pg' | 'items' | 'snapshot' | 'logs'>): IPicksComponent {
-  const { pg, items, snapshot, logs } = components
+export function createPicksComponent(components: Pick<AppComponents, 'pg' | 'items' | 'lists' | 'snapshot' | 'logs'>): IPicksComponent {
+  const { pg, items, snapshot, logs, lists } = components
   const logger = logs.getLogger('Picks component')
 
   /**
@@ -77,30 +75,26 @@ export function createPicksComponent(components: Pick<AppComponents, 'pg' | 'ite
     const { pickedFor = [], unpickedFrom = [] } = body
     let vpQuery: SQLStatement | undefined
 
-    await items.validateItemExists(itemId)
-
-    const allLists = [...pickedFor, ...unpickedFrom].join(', ')
-    const { rows } = await pg.query<{ total: number }>(
-      SQL`SELECT COUNT(1) total FROM favorites.lists
-      LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id
-      WHERE favorites.lists.id IN (${allLists}) AND favorites.lists.user_address != ${userAddress}
-      AND (favorites.acl.permission != ${Permission.EDIT} OR favorites.acl.grantee NOT IN (${userAddress}, ${GRANTED_TO_ALL}))`
-    )
-
-    if (rows[0]?.total > 0) {
-      throw new ForbiddenLists()
-    }
+    await Promise.all([items.validateItemExists(itemId), lists.checkNonEditableLists([...pickedFor, ...unpickedFrom], userAddress)])
 
     if (pickedFor && pickedFor.length > 0) {
-      const [power] = await Promise.allSettled([snapshot.getScore(userAddress)])
-      vpQuery = insertVPQuery(power, userAddress, { logger })
+      let power: number | undefined
+
+      try {
+        power = await snapshot.getScore(userAddress)
+        logger.info(`The voting power for ${userAddress} will be updated to ${power}`)
+      } catch (error) {
+        logger.error(`Querying snapshot failed: ${isErrorWithMessage(error) ? error.message : 'Unknown'}`)
+      }
+
+      vpQuery = insertVPQuery(power, userAddress)
     }
 
     await pg.withTransaction(async client => {
       const pickedForLists = pickedFor.join(', ')
       const pickForListsQuery =
         pickedForLists &&
-        SQL`INSERT INTO favorites.picks (item_id, user_address, list_id) SELECT ${itemId}, ${userAddress}, list_id FROM favorites.lists WHERE list_id IN (${pickedForLists})`
+        SQL`INSERT INTO favorites.picks (item_id, user_address, list_id) SELECT ${itemId}, ${userAddress}, id AS list_id FROM favorites.lists WHERE id IN (${pickedForLists})`
 
       const unpickedFromLists = unpickedFrom.join(', ')
       const unpickFromListsQuery =

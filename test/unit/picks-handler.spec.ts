@@ -1,7 +1,14 @@
 import * as authorizationMiddleware from 'decentraland-crypto-middleware'
 import { fromDBPickStatsToPickStats, TPick } from '../../src/adapters/picks'
-import { getPicksByItemIdHandler, getPickStatsHandler, getPickStatsOfItemHandler } from '../../src/controllers/handlers/picks-handlers'
-import { DBGetFilteredPicksWithCount, DBPickStats } from '../../src/ports/picks'
+import {
+  getPicksByItemIdHandler,
+  getPickStatsHandler,
+  getPickStatsOfItemHandler,
+  pickAndUnpickInBulkHandler
+} from '../../src/controllers/handlers/picks-handlers'
+import { ItemNotFoundError } from '../../src/ports/items/errors'
+import { ListsNotFoundError } from '../../src/ports/lists/errors'
+import { DBGetFilteredPicksWithCount, DBPickStats, PickUnpickInBulkBody } from '../../src/ports/picks'
 import { AppComponents, HandlerContextWithPath, StatusCode } from '../../src/types'
 import { createTestPicksComponent } from '../components'
 
@@ -22,9 +29,7 @@ beforeEach(() => {
     item_id: itemId,
     count: '1000'
   }
-})
 
-beforeEach(() => {
   getPicksStatsMock = jest.fn()
   components = {
     picks: createTestPicksComponent({ getPicksStats: getPicksStatsMock })
@@ -285,8 +290,8 @@ describe('when getting the picks for an item', () => {
         getPicksByItemId: getPicksByItemIdMock
       })
     }
-    request = {} as HandlerContextWithPath<'lists', '/v1/lists/:id/picks'>['request']
-    url = new URL(`http://localhost/v1/lists/${itemId}/picks`)
+    request = {} as HandlerContextWithPath<'lists', '/v1/picks/:itemId'>['request']
+    url = new URL(`http://localhost/v1/picks/${itemId}`)
     params = { itemId }
     userAddress = '0x687abb534BD927284F84b03d43f33dF0E5C91D21'
     anotherUserAddress = '0x45abb534BD927284F84b03d43f33dF0E5C91C21f'
@@ -455,6 +460,146 @@ describe('when getting the picks for an item', () => {
             }
           })
         })
+      })
+    })
+  })
+})
+
+describe('when picking or unpicking an item for/from multiple lists', () => {
+  let pickAndUnpickInBulkMock: jest.Mock
+  let request: HandlerContextWithPath<'picks', '/v1/picks/:itemId'>['request']
+  let params: HandlerContextWithPath<'picks', '/v1/picks/:itemId'>['params']
+  let jsonMock: jest.Mock
+
+  beforeEach(() => {
+    pickAndUnpickInBulkMock = jest.fn()
+    jsonMock = jest.fn()
+    components = {
+      picks: createTestPicksComponent({
+        pickAndUnpickInBulk: pickAndUnpickInBulkMock
+      })
+    }
+    request = { json: jsonMock } as unknown as HandlerContextWithPath<'lists', '/v1/picks/:itemId'>['request']
+    params = { itemId }
+  })
+
+  describe('and the request is not authenticated', () => {
+    beforeEach(() => {
+      verification = undefined
+    })
+
+    it('should return an unauthorized response', () => {
+      return expect(
+        pickAndUnpickInBulkHandler({
+          components,
+          verification,
+          request,
+          params
+        })
+      ).resolves.toEqual({
+        status: StatusCode.UNAUTHORIZED,
+        body: {
+          ok: false,
+          message: 'Unauthorized',
+          data: undefined
+        }
+      })
+    })
+  })
+
+  describe('and the user is trying to pick and unpick to and from a list at the same time', () => {
+    beforeEach(() => {
+      jsonMock.mockResolvedValueOnce({
+        pickedFor: ['list-id', 'repeated-list-id'],
+        unpickedFrom: ['repeated-list-id']
+      } as PickUnpickInBulkBody)
+    })
+
+    it('should return a bad request response', () => {
+      return expect(
+        pickAndUnpickInBulkHandler({
+          components,
+          verification,
+          request,
+          params
+        })
+      ).resolves.toEqual({
+        status: StatusCode.BAD_REQUEST,
+        body: {
+          ok: false,
+          message: 'The item cannot be be picked and unpicked from a list at the same time.',
+          data: undefined
+        }
+      })
+    })
+  })
+
+  describe('and the process fails with a lists not found error', () => {
+    const pickedFor = ['list-id', 'another-list-id']
+    const unpickedFrom = ['a-different-list-id']
+    beforeEach(() => {
+      jsonMock.mockResolvedValueOnce({ pickedFor, unpickedFrom })
+      pickAndUnpickInBulkMock.mockRejectedValueOnce(new ListsNotFoundError([...pickedFor, ...unpickedFrom]))
+    })
+
+    it('should return a response with a message saying that there are some lists inaccessible to the user and the 403 status code', () => {
+      return expect(pickAndUnpickInBulkHandler({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.NOT_FOUND,
+        body: {
+          ok: false,
+          message: 'Some lists were not found.',
+          data: { listIds: [...pickedFor, ...unpickedFrom] }
+        }
+      })
+    })
+  })
+
+  describe('and the process fails with a item not found error', () => {
+    beforeEach(() => {
+      jsonMock.mockResolvedValueOnce({})
+      pickAndUnpickInBulkMock.mockRejectedValueOnce(new ItemNotFoundError(itemId))
+    })
+
+    it('should return a response with a message saying that the item does not exist and the 404 status code', () => {
+      return expect(pickAndUnpickInBulkHandler({ components, verification, request, params })).resolves.toEqual({
+        status: StatusCode.NOT_FOUND,
+        body: {
+          ok: false,
+          message: "The item trying to get saved doesn't exist.",
+          data: {
+            itemId
+          }
+        }
+      })
+    })
+  })
+
+  describe('and the process fails with an unknown error', () => {
+    const error = new Error('anError')
+
+    beforeEach(() => {
+      jsonMock.mockResolvedValueOnce({})
+      pickAndUnpickInBulkMock.mockRejectedValueOnce(error)
+    })
+
+    it('should return a response with a message saying that the item does not exist and the 404 status code', () => {
+      return expect(pickAndUnpickInBulkHandler({ components, verification, request, params })).rejects.toEqual(error)
+    })
+  })
+
+  describe('and the process is successful', () => {
+    beforeEach(() => {
+      jsonMock.mockResolvedValueOnce({})
+      pickAndUnpickInBulkMock.mockResolvedValueOnce([])
+    })
+
+    it('should return an updated response', () => {
+      return expect(pickAndUnpickInBulkHandler({ params, components, request, verification })).resolves.toEqual({
+        status: StatusCode.UPDATED,
+        body: {
+          ok: true,
+          data: undefined
+        }
       })
     })
   })

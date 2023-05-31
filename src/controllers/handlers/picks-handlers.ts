@@ -2,6 +2,8 @@ import { fromDBGetPickByItemIdToPickUserAddressesWithCount, fromDBPickStatsToPic
 import { isEthereumAddressValid } from '../../logic/ethereum/validations'
 import { getNumberParameter, getPaginationParams } from '../../logic/http'
 import { InvalidParameterError } from '../../logic/http/errors'
+import { ItemNotFoundError } from '../../ports/items/errors'
+import { ListsNotFoundError } from '../../ports/lists/errors'
 import { PickStats, PickUnpickInBulkBody } from '../../ports/picks'
 import { HandlerContextWithPath, HTTPResponse, StatusCode } from '../../types'
 
@@ -188,8 +190,7 @@ export async function pickAndUnpickInBulkHandler(
       }
     }
   }
-  // TODO: remove this eslint-disable
-  // eslint-disable-next-line no-useless-catch
+
   try {
     await picks.pickAndUnpickInBulk(params.itemId, body, userAddress)
     return {
@@ -200,54 +201,29 @@ export async function pickAndUnpickInBulkHandler(
       }
     }
   } catch (error) {
-    // TODO: what we wanna do with the wk errors?
-    // if (error instanceof ListNotFoundError) {
-    //   return {
-    //     status: StatusCode.NOT_FOUND,
-    //     body: {
-    //       ok: false,
-    //       message: error.message,
-    //       data: {
-    //         listId: error.listId
-    //       }
-    //     }
-    //   }
-    // } else if (error instanceof PickAlreadyExistsError) {
-    //   return {
-    //     status: StatusCode.UNPROCESSABLE_CONTENT,
-    //     body: {
-    //       ok: false,
-    //       message: error.message,
-    //       data: {
-    //         listId: error.listId,
-    //         itemId: error.itemId
-    //       }
-    //     }
-    //   }
-    // } else if (error instanceof ItemNotFoundError) {
-    //   return {
-    //     status: StatusCode.NOT_FOUND,
-    //     body: {
-    //       ok: false,
-    //       message: error.message,
-    //       data: {
-    //         itemId: error.itemId
-    //       }
-    //     }
-    //   }
-    // } else if (error instanceof PickNotFoundError) {
-    //   return {
-    //     status: StatusCode.NOT_FOUND,
-    //     body: {
-    //       ok: false,
-    //       message: error.message,
-    //       data: {
-    //         listId: error.listId,
-    //         itemId: error.itemId
-    //       }
-    //     }
-    //   }
-    // }
+    if (error instanceof ListsNotFoundError) {
+      return {
+        status: StatusCode.NOT_FOUND,
+        body: {
+          ok: false,
+          message: error.message,
+          data: {
+            listIds: error.listIds
+          }
+        }
+      }
+    } else if (error instanceof ItemNotFoundError) {
+      return {
+        status: StatusCode.NOT_FOUND,
+        body: {
+          ok: false,
+          message: error.message,
+          data: {
+            itemId: error.itemId
+          }
+        }
+      }
+    }
 
     throw error
   }

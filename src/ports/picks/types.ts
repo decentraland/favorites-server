@@ -47,6 +47,3 @@ export type PickUnpickInBulkBody = {
   pickedFor?: string[]
   unpickedFrom?: string[]
 }
-
-// TODO (repeated from the lists port): is this a circular dependency?
-export * from './schemas'

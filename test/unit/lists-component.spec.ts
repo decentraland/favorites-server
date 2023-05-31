@@ -16,6 +16,7 @@ import {
 import {
   DuplicatedListError,
   ListNotFoundError,
+  ListsNotFoundError,
   PickAlreadyExistsError,
   PickNotFoundError,
   QueryFailure
@@ -23,6 +24,7 @@ import {
 import { IPgComponent } from '../../src/ports/pg'
 import { DBGetFilteredPicksWithCount, DBPick } from '../../src/ports/picks'
 import { ISnapshotComponent } from '../../src/ports/snapshot'
+import { ScoreError } from '../../src/ports/snapshot/errors'
 import { createTestSnapshotComponent, createTestPgComponent, createTestItemsComponent, createTestLogsComponent } from '../components'
 
 let listId: string
@@ -254,7 +256,7 @@ describe('when creating a new pick', () => {
 
       describe('and the request to get the voting power failed', () => {
         beforeEach(async () => {
-          getScoreMock.mockRejectedValueOnce(new Error())
+          getScoreMock.mockRejectedValueOnce(new ScoreError('Unknown error getting the score', userAddress))
           result = await listsComponent.addPickToList(listId, itemId, userAddress)
         })
 
@@ -1475,6 +1477,42 @@ describe('when updating a list', () => {
 
     it('should resolve with the updated list', () => {
       expect(result).toEqual(dbList)
+    })
+  })
+})
+
+describe('when checking if a user is allowed to edit some lists', () => {
+  const listIds: string[] = ['list-id-1', 'list-id-2', 'list-id-3']
+
+  describe('and there are some lists in which the user is not the owner and does not have edit permission', () => {
+    beforeEach(() => {
+      dbQueryMock.mockResolvedValueOnce({ rows: [listIds[1]], rowCount: 1 })
+    })
+
+    it('should throw a lists not found error', () => {
+      expect(listsComponent.checkNonEditableLists(listIds, userAddress)).rejects.toThrowError(new ListsNotFoundError([listIds[1]]))
+    })
+  })
+
+  describe('and there are not lists in which the user cannot perform an edit', () => {
+    beforeEach(() => {
+      dbQueryMock.mockResolvedValueOnce({ rowCount: 0 })
+    })
+
+    it('should resolve without any specific result', async () => {
+      await expect(listsComponent.checkNonEditableLists(listIds, userAddress)).resolves.toEqual(undefined)
+
+      expect(dbQueryMock).toBeCalledWith(
+        expect.objectContaining({
+          strings: expect.arrayContaining([
+            expect.stringContaining('WHERE favorites.lists.id IN'),
+            expect.stringContaining('favorites.lists.user_address !='),
+            expect.stringContaining('favorites.acl.permission !='),
+            expect.stringContaining('OR favorites.acl.grantee NOT IN')
+          ]),
+          values: expect.arrayContaining([listIds.join(', '), userAddress, Permission.EDIT, userAddress, '*'])
+        })
+      )
     })
   })
 })

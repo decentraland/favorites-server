@@ -9,14 +9,24 @@ export const PickUnpickInBulkSchema: JSONSchema<PickUnpickInBulkBody> = {
       items: {
         type: 'string'
       },
-      nullable: true
+      nullable: true,
+      minItems: 1
     },
     unpickedFrom: {
       type: 'array',
       items: {
         type: 'string'
       },
-      nullable: true
+      nullable: true,
+      minItems: 1
     }
-  }
+  },
+  anyOf: [
+    {
+      required: ['pickedFor']
+    },
+    {
+      required: ['unpickedFrom']
+    }
+  ]
 }

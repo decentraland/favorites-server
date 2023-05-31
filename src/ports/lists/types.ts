@@ -11,6 +11,7 @@ export interface IListsComponents {
   deleteList(id: string, userAddress: string): Promise<void>
   getList(listId: string, options?: GetListOptions): Promise<DBListsWithItemsCount>
   updateList(id: string, userAddress: string, updatedList: UpdateListRequestBody): Promise<DBList>
+  checkNonEditableLists(listIds: string[], userAddress: string): Promise<void>
 }
 
 export type GetAuthenticatedAndPaginatedParameters = {
@@ -69,6 +70,3 @@ export enum ListSortDirection {
   ASC = 'asc',
   DESC = 'desc'
 }
-
-// TODO: Is this a circular dependency?
-export * from './schemas'
