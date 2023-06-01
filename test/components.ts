@@ -4,7 +4,7 @@ import path from 'node:path'
 import { createDotEnvConfigComponent } from '@well-known-components/env-config-provider'
 import { instrumentHttpServerWithRequestLogger, Verbosity } from '@well-known-components/http-requests-logger-component'
 import { createServerComponent } from '@well-known-components/http-server'
-import { ILoggerComponent } from '@well-known-components/interfaces'
+import { ILoggerComponent, ITracerComponent } from '@well-known-components/interfaces'
 import { createLogComponent } from '@well-known-components/logger'
 import { createMetricsComponent } from '@well-known-components/metrics'
 import { createRunner, createLocalFetchCompoment } from '@well-known-components/test-helpers'
@@ -189,5 +189,53 @@ export function createTestPgComponent(
     getPool,
     stop,
     withTransaction
+  }
+}
+
+export function createTestTracerComponent(
+  {
+    span = jest.fn(),
+    isInsideOfTraceSpan = jest.fn(),
+    getSpanId = jest.fn(),
+    getTrace = jest.fn(),
+    getTraceString = jest.fn(),
+    getTraceChild = jest.fn(),
+    getTraceChildString = jest.fn(),
+    getTraceState = jest.fn(),
+    getTraceStateString = jest.fn(),
+    getContextData = jest.fn(),
+    setContextData = jest.fn(),
+    setTraceStateProperty = jest.fn(),
+    deleteTraceStateProperty = jest.fn()
+  } = {
+    span: jest.fn(),
+    isInsideOfTraceSpan: jest.fn(),
+    getSpanId: jest.fn(),
+    getTrace: jest.fn(),
+    getTraceString: jest.fn(),
+    getTraceChild: jest.fn(),
+    getTraceChildString: jest.fn(),
+    getTraceState: jest.fn(),
+    getTraceStateString: jest.fn(),
+    getContextData: jest.fn(),
+    setContextData: jest.fn(),
+    setTraceStateProperty: jest.fn(),
+    deleteTraceStateProperty: jest.fn()
+  }
+): ITracerComponent {
+  return {
+    span,
+    isInsideOfTraceSpan,
+    getSpanId,
+    getTrace,
+    getTraceString,
+    getTraceChild,
+    getTraceChildString,
+    getTraceState,
+    getTraceStateString,
+    getContextData,
+    setContextData,
+    setTraceStateProperty,
+    deleteTraceStateProperty
   }
 }

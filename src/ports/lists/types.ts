@@ -48,6 +48,7 @@ export type DBListsWithItemsCount = DBList & {
 export type DBGetListsWithCount = DBListsWithItemsCount & {
   lists_count: string
   is_item_in_list?: boolean
+  preview_of_item_ids?: string[]
 }
 
 export type AddListRequestBody = {
