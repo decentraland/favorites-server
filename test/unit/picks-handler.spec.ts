@@ -542,7 +542,7 @@ describe('when picking or unpicking an item for/from multiple lists', () => {
       pickAndUnpickInBulkMock.mockRejectedValueOnce(new ListsNotFoundError([...pickedFor, ...unpickedFrom]))
     })
 
-    it('should return a response with a message saying that there are some lists inaccessible to the user and the 403 status code', () => {
+    it('should return a response with a message saying that there are some lists inaccessible to the user and the 404 status code', () => {
       return expect(pickAndUnpickInBulkHandler({ components, verification, request, params })).resolves.toEqual({
         status: StatusCode.NOT_FOUND,
         body: {
