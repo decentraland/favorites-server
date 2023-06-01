@@ -5,7 +5,7 @@ export function insertVPQuery(power: number | undefined, userAddress: string) {
 
   // If the snapshot query fails, the power will be undefined
   // Try to set the VP to 0 without overwriting it if it already exists
-  query.append(typeof power === 'undefined' ? 'DO NOTHING' : SQL`DO UPDATE SET power = ${power}`)
+  query.append(power !== undefined ? SQL`DO UPDATE SET power = ${power}` : 'DO NOTHING')
 
   return query
 }
