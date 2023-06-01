@@ -2,7 +2,9 @@ import { fromDBGetPickByItemIdToPickUserAddressesWithCount, fromDBPickStatsToPic
 import { isEthereumAddressValid } from '../../logic/ethereum/validations'
 import { getNumberParameter, getPaginationParams } from '../../logic/http'
 import { InvalidParameterError } from '../../logic/http/errors'
-import { PickStats } from '../../ports/picks'
+import { ItemNotFoundError } from '../../ports/items/errors'
+import { ListsNotFoundError } from '../../ports/lists/errors'
+import { PickStats, PickUnpickInBulkBody } from '../../ports/picks'
 import { HandlerContextWithPath, HTTPResponse, StatusCode } from '../../types'
 
 export async function getPickStatsOfItemHandler(
@@ -147,6 +149,78 @@ export async function getPicksByItemIdHandler(
         body: {
           ok: false,
           message: error.message
+        }
+      }
+    }
+
+    throw error
+  }
+}
+
+export async function pickAndUnpickInBulkHandler(
+  context: Pick<HandlerContextWithPath<'picks', '/v1/picks/:itemId'>, 'components' | 'params' | 'request' | 'verification'>
+): Promise<HTTPResponse<undefined>> {
+  const {
+    components: { picks },
+    verification,
+    params,
+    request
+  } = context
+  const userAddress: string | undefined = verification?.auth.toLowerCase()
+
+  if (!userAddress) {
+    return {
+      status: StatusCode.UNAUTHORIZED,
+      body: {
+        ok: false,
+        message: 'Unauthorized'
+      }
+    }
+  }
+
+  const body: PickUnpickInBulkBody = await request.json()
+
+  const { pickedFor, unpickedFrom } = body
+  if (pickedFor?.some(listId => unpickedFrom?.includes(listId)) || unpickedFrom?.some(listId => pickedFor?.includes(listId))) {
+    return {
+      status: StatusCode.BAD_REQUEST,
+      body: {
+        ok: false,
+        message: 'The item cannot be be picked and unpicked from a list at the same time.'
+      }
+    }
+  }
+
+  try {
+    await picks.pickAndUnpickInBulk(params.itemId, body, userAddress)
+    return {
+      status: StatusCode.UPDATED,
+      body: {
+        ok: true,
+        data: undefined
+      }
+    }
+  } catch (error) {
+    if (error instanceof ListsNotFoundError) {
+      return {
+        status: StatusCode.NOT_FOUND,
+        body: {
+          ok: false,
+          message: error.message,
+          data: {
+            listIds: error.listIds
+          }
+        }
+      }
+    } else if (error instanceof ItemNotFoundError) {
+      return {
+        status: StatusCode.NOT_FOUND,
+        body: {
+          ok: false,
+          message: error.message,
+          data: {
+            itemId: error.itemId
+          }
         }
       }
     }

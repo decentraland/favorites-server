@@ -4,15 +4,15 @@ export class ListNotFoundError extends Error {
   }
 }
 
-export class PickAlreadyExistsError extends Error {
-  constructor(public listId: string, public itemId: string) {
-    super('The item was already favorited.')
+export class ListsNotFoundError extends Error {
+  constructor(public listIds: string[]) {
+    super('Some lists were not found.')
   }
 }
 
-export class ItemNotFoundError extends Error {
-  constructor(public itemId: string) {
-    super("The item trying to get favorited doesn't exist.")
+export class PickAlreadyExistsError extends Error {
+  constructor(public listId: string, public itemId: string) {
+    super('The item was already favorited.')
   }
 }
 

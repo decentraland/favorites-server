@@ -1,8 +1,9 @@
 import { IDatabase, ILoggerComponent } from '@well-known-components/interfaces'
-import { ISubgraphComponent } from '@well-known-components/thegraph-component'
 import { DEFAULT_LIST_ID, DEFAULT_LIST_USER_ADDRESS } from '../../src/migrations/1678303321034_default-list'
 import { Permission } from '../../src/ports/access'
 import { AccessNotFoundError } from '../../src/ports/access/errors'
+import { IItemsComponent } from '../../src/ports/items'
+import { ItemNotFoundError } from '../../src/ports/items/errors'
 import {
   createListsComponent,
   DBGetListsWithCount,
@@ -14,8 +15,8 @@ import {
 } from '../../src/ports/lists'
 import {
   DuplicatedListError,
-  ItemNotFoundError,
   ListNotFoundError,
+  ListsNotFoundError,
   PickAlreadyExistsError,
   PickNotFoundError,
   QueryFailure
@@ -23,7 +24,8 @@ import {
 import { IPgComponent } from '../../src/ports/pg'
 import { DBGetFilteredPicksWithCount, DBPick } from '../../src/ports/picks'
 import { ISnapshotComponent } from '../../src/ports/snapshot'
-import { createTestSnapshotComponent, createTestPgComponent, createTestSubgraphComponent, createTestLogsComponent } from '../components'
+import { ScoreError } from '../../src/ports/snapshot/errors'
+import { createTestSnapshotComponent, createTestPgComponent, createTestItemsComponent, createTestLogsComponent } from '../components'
 
 let listId: string
 let itemId: string
@@ -32,16 +34,16 @@ let dbQueryMock: jest.Mock
 let dbClientQueryMock: jest.Mock
 let dbClientReleaseMock: jest.Mock
 let getScoreMock: jest.Mock
-let collectionsSubgraphQueryMock: jest.Mock
+let validateItemExistsMock: jest.Mock
 let pg: IPgComponent & IDatabase
 let listsComponent: IListsComponents
-let collectionsSubgraph: ISubgraphComponent
+let items: IItemsComponent
 let snapshot: ISnapshotComponent
 let logs: ILoggerComponent
 
 beforeEach(() => {
   dbQueryMock = jest.fn()
-  collectionsSubgraphQueryMock = jest.fn()
+  validateItemExistsMock = jest.fn()
   getScoreMock = jest.fn()
   dbClientQueryMock = jest.fn()
   dbClientReleaseMock = jest.fn().mockResolvedValue(undefined)
@@ -70,12 +72,12 @@ beforeEach(() => {
     getLogger: jest.fn().mockReturnValue({ error: () => undefined, info: () => undefined })
   })
   snapshot = createTestSnapshotComponent({ getScore: getScoreMock })
-  collectionsSubgraph = createTestSubgraphComponent({
-    query: collectionsSubgraphQueryMock
+  items = createTestItemsComponent({
+    validateItemExists: validateItemExistsMock
   })
   listsComponent = createListsComponent({
     pg,
-    collectionsSubgraph,
+    items,
     logs,
     snapshot
   })
@@ -170,7 +172,7 @@ describe('when creating a new pick', () => {
           }
         ]
       })
-      collectionsSubgraphQueryMock.mockRejectedValueOnce(new Error('anError'))
+      validateItemExistsMock.mockRejectedValueOnce(new QueryFailure('anError'))
     })
 
     it('should throw an error saying that the request failed', () => {
@@ -193,7 +195,7 @@ describe('when creating a new pick', () => {
         ]
       })
       getScoreMock.mockResolvedValueOnce(10)
-      collectionsSubgraphQueryMock.mockResolvedValueOnce({ items: [] })
+      validateItemExistsMock.mockRejectedValueOnce(new ItemNotFoundError(itemId))
     })
 
     it('should throw an item not found error', () => {
@@ -203,7 +205,7 @@ describe('when creating a new pick', () => {
 
   describe('and the item being picked exists and the user is allowed to create a new pick on the given list', () => {
     beforeEach(() => {
-      collectionsSubgraphQueryMock.mockResolvedValueOnce({
+      validateItemExistsMock.mockResolvedValueOnce({
         items: [{ id: itemId }]
       })
       dbQueryMock.mockResolvedValueOnce({
@@ -254,7 +256,7 @@ describe('when creating a new pick', () => {
 
       describe('and the request to get the voting power failed', () => {
         beforeEach(async () => {
-          getScoreMock.mockRejectedValueOnce(new Error())
+          getScoreMock.mockRejectedValueOnce(new ScoreError('Unknown error getting the score', userAddress))
           result = await listsComponent.addPickToList(listId, itemId, userAddress)
         })
 
@@ -1486,6 +1488,42 @@ describe('when updating a list', () => {
 
     it('should resolve with the updated list', () => {
       expect(result).toEqual(dbList)
+    })
+  })
+})
+
+describe('when checking if a user is allowed to edit some lists', () => {
+  const listIds: string[] = ['list-id-1', 'list-id-2', 'list-id-3']
+
+  describe('and there are some lists in which the user is not the owner and does not have edit permission', () => {
+    beforeEach(() => {
+      dbQueryMock.mockResolvedValueOnce({ rows: [listIds[1]], rowCount: 1 })
+    })
+
+    it('should throw a lists not found error', () => {
+      expect(listsComponent.checkNonEditableLists(listIds, userAddress)).rejects.toThrowError(new ListsNotFoundError([listIds[1]]))
+    })
+  })
+
+  describe('and there are no lists in which the user cannot perform an edit', () => {
+    beforeEach(() => {
+      dbQueryMock.mockResolvedValueOnce({ rowCount: 0 })
+    })
+
+    it('should resolve without any specific result', async () => {
+      await expect(listsComponent.checkNonEditableLists(listIds, userAddress)).resolves.toEqual(undefined)
+
+      expect(dbQueryMock).toBeCalledWith(
+        expect.objectContaining({
+          strings: expect.arrayContaining([
+            expect.stringContaining('WHERE favorites.lists.id IN'),
+            expect.stringContaining('favorites.lists.user_address !='),
+            expect.stringContaining('favorites.acl.permission !='),
+            expect.stringContaining('OR favorites.acl.grantee NOT IN')
+          ]),
+          values: expect.arrayContaining([listIds.join(', '), userAddress, Permission.EDIT, userAddress, '*'])
+        })
+      )
     })
   })
 })

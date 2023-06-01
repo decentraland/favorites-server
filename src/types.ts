@@ -3,6 +3,7 @@ import type * as authorizationMiddleware from 'decentraland-crypto-middleware'
 import { PaginatedResponse } from './logic/http'
 import { metricDeclarations } from './metrics'
 import { IAccessComponent } from './ports/access'
+import { IItemsComponent } from './ports/items'
 import { IListsComponents } from './ports/lists/types'
 import { IPgComponent } from './ports/pg'
 import { IPicksComponent } from './ports/picks'
@@ -36,6 +37,7 @@ export type BaseComponents = {
   snapshot: ISnapshotComponent
   picks: IPicksComponent
   access: IAccessComponent
+  items: IItemsComponent
 }
 
 // components used in runtime

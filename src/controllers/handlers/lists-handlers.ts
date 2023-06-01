@@ -12,14 +12,9 @@ import { getPaginationParams, getParameter } from '../../logic/http'
 import { DEFAULT_LIST_ID } from '../../migrations/1678303321034_default-list'
 import { Permission } from '../../ports/access'
 import { AccessNotFoundError, DuplicatedAccessError } from '../../ports/access/errors'
+import { ItemNotFoundError } from '../../ports/items/errors'
 import { AddListRequestBody, ListSortBy, ListSortDirection, UpdateListRequestBody } from '../../ports/lists'
-import {
-  DuplicatedListError,
-  ItemNotFoundError,
-  ListNotFoundError,
-  PickAlreadyExistsError,
-  PickNotFoundError
-} from '../../ports/lists/errors'
+import { DuplicatedListError, ListNotFoundError, PickAlreadyExistsError, PickNotFoundError } from '../../ports/lists/errors'
 import { HandlerContextWithPath, HTTPResponse, StatusCode } from '../../types'
 import { AccessBody } from './types'
 import { validateAccessBody } from './utils'
