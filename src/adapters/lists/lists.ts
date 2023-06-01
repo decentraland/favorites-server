@@ -32,7 +32,7 @@ export function fromDBGetListsToListsWithCount(dbLists: DBGetListsWithCount[]): 
         name,
         itemsCount,
         isItemInList: list.is_item_in_list,
-        itemIds: list.item_ids
+        previewOfItemIds: list.preview_of_item_ids
       }
     }),
     count: Number(dbLists[0]?.lists_count ?? 0)

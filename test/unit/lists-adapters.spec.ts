@@ -124,7 +124,7 @@ describe('when transforming DB retrieved lists to lists with count', () => {
           lists_count: '3',
           items_count: '5',
           is_item_in_list: true,
-          item_ids: ['1', '2', '3', '4', '5']
+          preview_of_item_ids: ['1', '2', '3', '4', '5']
         },
         {
           id: 'e96df126-f5bf-4311-94d8-6e261f368bb2',
@@ -136,7 +136,7 @@ describe('when transforming DB retrieved lists to lists with count', () => {
           lists_count: '3',
           items_count: '4',
           is_item_in_list: false,
-          item_ids: []
+          preview_of_item_ids: []
         },
         {
           id: 'e96df126-f5bf-4311-94d8-6e261f368bb3',
@@ -156,9 +156,9 @@ describe('when transforming DB retrieved lists to lists with count', () => {
             name: 'List #1',
             itemsCount: 5,
             isItemInList: true,
-            itemIds: ['1', '2', '3', '4', '5']
+            previewOfItemIds: ['1', '2', '3', '4', '5']
           },
-          { id: 'e96df126-f5bf-4311-94d8-6e261f368bb2', name: 'List #2', itemsCount: 4, isItemInList: false, itemIds: [] },
+          { id: 'e96df126-f5bf-4311-94d8-6e261f368bb2', name: 'List #2', itemsCount: 4, isItemInList: false, previewOfItemIds: [] },
           { id: 'e96df126-f5bf-4311-94d8-6e261f368bb3', name: 'List #3', itemsCount: 2 }
         ],
         count: 3

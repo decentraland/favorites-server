@@ -18,6 +18,6 @@ export type ListWithItemsCount = List & {
 }
 
 export type ListsWithCount = {
-  lists: (Pick<ListWithItemsCount, 'id' | 'name' | 'itemsCount'> & { isItemInList?: boolean; itemIds?: string[] })[]
+  lists: (Pick<ListWithItemsCount, 'id' | 'name' | 'itemsCount'> & { isItemInList?: boolean; previewOfItemIds?: string[] })[]
   count: number
 }
