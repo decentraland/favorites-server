@@ -1505,7 +1505,7 @@ describe('when checking if a user is allowed to edit some lists', () => {
     })
   })
 
-  describe('and there are not lists in which the user cannot perform an edit', () => {
+  describe('and there are no lists in which the user cannot perform an edit', () => {
     beforeEach(() => {
       dbQueryMock.mockResolvedValueOnce({ rowCount: 0 })
     })
