@@ -1,10 +1,13 @@
-import SQL from 'sql-template-strings'
+import SQL, { SQLStatement } from 'sql-template-strings'
+import { isErrorWithMessage } from '../../logic/errors'
 import { AppComponents } from '../../types'
+import { insertVPQuery } from '../vp/queries'
 import { DEFAULT_VOTING_POWER } from './constants'
-import { DBGetFilteredPicksWithCount, DBPickStats, GetPicksByItemIdParameters, IPicksComponent } from './types'
+import { DBGetFilteredPicksWithCount, DBPickStats, GetPicksByItemIdParameters, IPicksComponent, PickUnpickInBulkBody } from './types'
 
-export function createPicksComponent(components: Pick<AppComponents, 'pg'>): IPicksComponent {
-  const { pg } = components
+export function createPicksComponent(components: Pick<AppComponents, 'pg' | 'items' | 'lists' | 'snapshot' | 'logs'>): IPicksComponent {
+  const { pg, items, snapshot, logs, lists } = components
+  const logger = logs.getLogger('Picks component')
 
   /**
    * Gets the picks stats of a set of items.
@@ -68,5 +71,39 @@ export function createPicksComponent(components: Pick<AppComponents, 'pg'>): IPi
     return result.rows
   }
 
-  return { getPicksStats, getPicksByItemId }
+  async function pickAndUnpickInBulk(itemId: string, body: PickUnpickInBulkBody, userAddress: string): Promise<void> {
+    const { pickedFor = [], unpickedFrom = [] } = body
+    let vpQuery: SQLStatement | undefined
+
+    await Promise.all([items.validateItemExists(itemId), lists.checkNonEditableLists([...pickedFor, ...unpickedFrom], userAddress)])
+
+    if (pickedFor && pickedFor.length > 0) {
+      let power: number | undefined
+
+      try {
+        power = await snapshot.getScore(userAddress)
+        logger.info(`The voting power for ${userAddress} will be updated to ${power}`)
+      } catch (error) {
+        logger.error(`Querying snapshot failed: ${isErrorWithMessage(error) ? error.message : 'Unknown'}`)
+      }
+
+      vpQuery = insertVPQuery(power, userAddress)
+    }
+
+    await pg.withTransaction(async client => {
+      const pickedForLists = pickedFor.join(', ')
+      const pickForListsQuery =
+        pickedForLists &&
+        SQL`INSERT INTO favorites.picks (item_id, user_address, list_id) SELECT ${itemId}, ${userAddress}, id AS list_id FROM favorites.lists WHERE id IN (${pickedForLists})`
+
+      const unpickedFromLists = unpickedFrom.join(', ')
+      const unpickFromListsQuery =
+        unpickedFromLists &&
+        SQL`DELETE FROM favorites.picks WHERE item_id = ${itemId} AND user_address = ${userAddress} AND list_id IN (${unpickedFromLists})`
+
+      await Promise.all([pickForListsQuery, unpickFromListsQuery, vpQuery].map(query => query && client.query(query)))
+    })
+  }
+
+  return { getPicksStats, getPicksByItemId, pickAndUnpickInBulk }
 }

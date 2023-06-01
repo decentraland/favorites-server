@@ -5,8 +5,10 @@ import { AppComponents } from '../../types'
 import { Permission } from '../access'
 import { deleteAccessQuery, insertAccessQuery } from '../access/queries'
 import { DBGetFilteredPicksWithCount, DBPick } from '../picks'
+import { ScoreError } from '../snapshot/errors'
+import { insertVPQuery } from '../vp/queries'
 import { GRANTED_TO_ALL } from './constants'
-import { ItemNotFoundError, ListNotFoundError, PickAlreadyExistsError, PickNotFoundError, QueryFailure } from './errors'
+import { ListNotFoundError, ListsNotFoundError, PickAlreadyExistsError, PickNotFoundError } from './errors'
 import { getListQuery } from './queries'
 import {
   GetAuthenticatedAndPaginatedParameters,
@@ -23,10 +25,8 @@ import {
 } from './types'
 import { validateDuplicatedListName, validateListExists } from './utils'
 
-export function createListsComponent(
-  components: Pick<AppComponents, 'pg' | 'collectionsSubgraph' | 'snapshot' | 'logs'>
-): IListsComponents {
-  const { pg, collectionsSubgraph, snapshot, logs } = components
+export function createListsComponent(components: Pick<AppComponents, 'pg' | 'snapshot' | 'logs' | 'items'>): IListsComponents {
+  const { pg, items, snapshot, logs } = components
   const logger = logs.getLogger('Lists component')
 
   async function getPicksByListId(listId: string, params: GetAuthenticatedAndPaginatedParameters): Promise<DBGetFilteredPicksWithCount[]> {
@@ -55,37 +55,17 @@ export function createListsComponent(
 
   async function addPickToList(listId: string, itemId: string, userAddress: string): Promise<DBPick> {
     const list = await getList(listId, { userAddress, requiredPermission: Permission.EDIT })
-    const [queryResult, power] = await Promise.allSettled([
-      collectionsSubgraph.query<{ items: { id: string }[] }>(
-        `query items($itemId: String) {
-        items(first: 1, where: { id: $itemId }) {
-          id
-        }
-      }`,
-        { itemId }
-      ),
-      snapshot.getScore(userAddress)
-    ])
+    let power: number | undefined
 
-    if (queryResult.status === 'rejected') {
-      logger.error('Querying the collections subgraph failed.')
-      throw new QueryFailure(isErrorWithMessage(queryResult.reason) ? queryResult.reason.message : 'Unknown')
+    try {
+      ;[power] = await Promise.all([snapshot.getScore(userAddress), items.validateItemExists(itemId)])
+      logger.info(`The voting power for ${userAddress} will be updated to ${power}`)
+    } catch (error) {
+      if (error instanceof ScoreError) logger.error(`Querying snapshot failed: ${isErrorWithMessage(error) ? error.message : 'Unknown'}`)
+      else throw error
     }
 
-    const vpQuery = SQL`INSERT INTO favorites.voting (user_address, power) `
-
-    // If the snapshot query fails, try to set the VP to 0 without overwriting it if it already exists
-    if (power.status === 'rejected') {
-      logger.error(`Querying snapshot failed: ${isErrorWithMessage(power.reason) ? power.reason.message : 'Unknown'}`)
-      vpQuery.append(SQL`VALUES (${userAddress}, ${0}) ON CONFLICT (user_address) DO NOTHING`)
-    } else {
-      logger.info(`The voting power for ${userAddress} was updated to ${power.value}`)
-      vpQuery.append(SQL`VALUES (${userAddress}, ${power.value}) ON CONFLICT (user_address) DO UPDATE SET power = ${power.value}`)
-    }
-
-    if (queryResult.value.items.length === 0) {
-      throw new ItemNotFoundError(itemId)
-    }
+    const vpQuery = insertVPQuery(power, userAddress)
 
     return pg.withTransaction(
       async client => {
@@ -237,5 +217,18 @@ export function createListsComponent(
     validateListExists(id, result)
   }
 
-  return { getPicksByListId, addPickToList, deletePickInList, getLists, addList, deleteList, getList, updateList }
+  async function checkNonEditableLists(listIds: string[], userAddress: string): Promise<void> {
+    const { rows, rowCount } = await pg.query<Pick<DBList, 'id'>>(
+      SQL`SELECT favorites.lists.id FROM favorites.lists
+      LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id
+      WHERE favorites.lists.id IN (${listIds.join(', ')}) AND favorites.lists.user_address != ${userAddress}
+      AND (favorites.acl.permission != ${Permission.EDIT} OR favorites.acl.grantee NOT IN (${userAddress}, ${GRANTED_TO_ALL}))`
+    )
+
+    if (rowCount > 0) {
+      throw new ListsNotFoundError(rows.map(({ id }) => id))
+    }
+  }
+
+  return { getPicksByListId, addPickToList, deletePickInList, getLists, addList, deleteList, getList, updateList, checkNonEditableLists }
 }

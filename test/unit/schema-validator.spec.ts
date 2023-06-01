@@ -13,7 +13,8 @@ import {
   createTestLogsComponent,
   createTestPgComponent,
   createTestSnapshotComponent,
-  createTestSubgraphComponent
+  createTestSubgraphComponent,
+  createTestItemsComponent
 } from '../components'
 
 let middleware: ReturnType<ReturnType<typeof createSchemaValidatorComponent>['withSchemaValidatorMiddleware']>
@@ -26,6 +27,7 @@ beforeEach(async () => {
     fetch: await createFetchComponent({ tracer }),
     server: createTestServerComponent(),
     access: createTestAccessComponent(),
+    items: createTestItemsComponent({}),
     lists: createTestListsComponent(),
     picks: createTestPicksComponent(),
     logs: createTestLogsComponent(),
