@@ -1101,8 +1101,8 @@ describe('when creating a list', () => {
             id: listId,
             name,
             userAddress: verification?.auth,
-            createdAt: date,
-            updatedAt: date,
+            createdAt: Number(date),
+            updatedAt: Number(date),
             description: null,
             permission: undefined
           }
@@ -1144,8 +1144,8 @@ describe('when getting a list', () => {
       id: listId,
       name: 'Test List',
       userAddress: '0x45abb534BD927284F84b03d43f33dF0E5C91C21f',
-      createdAt: date,
-      updatedAt: date,
+      createdAt: Number(date),
+      updatedAt: Number(date),
       description: 'Description of List #1',
       permission: undefined
     }
@@ -1428,8 +1428,8 @@ describe('when updating a list', () => {
             id: listId,
             name,
             userAddress: verification?.auth,
-            createdAt: date,
-            updatedAt: date,
+            createdAt: Number(date),
+            updatedAt: Number(date),
             description: null,
             permission: undefined
           }

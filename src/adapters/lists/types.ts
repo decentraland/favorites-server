@@ -8,8 +8,8 @@ export type List = {
   name: string
   description: string | null
   userAddress: string
-  createdAt: Date
-  updatedAt: Date | null
+  createdAt: number
+  updatedAt: number | null
   permission?: Permission | null
 }
 

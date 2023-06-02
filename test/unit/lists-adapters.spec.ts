@@ -192,8 +192,8 @@ describe('when transforming a DB retrieved list to a list', () => {
       name: dbList.name,
       userAddress: dbList.user_address,
       description: dbList.description,
-      createdAt: date,
-      updatedAt: date,
+      createdAt: Number(date),
+      updatedAt: Number(date),
       permission: undefined
     })
   })
@@ -221,8 +221,8 @@ describe('when transforming a DB retrieved list with items count to a list with 
       name: dbListWithItemsCount.name,
       userAddress: dbListWithItemsCount.user_address,
       description: dbListWithItemsCount.description,
-      createdAt: date,
-      updatedAt: date,
+      createdAt: Number(date),
+      updatedAt: Number(date),
       permission: undefined,
       itemsCount: 5
     })
