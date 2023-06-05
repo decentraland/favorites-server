@@ -949,9 +949,9 @@ describe('when getting a list', () => {
         expect(dbQueryMock).toHaveBeenCalledWith(
           expect.objectContaining({
             text: expect.stringContaining(
-              `WHERE favorites.lists.id = $2 AND (favorites.lists.user_address = $3 OR favorites.lists.user_address = $4) OR ((favorites.acl.grantee = $5 OR favorites.acl.grantee = $6) AND favorites.acl.permission IN ('${permission}')`
+              'WHERE favorites.lists.id = $2 AND (favorites.lists.user_address = $3 OR favorites.lists.user_address = $4) OR ((favorites.acl.grantee = $5 OR favorites.acl.grantee = $6) AND favorites.acl.permission = ANY($7)'
             ),
-            values: expect.arrayContaining([listId, userAddress, DEFAULT_LIST_USER_ADDRESS, userAddress, '*'])
+            values: expect.arrayContaining([listId, userAddress, DEFAULT_LIST_USER_ADDRESS, userAddress, '*', [permission]])
           })
         )
 
@@ -1021,14 +1021,16 @@ describe('when getting a list', () => {
         expect(dbQueryMock).toHaveBeenCalledWith(
           expect.objectContaining({
             text: expect.stringContaining(
-              `WHERE favorites.lists.id = $2 AND (favorites.lists.user_address = $3 OR favorites.lists.user_address = $4) OR ((favorites.acl.grantee = $5 OR favorites.acl.grantee = $6) AND favorites.acl.permission IN (${[
-                permission,
-                Permission.EDIT
-              ]
-                .map(p => `'${p}'`)
-                .join(', ')}))`
+              'WHERE favorites.lists.id = $2 AND (favorites.lists.user_address = $3 OR favorites.lists.user_address = $4) OR ((favorites.acl.grantee = $5 OR favorites.acl.grantee = $6) AND favorites.acl.permission = ANY($7))'
             ),
-            values: expect.arrayContaining([listId, userAddress, DEFAULT_LIST_USER_ADDRESS, userAddress, '*'])
+            values: expect.arrayContaining([
+              listId,
+              userAddress,
+              DEFAULT_LIST_USER_ADDRESS,
+              userAddress,
+              '*',
+              [permission, Permission.EDIT]
+            ])
           })
         )
 
@@ -1514,12 +1516,12 @@ describe('when checking if a user is allowed to edit some lists', () => {
       expect(dbQueryMock).toBeCalledWith(
         expect.objectContaining({
           strings: expect.arrayContaining([
-            expect.stringContaining(`WHERE favorites.lists.id IN (${listIds.map(id => `'${id}'`).join(', ')})`),
+            expect.stringContaining('WHERE favorites.lists.id = ANY'),
             expect.stringContaining('favorites.lists.user_address !='),
             expect.stringContaining('favorites.acl.permission !='),
             expect.stringContaining('OR favorites.acl.grantee NOT IN')
           ]),
-          values: expect.arrayContaining([userAddress, Permission.EDIT, userAddress, '*'])
+          values: expect.arrayContaining([listIds, userAddress, Permission.EDIT, userAddress, '*'])
         })
       )
     })

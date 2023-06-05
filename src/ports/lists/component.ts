@@ -219,18 +219,10 @@ export function createListsComponent(components: Pick<AppComponents, 'pg' | 'sna
   }
 
   async function checkNonEditableLists(listIds: string[], userAddress: string): Promise<void> {
-    const query = SQL`SELECT favorites.lists.id FROM favorites.lists
+    const { rows, rowCount } = await pg.query<Pick<DBList, 'id'>>(SQL`SELECT favorites.lists.id FROM favorites.lists
       LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id
-      WHERE favorites.lists.id IN (`
-
-    query.append(listIds.map(id => `'${id}'`).join(', '))
-
-    query.append(
-      SQL`) AND favorites.lists.user_address != ${userAddress}
-      AND (favorites.acl.permission != ${Permission.EDIT} OR favorites.acl.grantee NOT IN (${userAddress}, ${GRANTED_TO_ALL}))`
-    )
-
-    const { rows, rowCount } = await pg.query<Pick<DBList, 'id'>>(query)
+      WHERE favorites.lists.id = ANY(${listIds}) AND favorites.lists.user_address != ${userAddress}
+      AND (favorites.acl.permission != ${Permission.EDIT} OR favorites.acl.grantee NOT IN (${userAddress}, ${GRANTED_TO_ALL}))`)
     if (rowCount > 0) {
       throw new ListsNotFoundError(rows.map(({ id }) => id))
     }

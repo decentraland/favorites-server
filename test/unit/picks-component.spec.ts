@@ -419,11 +419,9 @@ describe('when picking or unpicking an item in bulk', () => {
         expect(dbClientQueryMock).toHaveBeenCalledWith(
           expect.objectContaining({
             text: expect.stringContaining(
-              `INSERT INTO favorites.picks (item_id, user_address, list_id) SELECT $1, $2, id AS list_id FROM favorites.lists WHERE id IN (${body.pickedFor
-                ?.map(id => `'${id}'`)
-                .join(', ')})`
+              'INSERT INTO favorites.picks (item_id, user_address, list_id) SELECT $1, $2, id AS list_id FROM favorites.lists WHERE id = ANY($3)'
             ),
-            values: expect.arrayContaining([itemId, userAddress])
+            values: expect.arrayContaining([itemId, userAddress, body.pickedFor])
           })
         )
       })
@@ -455,11 +453,9 @@ describe('when picking or unpicking an item in bulk', () => {
         expect(dbClientQueryMock).toHaveBeenCalledWith(
           expect.objectContaining({
             text: expect.stringContaining(
-              `INSERT INTO favorites.picks (item_id, user_address, list_id) SELECT $1, $2, id AS list_id FROM favorites.lists WHERE id IN (${body.pickedFor
-                ?.map(id => `'${id}'`)
-                .join(', ')})`
+              'INSERT INTO favorites.picks (item_id, user_address, list_id) SELECT $1, $2, id AS list_id FROM favorites.lists WHERE id = ANY($3)'
             ),
-            values: expect.arrayContaining([itemId, userAddress])
+            values: expect.arrayContaining([itemId, userAddress, body.pickedFor])
           })
         )
       })
@@ -493,12 +489,8 @@ describe('when picking or unpicking an item in bulk', () => {
     it('should delete new picks from the selected lists', () => {
       expect(dbClientQueryMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          text: expect.stringContaining(
-            `DELETE FROM favorites.picks WHERE item_id = $1 AND user_address = $2 AND list_id IN (${body.unpickedFrom
-              ?.map(id => `'${id}'`)
-              .join(', ')})`
-          ),
-          values: expect.arrayContaining([itemId, userAddress])
+          text: expect.stringContaining('DELETE FROM favorites.picks WHERE item_id = $1 AND user_address = $2 AND list_id = ANY($3)'),
+          values: expect.arrayContaining([itemId, userAddress, body.unpickedFrom])
         })
       )
     })

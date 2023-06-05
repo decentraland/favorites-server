@@ -91,19 +91,13 @@ export function createPicksComponent(components: Pick<AppComponents, 'pg' | 'ite
     }
 
     await pg.withTransaction(async client => {
-      const pickedForLists = pickedFor.map(id => `'${id}'`).join(', ')
       const pickForListsQuery =
-        pickedForLists &&
-        SQL`INSERT INTO favorites.picks (item_id, user_address, list_id) SELECT ${itemId}, ${userAddress}, id AS list_id FROM favorites.lists WHERE id IN (`
-          .append(pickedForLists)
-          .append(')')
+        pickedFor.length &&
+        SQL`INSERT INTO favorites.picks (item_id, user_address, list_id) SELECT ${itemId}, ${userAddress}, id AS list_id FROM favorites.lists WHERE id = ANY(${pickedFor})`
 
-      const unpickedFromLists = unpickedFrom.map(id => `'${id}'`).join(', ')
       const unpickFromListsQuery =
-        unpickedFromLists &&
-        SQL`DELETE FROM favorites.picks WHERE item_id = ${itemId} AND user_address = ${userAddress} AND list_id IN (`
-          .append(unpickedFromLists)
-          .append(')')
+        unpickedFrom.length &&
+        SQL`DELETE FROM favorites.picks WHERE item_id = ${itemId} AND user_address = ${userAddress} AND list_id = ANY(${unpickedFrom})`
 
       await Promise.all([pickForListsQuery, unpickFromListsQuery, vpQuery].map(query => query && client.query(query)))
     })

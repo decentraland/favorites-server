@@ -30,14 +30,9 @@ describe('when getting the get list query', () => {
         const query = getListQuery(listId, { userAddress, requiredPermission: Permission.VIEW })
 
         expect(query.text).toContain(
-          `OR ((favorites.acl.grantee = $5 OR favorites.acl.grantee = $6) AND favorites.acl.permission IN (${[
-            Permission.VIEW,
-            Permission.EDIT
-          ]
-            .map(p => `'${p}'`)
-            .join(', ')}))`
+          'OR ((favorites.acl.grantee = $5 OR favorites.acl.grantee = $6) AND favorites.acl.permission = ANY($7))'
         )
-        expect(query.values).toEqual(expect.arrayContaining([userAddress, '*']))
+        expect(query.values).toEqual(expect.arrayContaining([userAddress, '*', [Permission.VIEW, Permission.EDIT]]))
       })
     })
 
@@ -46,9 +41,9 @@ describe('when getting the get list query', () => {
         const query = getListQuery(listId, { userAddress, requiredPermission: Permission.EDIT })
 
         expect(query.text).toContain(
-          `OR ((favorites.acl.grantee = $5 OR favorites.acl.grantee = $6) AND favorites.acl.permission IN ('${Permission.EDIT}'))`
+          'OR ((favorites.acl.grantee = $5 OR favorites.acl.grantee = $6) AND favorites.acl.permission = ANY($7))'
         )
-        expect(query.values).toEqual(expect.arrayContaining([userAddress, '*']))
+        expect(query.values).toEqual(expect.arrayContaining([userAddress, '*', [Permission.EDIT]]))
       })
     })
   })

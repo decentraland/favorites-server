@@ -23,14 +23,10 @@ export function getListQuery(listId: string, { requiredPermission, considerDefau
   query.append(')')
 
   if (requiredPermission) {
-    const requiredPermissions = (requiredPermission === Permission.VIEW ? [Permission.VIEW, Permission.EDIT] : [requiredPermission])
-      .map(permission => `'${permission}'`)
-      .join(', ')
+    const requiredPermissions = requiredPermission === Permission.VIEW ? [Permission.VIEW, Permission.EDIT] : [requiredPermission]
     query.append(
-      SQL` OR ((favorites.acl.grantee = ${userAddress} OR favorites.acl.grantee = ${GRANTED_TO_ALL}) AND favorites.acl.permission IN (`
+      SQL` OR ((favorites.acl.grantee = ${userAddress} OR favorites.acl.grantee = ${GRANTED_TO_ALL}) AND favorites.acl.permission = ANY(${requiredPermissions}))`
     )
-    query.append(requiredPermissions)
-    query.append(SQL`))`)
   }
 
   query.append(SQL` GROUP BY favorites.lists.id, favorites.acl.permission`)
