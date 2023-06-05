@@ -29,8 +29,10 @@ describe('when getting the get list query', () => {
       it('should return the query with the list id, the user address, and the check if the user has view or edit access to the list', () => {
         const query = getListQuery(listId, { userAddress, requiredPermission: Permission.VIEW })
 
-        expect(query.text).toContain('OR ((favorites.acl.grantee = $5 OR favorites.acl.grantee = $6) AND favorites.acl.permission IN ($7))')
-        expect(query.values).toEqual(expect.arrayContaining([userAddress, '*', `${Permission.VIEW},${Permission.EDIT}`]))
+        expect(query.text).toContain(
+          'OR ((favorites.acl.grantee = $5 OR favorites.acl.grantee = $6) AND favorites.acl.permission = ANY($7))'
+        )
+        expect(query.values).toEqual(expect.arrayContaining([userAddress, '*', [Permission.VIEW, Permission.EDIT]]))
       })
     })
 
@@ -38,8 +40,10 @@ describe('when getting the get list query', () => {
       it('should return the query with the list id, the user address, and the check if the user has edit access to the list', () => {
         const query = getListQuery(listId, { userAddress, requiredPermission: Permission.EDIT })
 
-        expect(query.text).toContain('OR ((favorites.acl.grantee = $5 OR favorites.acl.grantee = $6) AND favorites.acl.permission IN ($7))')
-        expect(query.values).toEqual(expect.arrayContaining([userAddress, '*', Permission.EDIT]))
+        expect(query.text).toContain(
+          'OR ((favorites.acl.grantee = $5 OR favorites.acl.grantee = $6) AND favorites.acl.permission = ANY($7))'
+        )
+        expect(query.values).toEqual(expect.arrayContaining([userAddress, '*', [Permission.EDIT]]))
       })
     })
   })
