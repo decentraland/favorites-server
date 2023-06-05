@@ -7,7 +7,7 @@ import { GetListOptions } from './types'
 export function getListQuery(listId: string, { requiredPermission, considerDefaultList = true, userAddress }: GetListOptions) {
   const query = SQL`SELECT favorites.lists.id, favorites.lists.name, favorites.lists.description, favorites.lists.user_address, favorites.lists.created_at`
 
-  query.append(listId === DEFAULT_LIST_ID ? SQL`MAX(favorites.picks.created_at) as updated_at` : SQL`, favorites.lists.updated_at`)
+  query.append(listId === DEFAULT_LIST_ID ? SQL`, MAX(favorites.picks.created_at) as updated_at` : SQL`, favorites.lists.updated_at`)
 
   query.append(
     SQL`, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS count_items
@@ -23,12 +23,14 @@ export function getListQuery(listId: string, { requiredPermission, considerDefau
   query.append(')')
 
   if (requiredPermission) {
-    const requiredPermissions = (requiredPermission === Permission.VIEW ? [Permission.VIEW, Permission.EDIT] : [requiredPermission]).join(
-      ','
-    )
+    const requiredPermissions = (requiredPermission === Permission.VIEW ? [Permission.VIEW, Permission.EDIT] : [requiredPermission])
+      .map(permission => `'${permission}'`)
+      .join(', ')
     query.append(
-      SQL` OR ((favorites.acl.grantee = ${userAddress} OR favorites.acl.grantee = ${GRANTED_TO_ALL}) AND favorites.acl.permission IN (${requiredPermissions}))`
+      SQL` OR ((favorites.acl.grantee = ${userAddress} OR favorites.acl.grantee = ${GRANTED_TO_ALL}) AND favorites.acl.permission IN (`
     )
+    query.append(requiredPermissions)
+    query.append(SQL`))`)
   }
 
   query.append(SQL` GROUP BY favorites.lists.id, favorites.acl.permission`)
