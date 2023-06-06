@@ -9,9 +9,8 @@ describe('when getting the get list query', () => {
   it('should return the query with the list id, the user address, and the default list owner user address', () => {
     const query = getListQuery(listId, { userAddress })
 
-    expect(query.text).toContain(
-      'WHERE favorites.lists.id = $2 AND (favorites.lists.user_address = $3 OR favorites.lists.user_address = $4)'
-    )
+    expect(query.text).toContain('WHERE favorites.lists.id = $2 AND')
+    expect(query.text).toContain('(favorites.lists.user_address = $3 OR favorites.lists.user_address = $4)')
     expect(query.values).toEqual(expect.arrayContaining([listId, userAddress, DEFAULT_LIST_USER_ADDRESS]))
   })
 
@@ -19,7 +18,8 @@ describe('when getting the get list query', () => {
     it('should return the query with the list id and the user address', () => {
       const query = getListQuery(listId, { userAddress, considerDefaultList: false })
 
-      expect(query.text).toContain('WHERE favorites.lists.id = $2 AND (favorites.lists.user_address = $3)')
+      expect(query.text).toContain('WHERE favorites.lists.id = $2 AND')
+      expect(query.text).toContain('(favorites.lists.user_address = $3)')
       expect(query.values).toEqual(expect.arrayContaining([listId, userAddress]))
     })
   })

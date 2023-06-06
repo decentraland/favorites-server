@@ -16,7 +16,7 @@ export function getListQuery(listId: string, { requiredPermission, considerDefau
       LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id`
   )
 
-  query.append(SQL` WHERE favorites.lists.id = ${listId} AND (favorites.lists.user_address = ${userAddress}`)
+  query.append(SQL` WHERE favorites.lists.id = ${listId} AND ((favorites.lists.user_address = ${userAddress}`)
   if (considerDefaultList) {
     query.append(SQL` OR favorites.lists.user_address = ${DEFAULT_LIST_USER_ADDRESS}`)
   }
@@ -28,6 +28,7 @@ export function getListQuery(listId: string, { requiredPermission, considerDefau
       SQL` OR ((favorites.acl.grantee = ${userAddress} OR favorites.acl.grantee = ${GRANTED_TO_ALL}) AND favorites.acl.permission = ANY(${requiredPermissions}))`
     )
   }
+  query.append(')')
 
   query.append(SQL` GROUP BY favorites.lists.id, favorites.acl.permission`)
   query.append(SQL` ORDER BY favorites.acl.permission ASC LIMIT 1`)
