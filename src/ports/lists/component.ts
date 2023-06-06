@@ -108,7 +108,8 @@ export function createListsComponent(components: Pick<AppComponents, 'pg' | 'sna
   async function getLists(params: GetListsParameters): Promise<DBGetListsWithCount[]> {
     const { userAddress, limit, offset, sortBy = ListSortBy.CREATED_AT, sortDirection = ListSortDirection.DESC, itemId, q } = params
     const query = SQL`SELECT l.*, COUNT(*) OVER() as lists_count, l.user_address = ${DEFAULT_LIST_USER_ADDRESS} as is_default_list, COUNT(p.item_id) AS items_count,
-      (ARRAY_REMOVE(ARRAY_AGG(p.item_id ORDER BY p.created_at), NULL))[:4] preview_of_item_ids`
+      (ARRAY_REMOVE(ARRAY_AGG(p.item_id ORDER BY p.created_at), NULL))[:4] preview_of_item_ids,
+      (SELECT COUNT(1) FROM favorites.acl WHERE favorites.acl.list_id = l.id AND (favorites.acl.grantee = ${userAddress} OR favorites.acl.grantee = ${GRANTED_TO_ALL})) > 0 AS is_private`
 
     if (itemId) query.append(SQL`, MAX(CASE WHEN p.item_id = ${itemId} THEN 1 ELSE 0 END)::BOOLEAN AS is_item_in_list`)
 

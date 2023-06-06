@@ -39,6 +39,7 @@ export type DBList = {
   created_at: Date
   updated_at: Date | null
   permission?: string | null
+  is_private: boolean
 }
 
 export type DBListsWithItemsCount = DBList & {

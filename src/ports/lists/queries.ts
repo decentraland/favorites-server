@@ -10,7 +10,7 @@ export function getListQuery(listId: string, { requiredPermission, considerDefau
   query.append(listId === DEFAULT_LIST_ID ? SQL`, MAX(favorites.picks.created_at) as updated_at` : SQL`, favorites.lists.updated_at`)
 
   query.append(
-    SQL`, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS count_items
+    SQL`, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS count_items, COUNT(favorites.acl.permission) > 0 AS is_private
       FROM favorites.lists
       LEFT JOIN favorites.picks ON favorites.lists.id = favorites.picks.list_id AND favorites.picks.user_address = ${userAddress}
       LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id`

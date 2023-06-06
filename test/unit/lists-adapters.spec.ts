@@ -124,7 +124,8 @@ describe('when transforming DB retrieved lists to lists with count', () => {
           lists_count: '3',
           items_count: '5',
           is_item_in_list: true,
-          preview_of_item_ids: ['1', '2', '3', '4', '5']
+          preview_of_item_ids: ['1', '2', '3', '4', '5'],
+          is_private: false
         },
         {
           id: 'e96df126-f5bf-4311-94d8-6e261f368bb2',
@@ -136,7 +137,8 @@ describe('when transforming DB retrieved lists to lists with count', () => {
           lists_count: '3',
           items_count: '4',
           is_item_in_list: false,
-          preview_of_item_ids: []
+          preview_of_item_ids: [],
+          is_private: false
         },
         {
           id: 'e96df126-f5bf-4311-94d8-6e261f368bb3',
@@ -146,7 +148,8 @@ describe('when transforming DB retrieved lists to lists with count', () => {
           created_at: new Date(),
           updated_at: new Date(),
           lists_count: '3',
-          items_count: '2'
+          items_count: '2',
+          is_private: true
         }
       ]
       listsWithCount = {
@@ -156,10 +159,18 @@ describe('when transforming DB retrieved lists to lists with count', () => {
             name: 'List #1',
             itemsCount: 5,
             isItemInList: true,
-            previewOfItemIds: ['1', '2', '3', '4', '5']
+            previewOfItemIds: ['1', '2', '3', '4', '5'],
+            isPrivate: false
           },
-          { id: 'e96df126-f5bf-4311-94d8-6e261f368bb2', name: 'List #2', itemsCount: 4, isItemInList: false, previewOfItemIds: [] },
-          { id: 'e96df126-f5bf-4311-94d8-6e261f368bb3', name: 'List #3', itemsCount: 2 }
+          {
+            id: 'e96df126-f5bf-4311-94d8-6e261f368bb2',
+            name: 'List #2',
+            itemsCount: 4,
+            isItemInList: false,
+            previewOfItemIds: [],
+            isPrivate: false
+          },
+          { id: 'e96df126-f5bf-4311-94d8-6e261f368bb3', name: 'List #3', itemsCount: 2, isPrivate: true }
         ],
         count: 3
       }
@@ -182,7 +193,8 @@ describe('when transforming a DB retrieved list to a list', () => {
       user_address: '0x45abb534BD927284F84b03d43f33dF0E5C91C21f',
       description: 'This is a list',
       created_at: date,
-      updated_at: date
+      updated_at: date,
+      is_private: false
     }
   })
 
@@ -194,7 +206,8 @@ describe('when transforming a DB retrieved list to a list', () => {
       description: dbList.description,
       createdAt: Number(date),
       updatedAt: Number(date),
-      permission: undefined
+      permission: undefined,
+      isPrivate: false
     })
   })
 })
@@ -211,7 +224,8 @@ describe('when transforming a DB retrieved list with items count to a list with 
       description: 'This is a list',
       created_at: date,
       updated_at: date,
-      items_count: '5'
+      items_count: '5',
+      is_private: false
     }
   })
 
@@ -224,7 +238,8 @@ describe('when transforming a DB retrieved list with items count to a list with 
       createdAt: Number(date),
       updatedAt: Number(date),
       permission: undefined,
-      itemsCount: 5
+      itemsCount: 5,
+      isPrivate: false
     })
   })
 })
