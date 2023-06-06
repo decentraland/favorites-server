@@ -26,14 +26,15 @@ export function fromDBPickToPick(dbPick: DBPick): TPick {
 export function fromDBGetListsToListsWithCount(dbLists: DBGetListsWithCount[]): ListsWithCount {
   return {
     lists: dbLists.map(list => {
-      const { id, name, itemsCount } = fromDBListWithItemsCountToListWithItemsCount(list)
+      const { id, name, description, itemsCount, isPrivate } = fromDBListWithItemsCountToListWithItemsCount(list)
       return {
         id,
         name,
+        description,
         itemsCount,
         isItemInList: list.is_item_in_list,
         previewOfItemIds: list.preview_of_item_ids,
-        isPrivate: list.is_private
+        isPrivate
       }
     }),
     count: Number(dbLists[0]?.lists_count ?? 0)
