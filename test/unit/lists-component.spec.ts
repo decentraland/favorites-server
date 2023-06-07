@@ -576,7 +576,7 @@ describe('when creating a new list', () => {
         description: null,
         created_at: new Date(),
         updated_at: new Date(),
-        is_private: false
+        is_private: true
       }
 
       // Create List Query
@@ -612,7 +612,7 @@ describe('when creating a new list', () => {
       })
 
       it('should resolve with the new list', () => {
-        expect(result).toEqual(dbList)
+        expect(result).toEqual({ ...dbList, is_private: true })
       })
     })
 
@@ -643,7 +643,7 @@ describe('when creating a new list', () => {
       })
 
       it('should resolve with the new list', () => {
-        expect(result).toEqual(dbList)
+        expect(result).toEqual({ ...dbList, is_private: false })
       })
     })
   })

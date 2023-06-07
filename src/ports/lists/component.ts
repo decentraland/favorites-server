@@ -162,7 +162,7 @@ export function createListsComponent(components: Pick<AppComponents, 'pg' | 'sna
           await client.query(insertAccessQuery(id, Permission.VIEW, GRANTED_TO_ALL))
         }
 
-        return insertedList
+        return { ...insertedList, is_private: isPrivate }
       },
       (error: unknown) => {
         validateDuplicatedListName(name, error)
