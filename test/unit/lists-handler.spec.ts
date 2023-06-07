@@ -972,7 +972,15 @@ describe('when getting the lists', () => {
           is_private: false
         }
       ]
-      lists = [{ id: 'e96df126-f5bf-4311-94d8-6e261f368bb2', name: 'List #1', itemsCount: 2, isPrivate: false }]
+      lists = [
+        {
+          id: 'e96df126-f5bf-4311-94d8-6e261f368bb2',
+          name: 'List #1',
+          description: 'Description of List #1',
+          itemsCount: 2,
+          isPrivate: false
+        }
+      ]
       getListsMock.mockResolvedValueOnce(dbLists)
       url = new URL('http://localhost/v1/lists?sortBy=name&sortDirection=asc&itemId=anItemId&q=aName')
       result = getListsHandler({ url, components, verification })

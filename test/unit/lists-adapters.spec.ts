@@ -143,7 +143,7 @@ describe('when transforming DB retrieved lists to lists with count', () => {
         {
           id: 'e96df126-f5bf-4311-94d8-6e261f368bb3',
           name: 'List #3',
-          description: 'Super description of list #3',
+          description: null,
           user_address: '0x45abb534BD927284F84b03d43f33dF0E5C91C21f',
           created_at: new Date(),
           updated_at: new Date(),
@@ -157,6 +157,7 @@ describe('when transforming DB retrieved lists to lists with count', () => {
           {
             id: 'e96df126-f5bf-4311-94d8-6e261f368bb1',
             name: 'List #1',
+            description: 'Super description of list #1',
             itemsCount: 5,
             isItemInList: true,
             previewOfItemIds: ['1', '2', '3', '4', '5'],
@@ -165,12 +166,13 @@ describe('when transforming DB retrieved lists to lists with count', () => {
           {
             id: 'e96df126-f5bf-4311-94d8-6e261f368bb2',
             name: 'List #2',
+            description: 'Super description of list #2',
             itemsCount: 4,
             isItemInList: false,
             previewOfItemIds: [],
             isPrivate: false
           },
-          { id: 'e96df126-f5bf-4311-94d8-6e261f368bb3', name: 'List #3', itemsCount: 2, isPrivate: true }
+          { id: 'e96df126-f5bf-4311-94d8-6e261f368bb3', name: 'List #3', description: null, itemsCount: 2, isPrivate: true }
         ],
         count: 3
       }
