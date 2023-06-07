@@ -1435,7 +1435,7 @@ describe('when updating a list', () => {
 
     it('should convert the updated database list into a list and return it with the status 204', () => {
       return expect(result).resolves.toEqual({
-        status: StatusCode.UPDATED,
+        status: StatusCode.OK,
         body: {
           ok: true,
           data: {

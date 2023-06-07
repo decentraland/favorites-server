@@ -591,7 +591,7 @@ export async function updateListHandler(
     const updateListResult = await lists.updateList(params.id, userAddress, body)
 
     return {
-      status: StatusCode.UPDATED,
+      status: StatusCode.OK,
       body: {
         ok: true,
         data: fromDBListToList(updateListResult)

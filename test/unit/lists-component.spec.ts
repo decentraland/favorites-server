@@ -1095,6 +1095,9 @@ describe('when updating a list', () => {
 
       // Access Mock Query
       dbClientQueryMock.mockResolvedValueOnce(undefined)
+
+      // Get Updated List Mock Query
+      dbClientQueryMock.mockResolvedValueOnce({ rowCount: 0 })
     })
 
     it('should throw a list not found error', async () => {
@@ -1156,6 +1159,9 @@ describe('when updating a list', () => {
 
         // Delete Access Mock Query
         dbClientQueryMock.mockResolvedValueOnce({ rowCount: 0 })
+
+        // Get Updated List Mock Query
+        dbClientQueryMock.mockResolvedValueOnce({ rowCount: 1, rows: [updatedList] })
       })
 
       it('should not throw an error because this means the list is already private', () => {
@@ -1188,6 +1194,12 @@ describe('when updating a list', () => {
 
         // Delete Access Mock Query
         dbClientQueryMock.mockResolvedValueOnce({ rowCount: 1 })
+
+        // Get Updated List Mock Query
+        dbClientQueryMock.mockResolvedValueOnce({
+          rowCount: 1,
+          rows: [dbList]
+        })
       })
 
       describe('and the updated list has only an updated name without a new description', () => {
@@ -1347,6 +1359,12 @@ describe('when updating a list', () => {
 
         // Delete Access Mock Query
         dbClientQueryMock.mockResolvedValueOnce({ rowCount: 1 })
+
+        // Get Updated List Mock Query
+        dbClientQueryMock.mockResolvedValueOnce({
+          rowCount: 1,
+          rows: [dbList]
+        })
       })
 
       describe('and the updated list has only an updated name without a new description', () => {
@@ -1412,6 +1430,31 @@ describe('when updating a list', () => {
           )
         })
 
+        it('should get the updated list with its last privacy configuration', () => {
+          expect(dbClientQueryMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+              strings: expect.arrayContaining([
+                expect.stringContaining(
+                  'SELECT favorites.lists.id, favorites.lists.name, favorites.lists.description, favorites.lists.user_address, favorites.lists.created_at, favorites.lists.updated_at, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS items_count, COUNT(favorites.acl.permission) = 0 AS is_private'
+                ),
+                expect.stringContaining('FROM favorites.lists'),
+                expect.stringContaining(
+                  'LEFT JOIN favorites.picks ON favorites.lists.id = favorites.picks.list_id AND (favorites.picks.user_address ='
+                ),
+                expect.stringContaining('OR favorites.picks.user_address = favorites.lists.user_address)'),
+                expect.stringContaining('LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id'),
+                expect.stringContaining('WHERE favorites.lists.id ='),
+                expect.stringContaining('(favorites.lists.user_address ='),
+                expect.stringContaining('OR favorites.lists.user_address ='),
+                expect.stringContaining(')'),
+                expect.stringContaining('GROUP BY favorites.lists.id, favorites.acl.permission'),
+                expect.stringContaining('ORDER BY favorites.acl.permission ASC LIMIT 1')
+              ]),
+              values: [userAddress, listId, userAddress, DEFAULT_LIST_USER_ADDRESS]
+            })
+          )
+        })
+
         it('should resolve with the updated list', () => {
           expect(result).toEqual(dbList)
         })
@@ -1447,6 +1490,31 @@ describe('when updating a list', () => {
           )
         })
 
+        it('should get the updated list with its last privacy configuration', () => {
+          expect(dbClientQueryMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+              strings: expect.arrayContaining([
+                expect.stringContaining(
+                  'SELECT favorites.lists.id, favorites.lists.name, favorites.lists.description, favorites.lists.user_address, favorites.lists.created_at, favorites.lists.updated_at, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS items_count, COUNT(favorites.acl.permission) = 0 AS is_private'
+                ),
+                expect.stringContaining('FROM favorites.lists'),
+                expect.stringContaining(
+                  'LEFT JOIN favorites.picks ON favorites.lists.id = favorites.picks.list_id AND (favorites.picks.user_address ='
+                ),
+                expect.stringContaining('OR favorites.picks.user_address = favorites.lists.user_address)'),
+                expect.stringContaining('LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id'),
+                expect.stringContaining('WHERE favorites.lists.id ='),
+                expect.stringContaining('(favorites.lists.user_address ='),
+                expect.stringContaining('OR favorites.lists.user_address ='),
+                expect.stringContaining(')'),
+                expect.stringContaining('GROUP BY favorites.lists.id, favorites.acl.permission'),
+                expect.stringContaining('ORDER BY favorites.acl.permission ASC LIMIT 1')
+              ]),
+              values: [userAddress, listId, userAddress, DEFAULT_LIST_USER_ADDRESS]
+            })
+          )
+        })
+
         it('should resolve with the updated list', () => {
           expect(result).toEqual(dbList)
         })
@@ -1475,19 +1543,19 @@ describe('when updating a list', () => {
         is_private: false
       }
 
-      // Update List Mock Query
+      // Delete Access Mock Query
+      dbClientQueryMock.mockResolvedValueOnce({ rowCount: 1 })
+
+      // Get Updated List Mock Query
       dbClientQueryMock.mockResolvedValueOnce({
         rowCount: 1,
         rows: [dbList]
       })
 
-      // Delete Access Mock Query
-      dbClientQueryMock.mockResolvedValueOnce({ rowCount: 1 })
-
       result = await listsComponent.updateList(listId, userAddress, updatedList)
     })
 
-    it('should get the list instead of updating it', () => {
+    it('should only get the list instead of updating it', () => {
       expect(dbClientQueryMock).toHaveBeenCalledWith(
         expect.objectContaining({
           strings: expect.arrayContaining([
