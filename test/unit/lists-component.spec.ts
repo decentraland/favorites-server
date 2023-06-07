@@ -392,9 +392,14 @@ describe('when getting lists', () => {
         expect(dbQueryMock).toBeCalledWith(
           expect.objectContaining({
             strings: expect.arrayContaining([
+              expect.stringContaining(
+                '(SELECT COUNT(1) FROM favorites.acl WHERE favorites.acl.list_id = l.id AND (favorites.acl.grantee ='
+              ),
+              expect.stringContaining('OR favorites.acl.grantee ='),
+              expect.stringContaining(')) = 0 AS is_private'),
               expect.stringContaining('LEFT JOIN favorites.picks p ON l.id = p.list_id AND p.user_address =')
             ]),
-            values: expect.arrayContaining(['0xuseraddress'])
+            values: expect.arrayContaining(['0xuseraddress', '0xuseraddress', '*'])
           })
         )
 
@@ -442,7 +447,7 @@ describe('when getting lists', () => {
 
         expect(dbQueryMock).toBeCalledWith(
           expect.objectContaining({
-            text: expect.stringContaining(', MAX(CASE WHEN p.item_id = $2 THEN 1 ELSE 0 END)::BOOLEAN AS is_item_in_list'),
+            text: expect.stringContaining(', MAX(CASE WHEN p.item_id = $4 THEN 1 ELSE 0 END)::BOOLEAN AS is_item_in_list'),
             values: expect.arrayContaining([itemId])
           })
         )
@@ -468,7 +473,7 @@ describe('when getting lists', () => {
 
         expect(dbQueryMock).toBeCalledWith(
           expect.objectContaining({
-            text: expect.stringContaining("AND l.name ILIKE '%$5%'"),
+            text: expect.stringContaining("AND l.name ILIKE '%$7%'"),
             values: expect.arrayContaining([q])
           })
         )
@@ -570,7 +575,8 @@ describe('when creating a new list', () => {
         user_address: userAddress,
         description: null,
         created_at: new Date(),
-        updated_at: new Date()
+        updated_at: new Date(),
+        is_private: false
       }
 
       // Create List Query
@@ -718,7 +724,8 @@ describe('when getting a list', () => {
         description: null,
         user_address: 'aUserAddress',
         created_at: new Date(),
-        updated_at: new Date()
+        updated_at: new Date(),
+        is_private: false
       }
 
       dbQueryMock.mockResolvedValueOnce({ rowCount: 1, rows: [dbList] })
@@ -749,7 +756,8 @@ describe('when getting a list', () => {
         description: null,
         user_address: 'aUserAddress',
         created_at: new Date(),
-        updated_at: new Date()
+        updated_at: new Date(),
+        is_private: false
       }
 
       dbQueryMock.mockResolvedValueOnce({ rowCount: 1, rows: [dbList] })
@@ -760,7 +768,7 @@ describe('when getting a list', () => {
       expect(dbQueryMock).toHaveBeenCalledWith(
         expect.objectContaining({
           text: expect.stringContaining(
-            'SELECT favorites.lists.id, favorites.lists.name, favorites.lists.description, favorites.lists.user_address, favorites.lists.created_at, favorites.lists.updated_at, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS count_items'
+            'SELECT favorites.lists.id, favorites.lists.name, favorites.lists.description, favorites.lists.user_address, favorites.lists.created_at, favorites.lists.updated_at, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS items_count, COUNT(favorites.acl.permission) = 0 AS is_private'
           )
         })
       )
@@ -774,7 +782,7 @@ describe('when getting a list', () => {
       expect(dbQueryMock).toHaveBeenCalledWith(
         expect.objectContaining({
           text: expect.stringContaining(
-            'LEFT JOIN favorites.picks ON favorites.lists.id = favorites.picks.list_id AND favorites.picks.user_address = $1'
+            'LEFT JOIN favorites.picks ON favorites.lists.id = favorites.picks.list_id AND (favorites.picks.user_address = $1 OR favorites.picks.user_address = favorites.lists.user_address)'
           ),
           values: expect.arrayContaining([userAddress])
         })
@@ -829,7 +837,8 @@ describe('when getting a list', () => {
         description: null,
         user_address: 'aUserAddress',
         created_at: new Date(),
-        updated_at: new Date()
+        updated_at: new Date(),
+        is_private: false
       }
 
       dbQueryMock.mockResolvedValueOnce({ rowCount: 1, rows: [dbList] })
@@ -840,7 +849,7 @@ describe('when getting a list', () => {
       expect(dbQueryMock).toHaveBeenCalledWith(
         expect.objectContaining({
           text: expect.stringContaining(
-            'SELECT favorites.lists.id, favorites.lists.name, favorites.lists.description, favorites.lists.user_address, favorites.lists.created_at, favorites.lists.updated_at, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS count_items'
+            'SELECT favorites.lists.id, favorites.lists.name, favorites.lists.description, favorites.lists.user_address, favorites.lists.created_at, favorites.lists.updated_at, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS items_count, COUNT(favorites.acl.permission) = 0 AS is_private'
           )
         })
       )
@@ -854,7 +863,7 @@ describe('when getting a list', () => {
       expect(dbQueryMock).toHaveBeenCalledWith(
         expect.objectContaining({
           text: expect.stringContaining(
-            'LEFT JOIN favorites.picks ON favorites.lists.id = favorites.picks.list_id AND favorites.picks.user_address = $1'
+            'LEFT JOIN favorites.picks ON favorites.lists.id = favorites.picks.list_id AND (favorites.picks.user_address = $1 OR favorites.picks.user_address = favorites.lists.user_address)'
           ),
           values: expect.arrayContaining([userAddress])
         })
@@ -909,7 +918,8 @@ describe('when getting a list', () => {
         description: null,
         user_address: 'aUserAddress',
         created_at: new Date(),
-        updated_at: new Date()
+        updated_at: new Date(),
+        is_private: false
       }
     })
 
@@ -932,7 +942,7 @@ describe('when getting a list', () => {
         expect(dbQueryMock).toHaveBeenCalledWith(
           expect.objectContaining({
             text: expect.stringContaining(
-              'SELECT favorites.lists.id, favorites.lists.name, favorites.lists.description, favorites.lists.user_address, favorites.lists.created_at, favorites.lists.updated_at, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS count_items'
+              'SELECT favorites.lists.id, favorites.lists.name, favorites.lists.description, favorites.lists.user_address, favorites.lists.created_at, favorites.lists.updated_at, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS items_count, COUNT(favorites.acl.permission) = 0 AS is_private'
             )
           })
         )
@@ -946,7 +956,7 @@ describe('when getting a list', () => {
         expect(dbQueryMock).toHaveBeenCalledWith(
           expect.objectContaining({
             text: expect.stringContaining(
-              'LEFT JOIN favorites.picks ON favorites.lists.id = favorites.picks.list_id AND favorites.picks.user_address = $1'
+              'LEFT JOIN favorites.picks ON favorites.lists.id = favorites.picks.list_id AND (favorites.picks.user_address = $1 OR favorites.picks.user_address = favorites.lists.user_address)'
             ),
             values: expect.arrayContaining([userAddress])
           })
@@ -961,7 +971,7 @@ describe('when getting a list', () => {
         expect(dbQueryMock).toHaveBeenCalledWith(
           expect.objectContaining({
             text: expect.stringContaining(
-              'WHERE favorites.lists.id = $2 AND ((favorites.lists.user_address = $3 OR favorites.lists.user_address = $4) OR ((favorites.acl.grantee = $5 OR favorites.acl.grantee = $6) AND favorites.acl.permission = ANY($7))'
+              'WHERE favorites.lists.id = $2 AND (favorites.lists.user_address = $3 OR favorites.lists.user_address = $4 OR ((favorites.acl.grantee = $5 OR favorites.acl.grantee = $6) AND favorites.acl.permission = ANY($7))'
             ),
             values: expect.arrayContaining([listId, userAddress, DEFAULT_LIST_USER_ADDRESS, userAddress, '*', [permission]])
           })
@@ -1004,7 +1014,7 @@ describe('when getting a list', () => {
         expect(dbQueryMock).toHaveBeenCalledWith(
           expect.objectContaining({
             text: expect.stringContaining(
-              'SELECT favorites.lists.id, favorites.lists.name, favorites.lists.description, favorites.lists.user_address, favorites.lists.created_at, favorites.lists.updated_at, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS count_items'
+              'SELECT favorites.lists.id, favorites.lists.name, favorites.lists.description, favorites.lists.user_address, favorites.lists.created_at, favorites.lists.updated_at, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS items_count, COUNT(favorites.acl.permission) = 0 AS is_private'
             )
           })
         )
@@ -1018,7 +1028,7 @@ describe('when getting a list', () => {
         expect(dbQueryMock).toHaveBeenCalledWith(
           expect.objectContaining({
             text: expect.stringContaining(
-              'LEFT JOIN favorites.picks ON favorites.lists.id = favorites.picks.list_id AND favorites.picks.user_address = $1'
+              'LEFT JOIN favorites.picks ON favorites.lists.id = favorites.picks.list_id AND (favorites.picks.user_address = $1 OR favorites.picks.user_address = favorites.lists.user_address)'
             ),
             values: expect.arrayContaining([userAddress])
           })
@@ -1033,7 +1043,7 @@ describe('when getting a list', () => {
         expect(dbQueryMock).toHaveBeenCalledWith(
           expect.objectContaining({
             text: expect.stringContaining(
-              'WHERE favorites.lists.id = $2 AND ((favorites.lists.user_address = $3 OR favorites.lists.user_address = $4) OR ((favorites.acl.grantee = $5 OR favorites.acl.grantee = $6) AND favorites.acl.permission = ANY($7)))'
+              'WHERE favorites.lists.id = $2 AND (favorites.lists.user_address = $3 OR favorites.lists.user_address = $4 OR ((favorites.acl.grantee = $5 OR favorites.acl.grantee = $6) AND favorites.acl.permission = ANY($7)))'
             ),
             values: expect.arrayContaining([
               listId,
@@ -1166,7 +1176,8 @@ describe('when updating a list', () => {
           description: null,
           user_address: userAddress,
           created_at: new Date(),
-          updated_at: new Date()
+          updated_at: new Date(),
+          is_private: false
         }
 
         // Update List Mock Query
@@ -1324,7 +1335,8 @@ describe('when updating a list', () => {
           description: null,
           user_address: userAddress,
           created_at: new Date(),
-          updated_at: new Date()
+          updated_at: new Date(),
+          is_private: true
         }
 
         // Update List Mock Query
@@ -1459,7 +1471,8 @@ describe('when updating a list', () => {
         description: null,
         user_address: userAddress,
         created_at: new Date(),
-        updated_at: new Date()
+        updated_at: new Date(),
+        is_private: false
       }
 
       // Update List Mock Query
@@ -1479,12 +1492,13 @@ describe('when updating a list', () => {
         expect.objectContaining({
           strings: expect.arrayContaining([
             expect.stringContaining(
-              'SELECT favorites.lists.id, favorites.lists.name, favorites.lists.description, favorites.lists.user_address, favorites.lists.created_at, favorites.lists.updated_at, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS count_items'
+              'SELECT favorites.lists.id, favorites.lists.name, favorites.lists.description, favorites.lists.user_address, favorites.lists.created_at, favorites.lists.updated_at, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS items_count, COUNT(favorites.acl.permission) = 0 AS is_private'
             ),
             expect.stringContaining('FROM favorites.lists'),
             expect.stringContaining(
-              'LEFT JOIN favorites.picks ON favorites.lists.id = favorites.picks.list_id AND favorites.picks.user_address ='
+              'LEFT JOIN favorites.picks ON favorites.lists.id = favorites.picks.list_id AND (favorites.picks.user_address ='
             ),
+            expect.stringContaining('OR favorites.picks.user_address = favorites.lists.user_address)'),
             expect.stringContaining('LEFT JOIN favorites.acl ON favorites.lists.id = favorites.acl.list_id'),
             expect.stringContaining('WHERE favorites.lists.id ='),
             expect.stringContaining('(favorites.lists.user_address ='),

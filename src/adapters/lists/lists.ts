@@ -32,7 +32,8 @@ export function fromDBGetListsToListsWithCount(dbLists: DBGetListsWithCount[]): 
         name,
         itemsCount,
         isItemInList: list.is_item_in_list,
-        previewOfItemIds: list.preview_of_item_ids
+        previewOfItemIds: list.preview_of_item_ids,
+        isPrivate: list.is_private
       }
     }),
     count: Number(dbLists[0]?.lists_count ?? 0)
@@ -47,7 +48,8 @@ export function fromDBListToList(dbList: DBList): List {
     userAddress: dbList.user_address,
     createdAt: Number(dbList.created_at),
     updatedAt: Number(dbList.updated_at),
-    permission: dbList.permission as Permission
+    permission: dbList.permission as Permission,
+    isPrivate: dbList.is_private
   }
 }
 

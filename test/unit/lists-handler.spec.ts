@@ -968,10 +968,11 @@ describe('when getting the lists', () => {
           created_at: new Date(),
           updated_at: new Date(),
           lists_count: '1',
-          items_count: '2'
+          items_count: '2',
+          is_private: false
         }
       ]
-      lists = [{ id: 'e96df126-f5bf-4311-94d8-6e261f368bb2', name: 'List #1', itemsCount: 2 }]
+      lists = [{ id: 'e96df126-f5bf-4311-94d8-6e261f368bb2', name: 'List #1', itemsCount: 2, isPrivate: false }]
       getListsMock.mockResolvedValueOnce(dbLists)
       url = new URL('http://localhost/v1/lists?sortBy=name&sortDirection=asc&itemId=anItemId&q=aName')
       result = getListsHandler({ url, components, verification })
@@ -1086,7 +1087,8 @@ describe('when creating a list', () => {
         user_address: verification?.auth ?? '',
         created_at: date,
         updated_at: date,
-        description: null
+        description: null,
+        is_private: true
       }
       jsonMock.mockResolvedValueOnce({ name, private: true })
       addListMock.mockResolvedValueOnce(list)
@@ -1104,7 +1106,8 @@ describe('when creating a list', () => {
             createdAt: Number(date),
             updatedAt: Number(date),
             description: null,
-            permission: undefined
+            permission: undefined,
+            isPrivate: true
           }
         }
       })
@@ -1137,7 +1140,8 @@ describe('when getting a list', () => {
       description: 'Description of List #1',
       user_address: '0x45abb534BD927284F84b03d43f33dF0E5C91C21f',
       created_at: date,
-      updated_at: date
+      updated_at: date,
+      is_private: true
     }
 
     list = {
@@ -1147,7 +1151,8 @@ describe('when getting a list', () => {
       createdAt: Number(date),
       updatedAt: Number(date),
       description: 'Description of List #1',
-      permission: undefined
+      permission: undefined,
+      isPrivate: true
     }
   })
 
@@ -1411,7 +1416,8 @@ describe('when updating a list', () => {
         user_address: verification?.auth ?? '',
         created_at: date,
         updated_at: date,
-        description: null
+        description: null,
+        is_private: true
       }
       jsonMock.mockResolvedValueOnce({ name })
       updateListMock.mockResolvedValueOnce(list)
@@ -1431,7 +1437,8 @@ describe('when updating a list', () => {
             createdAt: Number(date),
             updatedAt: Number(date),
             description: null,
-            permission: undefined
+            permission: undefined,
+            isPrivate: true
           }
         }
       })
