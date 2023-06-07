@@ -190,12 +190,10 @@ export function createListsComponent(components: Pick<AppComponents, 'pg' | 'sna
 
         updateQuery.append(SQL` WHERE id = ${id} AND user_address = ${userAddress} RETURNING *`)
 
-        const [updatedListResult] = await Promise.all([
-          client.query<DBList>(shouldUpdate ? updateQuery : getListQuery(id, { userAddress })),
-          client.query(accessQuery)
-        ])
+        const [updateResult] = await Promise.all([shouldUpdate && client.query<DBList>(updateQuery), client.query(accessQuery)])
+        const updatedListResult = await client.query<DBList>(getListQuery(id, { userAddress }))
 
-        validateListExists(id, updatedListResult)
+        validateListExists(id, updateResult || updatedListResult)
 
         return updatedListResult.rows[0]
       },
