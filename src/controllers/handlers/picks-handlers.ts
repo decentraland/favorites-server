@@ -205,9 +205,6 @@ export async function pickAndUnpickInBulkHandler(
       body: {
         ok: true,
         data: {
-          itemId: params.itemId,
-          pickedFor,
-          unpickedFrom,
           pickedByUser
         }
       }

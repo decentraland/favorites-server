@@ -605,9 +605,6 @@ describe('when picking or unpicking an item for/from multiple lists', () => {
           body: {
             ok: true,
             data: {
-              itemId,
-              pickedFor,
-              unpickedFrom,
               pickedByUser: true
             } as PickUnpickInBulkResponse
           }
@@ -632,8 +629,6 @@ describe('when picking or unpicking an item for/from multiple lists', () => {
             body: {
               ok: true,
               data: {
-                itemId,
-                unpickedFrom,
                 pickedByUser: false
               } as PickUnpickInBulkResponse
             }
@@ -652,8 +647,6 @@ describe('when picking or unpicking an item for/from multiple lists', () => {
             body: {
               ok: true,
               data: {
-                itemId,
-                unpickedFrom,
                 pickedByUser: true
               } as PickUnpickInBulkResponse
             }

@@ -49,8 +49,5 @@ export type PickUnpickInBulkBody = {
 }
 
 export type PickUnpickInBulkResponse = {
-  itemId: string
-  pickedFor?: string[]
-  unpickedFrom?: string[]
   pickedByUser?: boolean
 }
