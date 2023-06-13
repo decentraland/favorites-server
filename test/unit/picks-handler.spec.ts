@@ -8,7 +8,7 @@ import {
 } from '../../src/controllers/handlers/picks-handlers'
 import { ItemNotFoundError } from '../../src/ports/items/errors'
 import { ListsNotFoundError } from '../../src/ports/lists/errors'
-import { DBGetFilteredPicksWithCount, DBPickStats, PickUnpickInBulkBody } from '../../src/ports/picks'
+import { DBGetFilteredPicksWithCount, DBPickStats, PickUnpickInBulkBody, PickUnpickInBulkResponse } from '../../src/ports/picks'
 import { AppComponents, HandlerContextWithPath, StatusCode } from '../../src/types'
 import { createTestPicksComponent } from '../components'
 
@@ -476,7 +476,8 @@ describe('when picking or unpicking an item for/from multiple lists', () => {
     jsonMock = jest.fn()
     components = {
       picks: createTestPicksComponent({
-        pickAndUnpickInBulk: pickAndUnpickInBulkMock
+        pickAndUnpickInBulk: pickAndUnpickInBulkMock,
+        getPicksStats: getPicksStatsMock
       })
     }
     request = { json: jsonMock } as unknown as HandlerContextWithPath<'lists', '/v1/picks/:itemId'>['request']
@@ -588,18 +589,69 @@ describe('when picking or unpicking an item for/from multiple lists', () => {
   })
 
   describe('and the process is successful', () => {
-    beforeEach(() => {
-      jsonMock.mockResolvedValueOnce({})
-      pickAndUnpickInBulkMock.mockResolvedValueOnce([])
+    const unpickedFrom = ['a-different-list-id']
+
+    describe('and the user is adding the item to some lists through the pickedFor property of the body', () => {
+      const pickedFor = ['list-id', 'another-list-id']
+
+      beforeEach(() => {
+        jsonMock.mockResolvedValueOnce({ pickedFor, unpickedFrom })
+        pickAndUnpickInBulkMock.mockResolvedValueOnce([])
+      })
+
+      it('should return an ok response with the flag "pickedByUser" in true because the user just added the item to some lists', () => {
+        return expect(pickAndUnpickInBulkHandler({ params, components, request, verification })).resolves.toEqual({
+          status: StatusCode.OK,
+          body: {
+            ok: true,
+            data: {
+              pickedByUser: true
+            } as PickUnpickInBulkResponse
+          }
+        })
+      })
     })
 
-    it('should return an updated response', () => {
-      return expect(pickAndUnpickInBulkHandler({ params, components, request, verification })).resolves.toEqual({
-        status: StatusCode.UPDATED,
-        body: {
-          ok: true,
-          data: undefined
-        }
+    describe('and the user is only removing the item from some lists through the unpickedFrom property of the body', () => {
+      beforeEach(() => {
+        jsonMock.mockResolvedValueOnce({ unpickedFrom })
+        pickAndUnpickInBulkMock.mockResolvedValueOnce([])
+      })
+
+      describe('and the user does not have more list in which has added the item', () => {
+        beforeEach(() => {
+          getPicksStatsMock.mockResolvedValueOnce([{ picked_by_user: false } as DBPickStats])
+        })
+
+        it('should return an ok response with the flag "pickedByUser" in false in the past', () => {
+          return expect(pickAndUnpickInBulkHandler({ params, components, request, verification })).resolves.toEqual({
+            status: StatusCode.OK,
+            body: {
+              ok: true,
+              data: {
+                pickedByUser: false
+              } as PickUnpickInBulkResponse
+            }
+          })
+        })
+      })
+
+      describe('and the user has more list in which has added the item in the past', () => {
+        beforeEach(() => {
+          getPicksStatsMock.mockResolvedValueOnce([{ picked_by_user: true } as DBPickStats])
+        })
+
+        it('should return an ok response with the flag "pickedByUser" in true', () => {
+          return expect(pickAndUnpickInBulkHandler({ params, components, request, verification })).resolves.toEqual({
+            status: StatusCode.OK,
+            body: {
+              ok: true,
+              data: {
+                pickedByUser: true
+              } as PickUnpickInBulkResponse
+            }
+          })
+        })
       })
     })
   })

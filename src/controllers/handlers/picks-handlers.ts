@@ -4,7 +4,7 @@ import { getNumberParameter, getPaginationParams } from '../../logic/http'
 import { InvalidParameterError } from '../../logic/http/errors'
 import { ItemNotFoundError } from '../../ports/items/errors'
 import { ListsNotFoundError } from '../../ports/lists/errors'
-import { PickStats, PickUnpickInBulkBody } from '../../ports/picks'
+import { PickStats, PickUnpickInBulkBody, PickUnpickInBulkResponse } from '../../ports/picks'
 import { HandlerContextWithPath, HTTPResponse, StatusCode } from '../../types'
 
 export async function getPickStatsOfItemHandler(
@@ -159,7 +159,7 @@ export async function getPicksByItemIdHandler(
 
 export async function pickAndUnpickInBulkHandler(
   context: Pick<HandlerContextWithPath<'picks', '/v1/picks/:itemId'>, 'components' | 'params' | 'request' | 'verification'>
-): Promise<HTTPResponse<undefined>> {
+): Promise<HTTPResponse<PickUnpickInBulkResponse>> {
   const {
     components: { picks },
     verification,
@@ -193,11 +193,20 @@ export async function pickAndUnpickInBulkHandler(
 
   try {
     await picks.pickAndUnpickInBulk(params.itemId, body, userAddress)
+    let pickedByUser = pickedFor && pickedFor?.length > 0
+
+    if (!pickedByUser) {
+      const picksStats = await picks.getPicksStats([params.itemId], { userAddress })
+      pickedByUser = fromDBPickStatsToPickStats(picksStats[0]).pickedByUser
+    }
+
     return {
-      status: StatusCode.UPDATED,
+      status: StatusCode.OK,
       body: {
         ok: true,
-        data: undefined
+        data: {
+          pickedByUser
+        }
       }
     }
   } catch (error) {
