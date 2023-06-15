@@ -30,16 +30,6 @@ export async function getPicksByListIdHandler(
   } = context
   const userAddress: string | undefined = verification?.auth.toLowerCase()
 
-  if (!userAddress) {
-    return {
-      status: StatusCode.UNAUTHORIZED,
-      body: {
-        ok: false,
-        message: 'Unauthorized'
-      }
-    }
-  }
-
   const { limit, offset } = getPaginationParams(url.searchParams)
   const picksByListIdResult = await lists.getPicksByListId(params.id, {
     userAddress,

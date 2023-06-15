@@ -15,10 +15,11 @@ export interface IListsComponents {
 }
 
 export type GetAuthenticatedAndPaginatedParameters = {
-  userAddress: string
+  userAddress?: string
 } & PaginationParameters
 
-export type GetListsParameters = GetAuthenticatedAndPaginatedParameters & {
+export type GetListsParameters = PaginationParameters & {
+  userAddress: string
   sortBy?: ListSortBy
   sortDirection?: ListSortDirection
   itemId?: string | null
