@@ -50,31 +50,6 @@ describe('when getting the picks of a list', () => {
     params = { id: listId }
   })
 
-  describe('and the request is not authenticated', () => {
-    beforeEach(() => {
-      verification = undefined
-    })
-
-    it('should return an unauthorized response', () => {
-      return expect(
-        getPicksByListIdHandler({
-          url,
-          components,
-          verification,
-          request,
-          params
-        })
-      ).resolves.toEqual({
-        status: StatusCode.UNAUTHORIZED,
-        body: {
-          ok: false,
-          message: 'Unauthorized',
-          data: undefined
-        }
-      })
-    })
-  })
-
   describe('and the process to get the picks fails', () => {
     let error: Error
 

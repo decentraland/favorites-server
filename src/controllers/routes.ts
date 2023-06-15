@@ -33,7 +33,7 @@ export function setupRouter({ components: { schemaValidator } }: GlobalContext):
   router.get(
     '/v1/lists/:id/picks',
     authorizationMiddleware.wellKnownComponents({
-      optional: false,
+      optional: true,
       expiration: FIVE_MINUTES
     }),
     getPicksByListIdHandler
