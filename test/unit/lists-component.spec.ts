@@ -481,10 +481,10 @@ describe('when getting lists', () => {
     })
 
     describe.each([
-      [ListSortBy.CREATED_AT, 'created_at'],
-      [ListSortBy.NAME, 'name'],
-      [ListSortBy.UPDATED_AT, 'updated_at']
-    ])('and the sorting parameters are set', (sortBy, expectedOrderByColumn) => {
+      [ListSortBy.CREATED_AT, 'created_at', ''],
+      [ListSortBy.NAME, 'name', ''],
+      [ListSortBy.UPDATED_AT, 'updated_at', 'NULLS LAST']
+    ])('and the sorting parameters are set', (sortBy, expectedOrderByColumn, extraStatement) => {
       describe('and the sort by is "%s"', () => {
         describe.each([ListSortDirection.ASC, ListSortDirection.DESC])('and the sort direction is "%s"', sortDirection => {
           it('should have made the query to get the lists matching those conditions', async () => {
@@ -501,7 +501,9 @@ describe('when getting lists', () => {
             expect(dbQueryMock).toBeCalledWith(
               expect.objectContaining({
                 strings: expect.arrayContaining([
-                  expect.stringContaining(`ORDER BY is_default_list DESC, l.${expectedOrderByColumn} ${sortDirection.toUpperCase()}`)
+                  expect.stringContaining(
+                    `ORDER BY is_default_list DESC, l.${expectedOrderByColumn} ${sortDirection.toUpperCase()} ${extraStatement}`.trim()
+                  )
                 ])
               })
             )
