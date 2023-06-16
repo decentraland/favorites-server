@@ -131,7 +131,7 @@ export function createListsComponent(components: Pick<AppComponents, 'pg' | 'sna
         orderByQuery.append(`, l.created_at ${sortDirectionKeyword}`)
         break
       case ListSortBy.UPDATED_AT:
-        orderByQuery.append(`, l.updated_at ${sortDirectionKeyword}`)
+        orderByQuery.append(`, l.updated_at ${sortDirectionKeyword} NULLS LAST`)
         break
       case ListSortBy.NAME:
         orderByQuery.append(`, l.name ${sortDirectionKeyword}`)
