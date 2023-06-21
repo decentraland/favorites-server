@@ -1,6 +1,7 @@
 import { Router } from '@well-known-components/http-server'
 import * as authorizationMiddleware from 'decentraland-crypto-middleware'
-import { ListCreationSchema, ListUpdateSchema } from '../ports/lists'
+import { AccessBodySchema } from '../ports/access'
+import { AddPickInListSchema, ListCreationSchema, ListUpdateSchema } from '../ports/lists'
 import { PickUnpickInBulkSchema } from '../ports/picks'
 import { GlobalContext } from '../types'
 import {
@@ -45,6 +46,7 @@ export function setupRouter({ components: { schemaValidator } }: GlobalContext):
       optional: false,
       expiration: FIVE_MINUTES
     }),
+    schemaValidator.withSchemaValidatorMiddleware(AddPickInListSchema),
     createPickInListHandler
   )
 
@@ -131,6 +133,7 @@ export function setupRouter({ components: { schemaValidator } }: GlobalContext):
       optional: false,
       expiration: FIVE_MINUTES
     }),
+    schemaValidator.withSchemaValidatorMiddleware(AccessBodySchema),
     createAccessHandler
   )
 
@@ -140,6 +143,7 @@ export function setupRouter({ components: { schemaValidator } }: GlobalContext):
       optional: false,
       expiration: FIVE_MINUTES
     }),
+    schemaValidator.withSchemaValidatorMiddleware(AccessBodySchema),
     deleteAccessHandler
   )
 

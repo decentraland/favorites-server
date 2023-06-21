@@ -7,17 +7,15 @@ import {
   fromDBListWithItemsCountToListWithItemsCount
 } from '../../adapters/lists'
 import { TPick } from '../../adapters/picks'
-import { isErrorWithMessage } from '../../logic/errors'
 import { getPaginationParams, getParameter } from '../../logic/http'
 import { DEFAULT_LIST_ID } from '../../migrations/1678303321034_default-list'
 import { Permission } from '../../ports/access'
 import { AccessNotFoundError, DuplicatedAccessError } from '../../ports/access/errors'
 import { ItemNotFoundError } from '../../ports/items/errors'
-import { AddListRequestBody, ListSortBy, ListSortDirection, UpdateListRequestBody } from '../../ports/lists'
+import { AddItemToListBody, AddListRequestBody, ListSortBy, ListSortDirection, UpdateListRequestBody } from '../../ports/lists'
 import { DuplicatedListError, ListNotFoundError, PickAlreadyExistsError, PickNotFoundError } from '../../ports/lists/errors'
 import { HandlerContextWithPath, HTTPResponse, StatusCode } from '../../types'
 import { AccessBody } from './types'
-import { validateAccessBody } from './utils'
 
 export async function getPicksByListIdHandler(
   context: Pick<HandlerContextWithPath<'lists', '/v1/lists/:id/picks'>, 'url' | 'components' | 'params' | 'request' | 'verification'>
@@ -63,7 +61,6 @@ export async function createPickInListHandler(
     request
   } = context
   const userAddress: string | undefined = verification?.auth.toLowerCase()
-  let body: { itemId?: string }
 
   if (!userAddress) {
     return {
@@ -75,26 +72,7 @@ export async function createPickInListHandler(
     }
   }
 
-  try {
-    body = await request.json()
-    if (!body.itemId || (body.itemId && typeof body.itemId !== 'string')) {
-      return {
-        status: StatusCode.BAD_REQUEST,
-        body: {
-          ok: false,
-          message: 'The property itemId is missing or is not of string type.'
-        }
-      }
-    }
-  } catch (error) {
-    return {
-      status: StatusCode.BAD_REQUEST,
-      body: {
-        ok: false,
-        message: 'The body must contain a parsable JSON.'
-      }
-    }
-  }
+  const body: AddItemToListBody = await request.json()
 
   try {
     const addPickToListResult = await lists.addPickToList(params.id, body.itemId, userAddress)
@@ -217,20 +195,7 @@ export async function deleteAccessHandler(
     }
   }
 
-  let body: AccessBody
-
-  try {
-    body = await request.json()
-    validateAccessBody(body)
-  } catch (error) {
-    return {
-      status: StatusCode.BAD_REQUEST,
-      body: {
-        ok: false,
-        message: isErrorWithMessage(error) ? error.message : 'Unknown error'
-      }
-    }
-  }
+  const body: AccessBody = await request.json()
 
   try {
     await access.deleteAccess(id, body.permission, body.grantee.toLowerCase(), userAddress)
@@ -283,20 +248,7 @@ export async function createAccessHandler(
     }
   }
 
-  let body: AccessBody
-
-  try {
-    body = await request.json()
-    validateAccessBody(body)
-  } catch (error) {
-    return {
-      status: StatusCode.BAD_REQUEST,
-      body: {
-        ok: false,
-        message: isErrorWithMessage(error) ? error.message : 'Unknown error'
-      }
-    }
-  }
+  const body: AccessBody = await request.json()
 
   try {
     await access.createAccess(id, body.permission, body.grantee, userAddress)
