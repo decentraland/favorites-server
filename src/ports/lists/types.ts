@@ -53,6 +53,8 @@ export type DBGetListsWithCount = DBListsWithItemsCount & {
   preview_of_item_ids?: string[]
 }
 
+export type AddItemToListBody = { itemId: string }
+
 export type AddListRequestBody = {
   name: string
   description?: string

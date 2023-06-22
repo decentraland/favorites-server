@@ -1,5 +1,18 @@
 import { JSONSchema } from '@dcl/schemas'
-import { AddListRequestBody, UpdateListRequestBody } from './types'
+import { AddItemToListBody, AddListRequestBody, UpdateListRequestBody } from './types'
+
+export const AddPickInListSchema: JSONSchema<AddItemToListBody> = {
+  type: 'object',
+  properties: {
+    itemId: {
+      type: 'string',
+      description: 'The item id to be added to the list',
+      nullable: false,
+      minLength: 1
+    }
+  },
+  required: ['itemId']
+}
 
 export const ListCreationSchema: JSONSchema<AddListRequestBody> = {
   type: 'object',
