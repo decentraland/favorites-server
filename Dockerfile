@@ -1,12 +1,11 @@
 ARG RUN
 
-FROM node:16 as builderenv
+FROM node:18-alpine as builderenv
 
 WORKDIR /app
 
 # some packages require a build step
-RUN apt-get update
-RUN apt-get -y -qq install python-setuptools python-dev build-essential
+RUN apk add --no-cache py3-setuptools python3-dev build-base
 
 # We use Tini to handle signals and PID1 (https://github.com/krallin/tini, read why here https://github.com/krallin/tini/issues/8)
 ENV TINI_VERSION v0.19.0
@@ -28,7 +27,7 @@ RUN npm ci --only=production --ignore-scripts
 
 ########################## END OF BUILD STAGE ##########################
 
-FROM node:lts
+FROM node:18-alpine
 
 # NODE_ENV is used to configure some runtime options, like JSON logger
 ENV NODE_ENV production
