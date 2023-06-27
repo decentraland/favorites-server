@@ -1,12 +1,14 @@
-module.exports = {
-  moduleFileExtensions: ["ts", "js"],
+export default {
+  moduleFileExtensions: ['ts', 'js'],
   transform: {
-    "^.+\\.(ts|tsx)$": "ts-jest",
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    '^.+\\.(ts|tsx)$': 'ts-jest'
   },
-  coverageDirectory: "coverage",
-  collectCoverageFrom: ["src/**/*.ts", "src/**/*.js"],
-  coveragePathIgnorePatterns: ["/node_modules/", "index.ts", "src/migrations"],
-  testMatch: ["**/*.spec.(ts)"],
-  testEnvironment: "node",
+  coverageDirectory: 'coverage',
+  collectCoverageFrom: ['src/**/*.ts', 'src/**/*.js'],
+  coveragePathIgnorePatterns: ['/node_modules/', 'index.ts', 'src/migrations'],
+  testMatch: ['**/*.spec.(ts)'],
+  testEnvironment: 'node',
   resetMocks: true,
+  setupFilesAfterEnv: ['./jest.setup.ts']
 }

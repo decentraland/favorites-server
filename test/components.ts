@@ -47,19 +47,36 @@ async function initComponents(): Promise<TestComponents> {
     HTTP_SERVER_PORT: (currentPort + 1).toString()
   }
 
-  const config = await createDotEnvConfigComponent({ path: path.resolve(__dirname, '../.env.default') }, defaultConfig)
+  const config = await createDotEnvConfigComponent(
+    { path: [path.resolve(__dirname, '../.env.default'), path.resolve(__dirname, '../.env.spec')] },
+    defaultConfig
+  )
   const metrics = await createMetricsComponent(metricDeclarations, { config })
   const tracer = createTracerComponent()
   const logs = await createLogComponent({ metrics, tracer })
 
-  const pg = await createPgComponent({ logs, config, metrics })
-  // Mock the start function to avoid connecting to a local database
-  jest.spyOn(pg, 'start').mockResolvedValue()
+  const databaseUrl = (await config.getString('PG_COMPONENT_PSQL_CONNECTION_STRING')) || ''
+  const schema = await config.requireString('PG_COMPONENT_PSQL_SCHEMA')
+
+  const pg = await createPgComponent(
+    { logs, config, metrics },
+    {
+      migration: {
+        databaseUrl,
+        schema,
+        dir: path.resolve(__dirname, '../src/migrations'),
+        migrationsTable: 'pgmigrations',
+        ignorePattern: '.*\\.map',
+        direction: 'up'
+      }
+    }
+  )
 
   const server = await createServerComponent<GlobalContext>({ config, logs }, {})
   const fetch = await createFetchComponent({ tracer })
   instrumentHttpServerWithRequestLogger({ server, logger: logs }, { verbosity: Verbosity.INFO })
-  const collectionsSubgraph = await createSubgraphComponent({ logs, config, fetch, metrics }, 'subgraph-url')
+  const COLLECTIONS_SUBGRAPH_URL = await config.requireString('COLLECTIONS_SUBGRAPH_URL')
+  const collectionsSubgraph = await createSubgraphComponent({ logs, config, fetch, metrics }, COLLECTIONS_SUBGRAPH_URL)
   const snapshot = await createSnapshotComponent({ fetch, config })
   const schemaValidator = await createSchemaValidatorComponent()
   const items = createItemsComponent({ collectionsSubgraph, logs })

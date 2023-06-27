@@ -38,6 +38,7 @@ export async function createSnapshotComponent(components: Pick<AppComponents, 'f
       const body: ScoreResponse = await res.json()
       return (body?.result?.vp || 0) | 0
     } catch (err) {
+      console.error(`Error getting score for ${address} from snapshot: ${err}`)
       throw new ScoreError(isErrorWithMessage(err) ? err.message : 'Unknown', address)
     }
   }

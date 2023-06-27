@@ -3,8 +3,29 @@ name: node
 on: push
 
 jobs:
-  install:
+  # Label of the container job
+  container-job:
     runs-on: ubuntu-latest
+
+    # Service containers to run with `container-job`
+    services:
+      # Label used to access the service container
+      postgres:
+        # Docker Hub image
+        image: postgres
+        # Provide the password for postgres
+        volumes:
+          - postgres_data:/var/lib/postgresql/data
+          - ./test/db/init-schema.sh:/docker-entrypoint-initdb.d/init-schema.sh
+        env:
+          POSTGRES_PASSWORD: postgres
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@master
       - name: Use Node.js 16.x
