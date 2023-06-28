@@ -227,7 +227,8 @@ describe('when transforming a DB retrieved list with items count to a list with 
       created_at: date,
       updated_at: date,
       items_count: '5',
-      is_private: false
+      is_private: false,
+      preview_of_item_ids: ['1', '2', '3', '4', '5']
     }
   })
 
@@ -241,7 +242,8 @@ describe('when transforming a DB retrieved list with items count to a list with 
       updatedAt: Number(date),
       permission: undefined,
       itemsCount: 5,
-      isPrivate: false
+      isPrivate: false,
+      previewOfItemIds: ['1', '2', '3', '4', '5']
     })
   })
 })

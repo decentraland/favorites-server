@@ -41,6 +41,7 @@ export type DBList = {
   updated_at: Date | null
   permission?: string | null
   is_private: boolean
+  preview_of_item_ids?: string[]
 }
 
 export type DBListsWithItemsCount = DBList & {
@@ -50,7 +51,6 @@ export type DBListsWithItemsCount = DBList & {
 export type DBGetListsWithCount = DBListsWithItemsCount & {
   lists_count: string
   is_item_in_list?: boolean
-  preview_of_item_ids?: string[]
 }
 
 export type AddItemToListBody = { itemId: string }

@@ -26,15 +26,15 @@ export function fromDBPickToPick(dbPick: DBPick): TPick {
 export function fromDBGetListsToListsWithCount(dbLists: DBGetListsWithCount[]): ListsWithCount {
   return {
     lists: dbLists.map(list => {
-      const { id, name, description, itemsCount, isPrivate } = fromDBListWithItemsCountToListWithItemsCount(list)
+      const { id, name, description, itemsCount, isPrivate, previewOfItemIds } = fromDBListWithItemsCountToListWithItemsCount(list)
       return {
         id,
         name,
         description,
         itemsCount,
         isItemInList: list.is_item_in_list,
-        previewOfItemIds: list.preview_of_item_ids,
-        isPrivate
+        isPrivate,
+        previewOfItemIds
       }
     }),
     count: Number(dbLists[0]?.lists_count ?? 0)
@@ -50,7 +50,8 @@ export function fromDBListToList(dbList: DBList): List {
     createdAt: Number(dbList.created_at),
     updatedAt: Number(dbList.updated_at),
     permission: dbList.permission as Permission,
-    isPrivate: dbList.is_private
+    isPrivate: dbList.is_private,
+    previewOfItemIds: dbList.preview_of_item_ids
   }
 }
 
