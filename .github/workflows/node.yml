@@ -27,7 +27,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-          --entrypoint /bin/bash -c docker-entrypoint.sh
+          --entrypoint /bin/bash docker-entrypoint.sh
 
     steps:
       - uses: actions/checkout@master
