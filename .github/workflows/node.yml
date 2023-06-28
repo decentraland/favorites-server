@@ -22,13 +22,12 @@ jobs:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: marketplace
         # Set health checks to wait until postgres has started
-        # chown -R 999 /docker-entrypoint-initdb.d/ && chmod -R 755 /docker-entrypoint-initdb.d/ && docker-entrypoint.sh
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-          --entrypoint /bin/bash
+          --entrypoint /bin/bash -c docker-entrypoint.sh
 
     steps:
       - uses: actions/checkout@master
