@@ -63,7 +63,7 @@ test('picks controller', function ({ components }) {
         }
       })
 
-      it('responds /v1/picks/:itemId', async () => {
+      it('responds with the an array with the recently created pick for the given item id', async () => {
         const { localFetch } = components
         const response = await localFetch.fetch(`/v1/picks/${itemId}`)
 
