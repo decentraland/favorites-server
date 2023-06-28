@@ -27,7 +27,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-          --entrypoint chown 755 /docker-entrypoint-initdb.d/init-schema.sh && docker-entrypoint.sh postgres"
+          --entrypoint chown 755 /docker-entrypoint-initdb.d/init-schema.sh && docker-entrypoint.sh
 
     steps:
       - uses: actions/checkout@master
