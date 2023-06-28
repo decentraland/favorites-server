@@ -16,6 +16,7 @@ jobs:
         # Provide the password for postgres
         volumes:
           - postgres_data:/var/lib/postgresql/data
+          - ${{ github.workspace }}/init-schema.sql:/docker-entrypoint-initdb.d/init-schema.sql
         env:
           POSTGRES_USER: admin
           POSTGRES_PASSWORD: postgres
