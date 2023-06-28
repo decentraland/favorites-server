@@ -777,6 +777,14 @@ describe('when getting a list', () => {
 
       expect(dbQueryMock).toHaveBeenCalledWith(
         expect.objectContaining({
+          text: expect.stringContaining(
+            '(ARRAY_REMOVE(ARRAY_AGG(favorites.picks.item_id ORDER BY favorites.picks.created_at), NULL))[:4] AS preview_of_item_ids'
+          )
+        })
+      )
+
+      expect(dbQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
           text: expect.stringContaining('FROM favorites.lists')
         })
       )
@@ -852,6 +860,14 @@ describe('when getting a list', () => {
         expect.objectContaining({
           text: expect.stringContaining(
             'SELECT favorites.lists.id, favorites.lists.name, favorites.lists.description, favorites.lists.user_address, favorites.lists.created_at, favorites.lists.updated_at, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS items_count, COUNT(favorites.acl.permission) = 0 AS is_private'
+          )
+        })
+      )
+
+      expect(dbQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining(
+            '(ARRAY_REMOVE(ARRAY_AGG(favorites.picks.item_id ORDER BY favorites.picks.created_at), NULL))[:4] AS preview_of_item_ids'
           )
         })
       )
@@ -951,6 +967,14 @@ describe('when getting a list', () => {
 
         expect(dbQueryMock).toHaveBeenCalledWith(
           expect.objectContaining({
+            text: expect.stringContaining(
+              '(ARRAY_REMOVE(ARRAY_AGG(favorites.picks.item_id ORDER BY favorites.picks.created_at), NULL))[:4] AS preview_of_item_ids'
+            )
+          })
+        )
+
+        expect(dbQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
             text: expect.stringContaining('FROM favorites.lists')
           })
         )
@@ -1017,6 +1041,14 @@ describe('when getting a list', () => {
           expect.objectContaining({
             text: expect.stringContaining(
               'SELECT favorites.lists.id, favorites.lists.name, favorites.lists.description, favorites.lists.user_address, favorites.lists.created_at, favorites.lists.updated_at, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS items_count, COUNT(favorites.acl.permission) = 0 AS is_private'
+            )
+          })
+        )
+
+        expect(dbQueryMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining(
+              '(ARRAY_REMOVE(ARRAY_AGG(favorites.picks.item_id ORDER BY favorites.picks.created_at), NULL))[:4] AS preview_of_item_ids'
             )
           })
         )
@@ -1439,6 +1471,9 @@ describe('when updating a list', () => {
                 expect.stringContaining(
                   'SELECT favorites.lists.id, favorites.lists.name, favorites.lists.description, favorites.lists.user_address, favorites.lists.created_at, favorites.lists.updated_at, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS items_count, COUNT(favorites.acl.permission) = 0 AS is_private'
                 ),
+                expect.stringContaining(
+                  '(ARRAY_REMOVE(ARRAY_AGG(favorites.picks.item_id ORDER BY favorites.picks.created_at), NULL))[:4] AS preview_of_item_ids'
+                ),
                 expect.stringContaining('FROM favorites.lists'),
                 expect.stringContaining(
                   'LEFT JOIN favorites.picks ON favorites.lists.id = favorites.picks.list_id AND (favorites.picks.user_address ='
@@ -1498,6 +1533,9 @@ describe('when updating a list', () => {
               strings: expect.arrayContaining([
                 expect.stringContaining(
                   'SELECT favorites.lists.id, favorites.lists.name, favorites.lists.description, favorites.lists.user_address, favorites.lists.created_at, favorites.lists.updated_at, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS items_count, COUNT(favorites.acl.permission) = 0 AS is_private'
+                ),
+                expect.stringContaining(
+                  '(ARRAY_REMOVE(ARRAY_AGG(favorites.picks.item_id ORDER BY favorites.picks.created_at), NULL))[:4] AS preview_of_item_ids'
                 ),
                 expect.stringContaining('FROM favorites.lists'),
                 expect.stringContaining(
@@ -1563,6 +1601,9 @@ describe('when updating a list', () => {
           strings: expect.arrayContaining([
             expect.stringContaining(
               'SELECT favorites.lists.id, favorites.lists.name, favorites.lists.description, favorites.lists.user_address, favorites.lists.created_at, favorites.lists.updated_at, favorites.acl.permission AS permission, COUNT(favorites.picks.item_id) AS items_count, COUNT(favorites.acl.permission) = 0 AS is_private'
+            ),
+            expect.stringContaining(
+              '(ARRAY_REMOVE(ARRAY_AGG(favorites.picks.item_id ORDER BY favorites.picks.created_at), NULL))[:4] AS preview_of_item_ids'
             ),
             expect.stringContaining('FROM favorites.lists'),
             expect.stringContaining(
