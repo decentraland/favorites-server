@@ -10,7 +10,6 @@ jobs:
       postgres:
         image: postgres
         volumes:
-          - postgres_data:/var/lib/postgresql/data
           - ${{ github.workspace }}/test/db:/docker-entrypoint-initdb.d
         env:
           POSTGRES_USER: admin
