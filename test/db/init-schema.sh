@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+echo "Creating schema and test user..."
+
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
 	CREATE SCHEMA favorites;
     
@@ -10,3 +12,5 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
 
 	CREATE EXTENSION IF NOT EXISTS "uuid-ossp" SCHEMA favorites;
 EOSQL
+
+echo "Schema created successfully!"
