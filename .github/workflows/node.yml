@@ -16,7 +16,7 @@ jobs:
         # Provide the password for postgres
         volumes:
           - postgres_data:/var/lib/postgresql/data
-          - ${{ github.workspace }}/init-schema.sh:/docker-entrypoint-initdb.d/init-schema.sh
+          - ${{ github.workspace }}/test/db:/docker-entrypoint-initdb.d
         env:
           POSTGRES_USER: admin
           POSTGRES_PASSWORD: postgres
@@ -27,7 +27,6 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-          --entrypoint "/bin/bash docker-entrypoint.sh"
 
     steps:
       - uses: actions/checkout@master
