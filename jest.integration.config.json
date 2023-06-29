@@ -6,5 +6,5 @@
   "testMatch": ["**/test/integration/*.spec.(ts)"],
   "testEnvironment": "node",
   "resetMocks": true,
-  "setupFilesAfterEnv": ["./test/jest.setup.ts"]
+  "setupFilesAfterEnv": ["./jest.setup.ts"]
 }
