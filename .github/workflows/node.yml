@@ -6,27 +6,10 @@ jobs:
   install:
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres
-        volumes:
-          - ${{ github.workspace }}/test/db:/docker-entrypoint-initdb.d
-        env:
-          POSTGRES_USER: admin
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: marketplace
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
-      - name: Chown user
-        run: sudo chown -R $USER:$USER ${{ github.workspace }}
       - uses: actions/checkout@master
+      - name: Start postgres
+        run: docker compose up -d --renew-anon-volumes
       - name: Use Node.js 16.x
         uses: actions/setup-node@v3
         with:
@@ -47,3 +30,5 @@ jobs:
         uses: coverallsapp/github-action@master
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Stop postgres
+        run: docker compose down -v
