@@ -30,7 +30,7 @@ jobs:
 
     steps:
       - name: Chown user
-        run: sudo chown -R $USER:$USER $GITHUB_WORKSPACE
+        run: sudo chown -R $USER:$USER ${{ github.workspace }}
       - uses: actions/checkout@master
       - name: Use Node.js 16.x
         uses: actions/setup-node@v3
@@ -46,6 +46,8 @@ jobs:
         if: ${{ always() }}
       - name: test
         run: npm run test
+      - name: integration test
+        run: npm run test:integration
       - name: Report coverage
         uses: coverallsapp/github-action@master
         with:
