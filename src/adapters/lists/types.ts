@@ -12,6 +12,7 @@ export type List = {
   updatedAt: number | null
   permission?: Permission | null
   isPrivate: boolean
+  previewOfItemIds?: string[]
 }
 
 export type ListWithItemsCount = List & {
@@ -19,9 +20,8 @@ export type ListWithItemsCount = List & {
 }
 
 export type ListsWithCount = {
-  lists: (Pick<ListWithItemsCount, 'id' | 'name' | 'description' | 'itemsCount' | 'isPrivate'> & {
+  lists: (Pick<ListWithItemsCount, 'id' | 'name' | 'description' | 'itemsCount' | 'isPrivate' | 'previewOfItemIds'> & {
     isItemInList?: boolean
-    previewOfItemIds?: string[]
   })[]
   count: number
 }
