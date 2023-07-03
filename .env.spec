@@ -1,6 +1,10 @@
 HTTP_SERVER_HOST=localhost
 
-PG_COMPONENT_PSQL_DATABASE=marketplace
+PG_COMPONENT_PSQL_CONNECTION_STRING=postgres://testuser:testpassword@localhost:5432/marketplace
 PG_COMPONENT_PSQL_SCHEMA=favorites
-PG_COMPONENT_PSQL_PORT=5432
-PG_COMPONENT_PSQL_HOST=localhost
+
+COLLECTIONS_SUBGRAPH_URL=https://api.thegraph.com/subgraphs/name/decentraland/collections-matic-mumbai
+
+SNAPSHOT_URL=https://score.snapshot.org/
+SNAPSHOT_NETWORK=5
+SNAPSHOT_SPACE=1emu.eth
