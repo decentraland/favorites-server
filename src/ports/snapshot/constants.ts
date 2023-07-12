@@ -130,7 +130,7 @@ export const strategiesByChainId = {
   [ChainId.ETHEREUM_SEPOLIA]: [
     {
       name: 'multichain',
-      network: '5',
+      network: '11155111',
       params: {
         name: 'multichain',
         graphs: {
@@ -142,7 +142,7 @@ export const strategiesByChainId = {
           {
             name: 'erc20-balance-of',
             params: {
-              address: '0xe7fDae84ACaba2A5Ba817B6E6D8A2d415DBFEdbe',
+              address: '0xfa04d2e2ba9aec166c93dfeeba7427b2303befa9',
               decimals: 18
             },
             network: '11155111'
@@ -160,28 +160,28 @@ export const strategiesByChainId = {
     },
     {
       name: 'erc721-with-multiplier',
-      network: '5',
+      network: '11155111',
       params: {
         symbol: 'LAND',
-        address: '0x25b6B4bac4aDB582a0ABd475439dA6730777Fbf7',
+        address: '0x42f4ba48791e2de32f5fbf553441c2672864bb33',
         multiplier: 2000
       }
     },
     {
       name: 'decentraland-estate-size',
-      network: '5',
+      network: '11155111',
       params: {
         symbol: 'ESTATE',
-        address: '0xC9A46712E6913c24d15b46fF12221a79c4e251DC',
+        address: '0x369a7fbe718c870c79f99fb423882e8dd8b20486',
         multiplier: 2000
       }
     },
     {
       name: 'erc721-with-multiplier',
-      network: '5',
+      network: '11155111',
       params: {
         symbol: 'NAMES',
-        address: '0x6b8da2752827cf926215b43bb8E46Fd7b9dDac35',
+        address: '0x7518456ae93eb98f3e64571b689c626616bb7f30',
         multiplier: 100
       }
     }
