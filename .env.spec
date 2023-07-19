@@ -7,4 +7,4 @@ COLLECTIONS_SUBGRAPH_URL=https://api.thegraph.com/subgraphs/name/decentraland/co
 
 SNAPSHOT_URL=https://score.snapshot.org/
 SNAPSHOT_NETWORK=11155111
-SNAPSHOT_SPACE=1emu.eth
+SNAPSHOT_SPACE=daotest.dcl.eth
