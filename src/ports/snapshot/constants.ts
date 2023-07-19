@@ -126,5 +126,64 @@ export const strategiesByChainId = {
         multiplier: 100
       }
     }
+  ],
+  [ChainId.ETHEREUM_SEPOLIA]: [
+    {
+      name: 'multichain',
+      network: '11155111',
+      params: {
+        name: 'multichain',
+        graphs: {
+          [ChainId.ETHEREUM_SEPOLIA]: 'https://api.studio.thegraph.com/query/49472/blocks-ethereum-sepolia/version/latest',
+          [ChainId.MATIC_MUMBAI]: 'https://api.thegraph.com/subgraphs/name/decentraland/blocks-matic-mumbai'
+        },
+        symbol: 'MANA',
+        strategies: [
+          {
+            name: 'erc20-balance-of',
+            params: {
+              address: '0xfa04d2e2ba9aec166c93dfeeba7427b2303befa9',
+              decimals: 18
+            },
+            network: '11155111'
+          },
+          {
+            name: 'erc20-balance-of',
+            params: {
+              address: '0x882Da5967c435eA5cC6b09150d55E8304B838f45',
+              decimals: 18
+            },
+            network: '80001'
+          }
+        ]
+      }
+    },
+    {
+      name: 'erc721-with-multiplier',
+      network: '11155111',
+      params: {
+        symbol: 'LAND',
+        address: '0x42f4ba48791e2de32f5fbf553441c2672864bb33',
+        multiplier: 2000
+      }
+    },
+    {
+      name: 'decentraland-estate-size',
+      network: '11155111',
+      params: {
+        symbol: 'ESTATE',
+        address: '0x369a7fbe718c870c79f99fb423882e8dd8b20486',
+        multiplier: 2000
+      }
+    },
+    {
+      name: 'erc721-with-multiplier',
+      network: '11155111',
+      params: {
+        symbol: 'NAMES',
+        address: '0x7518456ae93eb98f3e64571b689c626616bb7f30',
+        multiplier: 100
+      }
+    }
   ]
 }
