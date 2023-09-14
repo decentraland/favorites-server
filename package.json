@@ -33,7 +33,7 @@
     "typescript": "^5.1.6"
   },
   "dependencies": {
-    "@dcl/schemas": "^8.2.0",
+    "@dcl/schemas": "^9.6.0",
     "@well-known-components/env-config-provider": "^1.2.0",
     "@well-known-components/http-requests-logger-component": "^2.1.0",
     "@well-known-components/http-server": "^1.1.6",
