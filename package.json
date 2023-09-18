@@ -21,7 +21,7 @@
   },
   "devDependencies": {
     "@dcl/eslint-config": "^1.1.6",
-    "@types/jest": "^29.5.4",
+    "@types/jest": "^29.5.5",
     "@types/node": "^18.16.18",
     "@well-known-components/test-helpers": "^1.5.3",
     "husky": "^8.0.3",
