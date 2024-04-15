@@ -29,8 +29,9 @@ export async function initComponents(): Promise<AppComponents> {
 
   let databaseUrl: string | undefined = await config.getString('PG_COMPONENT_PSQL_CONNECTION_STRING')
   const COLLECTIONS_SUBGRAPH_URL = await config.requireString('COLLECTIONS_SUBGRAPH_URL')
+
   const cors = {
-    origin: await config.requireString('CORS_ORIGIN'),
+    origin: (await config.requireString('CORS_ORIGIN')).split(';').map(origin => new RegExp(origin)),
     methods: await config.requireString('CORS_METHODS')
   }
 
