@@ -76,7 +76,7 @@ export const strategiesByChainId = {
         name: 'multichain',
         graphs: {
           [ChainId.ETHEREUM_GOERLI]: 'https://api.thegraph.com/subgraphs/name/decentraland/blocks-ethereum-goerli',
-          [ChainId.MATIC_AMOY]: 'https://api.thegraph.com/subgraphs/name/decentraland/blocks-matic-amoy'
+          [ChainId.MATIC_AMOY]: 'https://api.studio.thegraph.com/query/49472/blocks-matic-amoy/version/latest'
         },
         symbol: 'MANA',
         strategies: [
@@ -135,7 +135,7 @@ export const strategiesByChainId = {
         name: 'multichain',
         graphs: {
           [ChainId.ETHEREUM_SEPOLIA]: 'https://api.studio.thegraph.com/query/49472/blocks-ethereum-sepolia/version/latest',
-          [ChainId.MATIC_AMOY]: 'https://api.thegraph.com/subgraphs/name/decentraland/blocks-matic-amoy'
+          [ChainId.MATIC_AMOY]: 'https://api.studio.thegraph.com/query/49472/blocks-matic-amoy/version/latest'
         },
         symbol: 'MANA',
         strategies: [
